@@ -1,3 +1,6 @@
+import '@unocss/reset/tailwind.css'
+import 'virtual:uno.css'
+
 // src/main.jsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';

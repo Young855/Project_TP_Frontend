@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import UnoCSS from 'unocss/vite'
+import { presetWind } from 'unocss'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    UnoCSS({
+      presets: [presetWind()],
+    }),
+  ],
 })

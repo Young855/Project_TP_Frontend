@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { mockItinerary } from './data/mockData';
-
+import './index.css';
 // Helper Components
 import Modal from './components/Modal';
 import Header from './components/Header';

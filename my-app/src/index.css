@@ -1,4 +1,6 @@
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 전역 스타일 및 Tailwind 컴포넌트 스타일 */
 .form-label {

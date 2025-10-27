@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { User, LogOut, LogIn, UserPlus, X, Menu } from 'lucide-react';
+import { 
+  User, LogOut, LogIn, UserPlus, X, Menu 
+} from 'lucide-react';
 
 /**
  * 헤더 컴포넌트
@@ -14,40 +16,24 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div
+        {/* [수정됨] justify-between 제거, ml-auto 적용을 위해 */}
+        <div className="flex items-center h-16">
+          {/* [수정됨] "TP"를 "TP-TEST-HELLO"로 변경 (테스트 목적) */}
+          <div 
             className="text-2xl font-bold text-blue-600 cursor-pointer"
             onClick={() => setPage('main')}
           >
             TP
           </div>
-
-          {/* 데스크탑 네비게이션 */}
-          <div className="hidden md:flex items-center space-x-4">
-            <button onClick={() => setPage('search')} className="nav-link">
-              숙소 검색
-            </button>
-            <button
-              onClick={() =>
-                setPage(isLoggedIn ? 'my-itineraries' : 'login-required')
-              }
-              className="nav-link"
-            >
-              내 일정
-            </button>
-            <button
-              onClick={() => setPage('community')}
-              className="nav-link"
-            >
-              커뮤니티
-            </button>
-
+          
+          <div className="hidden md:flex items-center space-x-4 ml-auto">
+            <button onClick={() => setPage('search')} className="nav-link">숙소 검색</button>
+            <button onClick={() => setPage(isLoggedIn ? 'my-itineraries' : 'login-required')} className="nav-link">내 일정</button>
+            <button onClick={() => setPage('community')} className="nav-link">커뮤니티</button>
+            
             {isLoggedIn ? (
               <>
-                <button
-                  onClick={() => setPage('my-page')}
-                  className="nav-link"
-                >
+                <button onClick={() => setPage('my-page')} className="nav-link">
                   <User size={20} className="inline-block mr-1" />
                   마이페이지
                 </button>
@@ -58,17 +44,11 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => setPage('login')}
-                  className="nav-link"
-                >
+                <button onClick={() => setPage('login')} className="nav-link">
                   <LogIn size={20} className="inline-block mr-1" />
                   로그인
                 </button>
-                <button
-                  onClick={() => setPage('signup')}
-                  className="btn-primary-outline"
-                >
+                <button onClick={() => setPage('signup')} className="btn-primary-outline">
                   <UserPlus size={20} className="inline-block mr-1" />
                   회원가입
                 </button>
@@ -76,102 +56,12 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
             )}
           </div>
 
-          {/* 모바일 메뉴 버튼 */}
-          <div className="md:hidden ml-auto">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
-          </div>
+          
         </div>
 
-        {/* 모바일 메뉴 */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={() => {
-                  setPage('search');
-                  setIsMenuOpen(false);
-                }}
-                className="nav-link-mobile"
-              >
-                숙소 검색
-              </button>
-              <button
-                onClick={() => {
-                  setPage(isLoggedIn ? 'my-itineraries' : 'login-required');
-                  setIsMenuOpen(false);
-                }}
-                className="nav-link-mobile"
-              >
-                내 일정
-              </button>
-              <button
-                onClick={() => {
-                  setPage('community');
-                  setIsMenuOpen(false);
-                }}
-                className="nav-link-mobile"
-              >
-                커뮤니티
-              </button>
-
-              <hr className="my-2" />
-
-              {isLoggedIn ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setPage('my-page');
-                      setIsMenuOpen(false);
-                    }}
-                    className="nav-link-mobile"
-                  >
-                    <User size={20} className="inline-block mr-2" />
-                    마이페이지
-                  </button>
-                  <button
-                    onClick={() => {
-                      onLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="nav-link-mobile"
-                  >
-                    <LogOut size={20} className="inline-block mr-2" />
-                    로그아웃
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      setPage('login');
-                      setIsMenuOpen(false);
-                    }}
-                    className="nav-link-mobile"
-                  >
-                    <LogIn size={20} className="inline-block mr-2" />
-                    로그인
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPage('signup');
-                      setIsMenuOpen(false);
-                    }}
-                    className="btn-primary w-full mt-2"
-                  >
-                    <UserPlus size={20} className="inline-block mr-2" />
-                    회원가입
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </nav>
+      </nav> 
     </header>
   );
 };
 
 export default Header;
-

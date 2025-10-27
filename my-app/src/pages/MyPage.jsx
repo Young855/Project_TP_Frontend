@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { UserCheck, ShoppingBag, Map, Star, Settings } from 'lucide-react';
 import { mockBookings } from '../data/mockData';
 
-// MyInfo 서브 컴포넌트를 MyPage 파일 내부에 정의합니다.
 const MyInfo = ({ user }) => (
   <div>
     <h3 className="text-xl font-semibold mb-4">내 정보 (R001)</h3>
@@ -27,29 +26,23 @@ const MyInfo = ({ user }) => (
 const MyPage = ({ subPage, setPage, user }) => {
   const [currentSubPage, setCurrentSubPage] = useState(subPage || 'info');
   
-  // R009: 비밀번호 재확인 (Mock)
   const [isVerified, setIsVerified] = useState(false);
   const [password, setPassword] = useState('');
   
   const handleVerify = (e) => {
     e.preventDefault();
-    // --- AUTHENTICATION LOGIC ---
-    // Mock: 비밀번호 "Test1234!" 입력 시 인증 성공
     if (password === "Test1234!") {
       setIsVerified(true);
     } else {
       alert("비밀번호가 일치하지 않습니다.");
     }
-    // --- END AUTHENTICATION LOGIC ---
   };
 
   const renderSubPage = () => {
     switch (currentSubPage) {
       case 'info':
-        // R001: 닉네임, 이름, 생년월일, 이메일, 전화번호 확인
         return <MyInfo user={user} />;
       case 'bookings':
-        // R007: 예약/결제 내역 조회 (최신순)
         return (
           <div>
             <h3 className="text-xl font-semibold mb-4">예약/결제 내역 (R007)</h3>
@@ -67,7 +60,6 @@ const MyPage = ({ subPage, setPage, user }) => {
           </div>
         );
       case 'reviews':
-        // R006: 이용 완료 예약에만 후기 작성 가능
         return (
            <div>
             <h3 className="text-xl font-semibold mb-4">후기 관리 (R006)</h3>
@@ -81,7 +73,6 @@ const MyPage = ({ subPage, setPage, user }) => {
           </div>
         );
       case 'preferences':
-        // R005: 취향 설문 수정
          return (
            <div>
             <h3 className="text-xl font-semibold mb-4">여행 취향 설문 (R005)</h3>
@@ -93,7 +84,6 @@ const MyPage = ({ subPage, setPage, user }) => {
     }
   };
 
-  // R009: 비밀번호 재확인
   if (!isVerified) {
     return (
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-lg">
@@ -119,7 +109,6 @@ const MyPage = ({ subPage, setPage, user }) => {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <h1 className="text-3xl font-bold mb-8">마이페이지</h1>
       <div className="flex flex-col md:flex-row gap-8">
-        {/* 네비게이션 */}
         <nav className="w-full md:w-1/4">
           <ul className="space-y-2">
             <li>
@@ -164,7 +153,6 @@ const MyPage = ({ subPage, setPage, user }) => {
             </li>
           </ul>
         </nav>
-        {/* 컨텐츠 */}
         <main className="w-full md:w-3/4 bg-white p-6 rounded-lg shadow-md">
           {renderSubPage()}
         </main>

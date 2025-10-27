@@ -57,64 +57,49 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
  * @param {function} props.showModal - 모달 표시 함수
  */
 const SignupPage = ({ setPage, showModal }) => {
-  // User.java 필드 매핑
-  const [email, setEmail] = useState(''); // email
-  const [password, setPassword] = useState(''); // passwordHash (전송 시 'password'로 보내면 백엔드가 해싱)
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState(''); // name
-  const [nickname, setNickname] = useState(''); // nickname
-  const [phone, setPhone] = useState(''); // phone
   
-  // birthDate
+  const [email, setEmail] = useState(''); // email
+  const [password, setPassword] = useState(''); 
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState(''); 
+  const [nickname, setNickname] = useState(''); 
+  const [phone, setPhone] = useState(''); 
+  
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   
-  // 오류 상태
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [nicknameError, setNicknameError] = useState(''); // nickname (unique)
-  
-  // R001: 이메일 형식 및 중복 확인
+  const [nicknameError, setNicknameError] = useState(''); 
   const checkEmail = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError('올바른 이메일 형식이 아닙니다.');
       return;
     }
-    // --- AUTHENTICATION LOGIC ---
-    // Mock: API로 이메일 중복 확인
     console.log(`Checking email duplication for: ${email}`);
-    // Mock 로직
     if (email === 'test@example.com') {
       setEmailError('이미 사용 중인 이메일입니다.');
     } else {
-      setEmailError('사용 가능한 이메일입니다.'); // CSS로 초록색 처리 필요
+      setEmailError('사용 가능한 이메일입니다.'); 
     }
-    // --- END AUTHENTICATION LOGIC ---
   };
-
-  // User.java nickname (unique) 중복 확인
   const checkNickname = () => {
     if (!nickname || nickname.length < 2) {
         setNicknameError('닉네임은 2자 이상 입력해주세요.');
         return;
     }
-    // --- AUTHENTICATION LOGIC ---
-    // Mock: API로 닉네임 중복 확인
     console.log(`Checking nickname duplication for: ${nickname}`);
-    // Mock 로직
+    
     if (nickname === 'admin') {
       setNicknameError('이미 사용 중인 닉네임입니다.');
     } else {
-      setNicknameError('사용 가능한 닉네임입니다.'); // CSS로 초록색 처리 필요
+      setNicknameError('사용 가능한 닉네임입니다.'); 
     }
-    // --- END AUTHENTICATION LOGIC ---
   };
 
-
-  // R002: 비밀번호 조건
   const validatePassword = () => {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
     if (!passwordRegex.test(password)) {
@@ -123,8 +108,6 @@ const SignupPage = ({ setPage, showModal }) => {
       setPasswordError('');
     }
   };
-
-  // R003: 비밀번호 재입력 확인
   useEffect(() => {
     if (confirmPassword && password !== confirmPassword) {
       setConfirmPasswordError('비밀번호가 일치하지 않습니다.');
@@ -153,35 +136,28 @@ const SignupPage = ({ setPage, showModal }) => {
     
     const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    // --- AUTHENTICATION LOGIC ---
-    // User.java 엔티티에 맞춘 데이터
     const signupData = {
       email,
-      password, // 백엔드에서 해싱하여 passwordHash로 저장
+      password,
       name,
       nickname,
       phone,
-      birthDate // 'YYYY-MM-DD' 형식
-      // role은 백엔드에서 기본값(예: 'USER')으로 설정
+      birthDate
     };
 
-    // 실제 회원가입 요청 (Mock)
     console.log('Mock signup Data (based on User.java):', signupData);
     
-    // R006: 환영 메시지 및 로그인 페이지로 이동
     showModal('회원가입 완료', '환영합니다! 로그인 페이지로 이동합니다.', () => {
       setPage('login');
     });
-    // --- END AUTHENTICATION LOGIC ---
   };
   
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4 font-sans"> {/* 기본 폰트 적용 */}
+    <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4 font-sans">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">회원가입</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* 이메일 */}
           <div>
             <label htmlFor="email" className="form-label">이메일</label>
             <div className="flex space-x-2">
@@ -201,7 +177,6 @@ const SignupPage = ({ setPage, showModal }) => {
             {emailError && <p className={`text-sm mt-1 ${emailError === '사용 가능한 이메일입니다.' ? 'text-green-600' : 'text-red-500'}`}>{emailError}</p>}
           </div>
 
-          {/* 비밀번호 */}
           <div>
             <label htmlFor="password" className="form-label">비밀번호</label>
             <input
@@ -218,7 +193,6 @@ const SignupPage = ({ setPage, showModal }) => {
             {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
           </div>
 
-          {/* 비밀번호 확인 */}
           <div>
             <label htmlFor="confirmPassword" className="form-label">비밀번호 확인</label>
             <input
@@ -234,7 +208,6 @@ const SignupPage = ({ setPage, showModal }) => {
             {confirmPasswordError && <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>}
           </div>
 
-          {/* 이름 (name) */}
           <div>
             <label htmlFor="name" className="form-label">이름</label>
             <input
@@ -248,7 +221,6 @@ const SignupPage = ({ setPage, showModal }) => {
             />
           </div>
 
-          {/* 닉네임 (nickname) */}
           <div>
             <label htmlFor="nickname" className="form-label">닉네임</label>
             <div className="flex space-x-2">
@@ -268,7 +240,6 @@ const SignupPage = ({ setPage, showModal }) => {
             {nicknameError && <p className={`text-sm mt-1 ${nicknameError === '사용 가능한 닉네임입니다.' ? 'text-green-600' : 'text-red-500'}`}>{nicknameError}</p>}
           </div>
 
-          {/* 전화번호 (phone) */}
           <div>
             <label htmlFor="phone" className="form-label">전화번호</label>
             <input
@@ -282,13 +253,10 @@ const SignupPage = ({ setPage, showModal }) => {
             />
           </div>
 
-          {/* 생년월일 (birthDate) */}
           <div>
             <label className="form-label">생년월일</label>
             <BirthDatePicker year={year} setYear={setYear} month={month} setMonth={setMonth} day={day} setDay={setDay} />
           </div>
-
-          {/* 가입하기 버튼 */}
           <div>
             <button type="submit" className="btn-primary w-full text-lg mt-4">
               가입하기
@@ -297,7 +265,6 @@ const SignupPage = ({ setPage, showModal }) => {
         </form>
       </div>
 
-      {/* Tailwind CSS 스타일 정의 (가정) */}
       <style jsx global>{`
         .form-label {
           display: block;

@@ -24,14 +24,12 @@ const SearchResultsPage = ({ searchParams, setPage, setSelectedAccommodation }) 
         </span>
       </h2>
 
-      {/* 필터 (구현은 생략) */}
       <div className="mb-4 flex space-x-2">
         <button className="filter-chip">가격</button>
         <button className="filter-chip">리뷰 평점</button>
         <button className="filter-chip">시설</button>
       </div>
 
-      {/* 숙소 목록 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {mockAccommodations.map((acc) => (
           <div 

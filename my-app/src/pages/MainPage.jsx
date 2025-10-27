@@ -23,7 +23,6 @@ const MainPage = ({ onSearch }) => {
     onSearch({ destination, checkIn, checkOut, guests: totalGuests });
   };
 
-  // 외부 클릭 시 인원 수 선택 팝업 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (guestPickerRef.current && !guestPickerRef.current.contains(event.target)) {
@@ -47,13 +46,11 @@ const MainPage = ({ onSearch }) => {
         </p>
       </div>
 
-      {/* 검색 바 */}
       <form 
         onSubmit={handleSearch}
         className="w-full max-w-4xl bg-white rounded-lg shadow-xl p-4 md:p-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* 목적지 */}
           <div className="md:col-span-1">
             <label htmlFor="destination" className="form-label">
               <MapPin size={16} className="inline-block mr-1" />
@@ -69,7 +66,6 @@ const MainPage = ({ onSearch }) => {
             />
           </div>
 
-          {/* 날짜 */}
           <div className="md:col-span-2 grid grid-cols-2 gap-2">
             <div>
               <label htmlFor="checkin" className="form-label">
@@ -81,7 +77,7 @@ const MainPage = ({ onSearch }) => {
                 id="checkin"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
-                min={new Date().toISOString().split('T')[0]} // 오늘부터 선택 가능
+                min={new Date().toISOString().split('T')[0]}
                 className="form-input"
               />
             </div>
@@ -95,13 +91,12 @@ const MainPage = ({ onSearch }) => {
                 id="checkout"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                min={checkIn || new Date().toISOString().split('T')[0]} // 체크인 날짜 이후
+                min={checkIn || new Date().toISOString().split('T')[0]}
                 className="form-input"
               />
             </div>
           </div>
 
-          {/* 인원 */}
           <div className="md:col-span-1 relative" ref={guestPickerRef}>
             <label htmlFor="guests" className="form-label">
               <User size={16} className="inline-block mr-1" />
@@ -117,7 +112,6 @@ const MainPage = ({ onSearch }) => {
               {isGuestPickerOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             
-            {/* 인원 수 선택 팝업 */}
             {isGuestPickerOpen && (
               <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-2xl border z-10 p-4 space-y-4">
                 <GuestCounter count={adults} setCount={setAdults} label="성인" />
@@ -127,7 +121,6 @@ const MainPage = ({ onSearch }) => {
           </div>
         </div>
 
-        {/* 검색 버튼 */}
         <div className="mt-6">
           <button type="submit" className="btn-primary w-full text-lg">
             <Search size={20} className="inline-block mr-2" />

@@ -19,7 +19,6 @@ const PaymentPage = ({ setPage, showModal }) => {
       <h1 className="text-3xl font-bold mb-6">결제</h1>
       <div className="bg-white rounded-lg shadow-xl p-6">
         <p className="text-center text-lg mb-6">총 결제 금액: <span className="font-bold text-2xl ml-2">700,000원</span></p>
-        {/* Mock 결제 UI */}
         <div className="space-y-4">
           <button className="w-full p-4 rounded-lg border border-gray-300 text-left font-medium hover:bg-gray-50">
             신용카드

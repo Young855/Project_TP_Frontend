@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// import { mockUser } from '../data/mockData'; // 더 이상 필요하지 않음
 
 /**
  * 로그인 페이지
@@ -42,7 +41,6 @@ const LoginPage = ({ setPage }) => {
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">로그인</h2>
-        {/* {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>} - 제거 */ }
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="email" className="form-label">이메일</label>
@@ -87,7 +85,6 @@ const LoginPage = ({ setPage }) => {
         </div>
       </div>
 
-    {/* Tailwind CSS 스타일 정의 (가정) */}
     <style jsx global>{`
       .form-label {
         display: block;

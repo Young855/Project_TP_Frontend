@@ -10,7 +10,7 @@ const FindPasswordPage = ({ setPage }) => {
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">비밀번호 찾기</h2>
-        <p className="text-center text-gray-600 mb-6">R008: 아이디(이메일) 또는 이름을 통해 비밀번호를 찾을 수 있습니다. (UI만 구현)</p>
+        <p className="text-center text-gray-600 mb-6">아이디(이메일)을 통해 비밀번호를 찾을 수 있습니다.</p>
         <form className="space-y-4">
           <div>
             <label htmlFor="email" className="form-label">이메일</label>

@@ -17,7 +17,7 @@ import FindPasswordPage from './pages/FindPasswordPage';
 import MyPage from './pages/MyPage';
 import ItineraryPage from './pages/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
-
+import PartnerPropertiesPage from './pages/PartnerPropertiesPage';
 // --- Main App Component ---
 
 export default function App() {
@@ -177,6 +177,7 @@ export default function App() {
         return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>;
       case 'partner':
         return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">파트너 페이지 (R004)</h1></div>;
+     
       default:
         return <MainPage onSearch={handleSearch} />;
     }

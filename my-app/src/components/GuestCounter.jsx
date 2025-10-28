@@ -9,9 +9,9 @@ import { Plus, Minus } from 'lucide-react';
  * @param {string} props.label - 라벨 (예: 성인)
  */
 const GuestCounter = ({ count, setCount, label }) => (
-  <div className="flex items-center justify-between">
+  <div className="flex items-right justify-between">
     <span className="text-gray-700">{label}</span>
-    <div className="flex items-center space-x-3">
+    <div className="flex items-right space-x-2">
       <button
         type="button"
         onClick={() => setCount(Math.max(0, count - 1))}
@@ -19,6 +19,7 @@ const GuestCounter = ({ count, setCount, label }) => (
         disabled={count === 0}
       >
         <Minus size={16} />
+        <span className="text-xl font-medium pb-0.5">-</span>
       </button>
       <span className="text-lg font-medium w-6 text-center">{count}</span>
       <button
@@ -27,6 +28,7 @@ const GuestCounter = ({ count, setCount, label }) => (
         className="w-8 h-8 rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors"
       >
         <Plus size={16} />
+        <span className="text-xl font-medium pb-0.5">+</span>
       </button>
     </div>
   </div>

@@ -109,7 +109,7 @@ const MainPage = ({ onSearch }) => {
               className="form-input text-left w-full flex justify-between items-center"
             >
               <span>총 {totalGuests}명</span>
-              {isGuestPickerOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              {isGuestPickerOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
             </button>
             
             {isGuestPickerOpen && (

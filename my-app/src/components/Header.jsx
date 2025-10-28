@@ -30,7 +30,7 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
           </div>
           </div>
           {/* 데스크탑 네비게이션 */}
-          <div className="hidden md:flex items-right space-x-4  h-10-center ">
+          <div className="hidden md:flex items-center space-x-4  h-10-center ">
             <button onClick={() => setPage('search')} className="nav-link">숙소 검색</button>
             <button onClick={() => setPage(isLoggedIn ? 'my-itineraries' : 'login-required')} className="nav-link">내 일정</button>
             <button onClick={() => setPage('community')} className="nav-link">커뮤니티</button>

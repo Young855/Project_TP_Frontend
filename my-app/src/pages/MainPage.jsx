@@ -97,29 +97,31 @@ const MainPage = ({ onSearch }) => {
             </div>
           </div>
 
-          <div className="md:col-span-1 relative" ref={guestPickerRef}>
-            <label htmlFor="guests" className="form-label">
-              <User size={16} className="inline-block mr-1" />
-              인원
-            </label>
-            <button
-              type="button"
-              id="guests"
-              onClick={() => setIsGuestPickerOpen(!isGuestPickerOpen)}
-              className="form-input text-left w-full flex justify-between items-center"
-            >
-              <span>총 {totalGuests}명</span>
-              {isGuestPickerOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-            </button>
-            
-            {isGuestPickerOpen && (
-              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-2xl border z-10 p-4 space-y-4">
-                <GuestCounter count={adults} setCount={setAdults} label="성인" />
-                <GuestCounter count={children} setCount={setChildren} label="아동" />
-              </div>
-            )}
-          </div>
-        </div>
+<div className="md:col-span-1 relative" ref={guestPickerRef}>
+  <label htmlFor="guests" className="form-label">
+    <User size={16} className="inline-block mr-1" />
+    인원
+  </label>
+  <button
+    type="button"
+    id="guests"
+    onClick={() => setIsGuestPickerOpen(!isGuestPickerOpen)}
+    className="form-input w-full flex items-center justify-start px-3 py-2"
+  >
+    <div className="flex items-center gap-2 text-gray-800">
+      <span>총 {totalGuests}명</span>
+      {isGuestPickerOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+    </div>
+  </button>
+
+  {isGuestPickerOpen && (
+    <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-2xl border z-10 p-4 space-y-4">
+      <GuestCounter count={adults} setCount={setAdults} label="성인" />
+      <GuestCounter count={children} setCount={setChildren} label="아동" />
+    </div>
+  )}
+</div>
+</div>
 
         <div className="mt-6">
           <button type="submit" className="btn-primary w-full text-lg">

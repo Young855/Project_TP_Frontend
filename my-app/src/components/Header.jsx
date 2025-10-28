@@ -28,9 +28,9 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
           >
             TP
           </div>
-
+          </div>
           {/* 데스크탑 네비게이션 */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-right space-x-4  h-10-center ">
             <button onClick={() => setPage('search')} className="nav-link">숙소 검색</button>
             <button onClick={() => setPage(isLoggedIn ? 'my-itineraries' : 'login-required')} className="nav-link">내 일정</button>
             <button onClick={() => setPage('community')} className="nav-link">커뮤니티</button>
@@ -66,7 +66,7 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
               {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
-        </div>
+        
 
         {/* 모바일 메뉴 */}
         {isMenuOpen && (

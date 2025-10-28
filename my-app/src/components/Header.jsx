@@ -16,14 +16,21 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16">
+        {/* [수정]
+          1. justify-end -> justify-between: 로고는 왼쪽, 메뉴는 오른쪽으로 정렬합니다.
+          2. space-x-8 제거: 양쪽 끝으로 정렬되므로 간격이 필요 없습니다.
+        */}
+        <div className="flex justify-between items-center h-16">
+          {/* 로고 */}
           <div 
             className="text-2xl font-bold text-blue-600 cursor-pointer"
             onClick={() => setPage('main')}
           >
             TP
           </div>
-          <div className="hidden md:flex items-center space-x-4 ml-auto">
+
+          {/* 데스크탑 네비게이션 */}
+          <div className="hidden md:flex items-center space-x-4">
             <button onClick={() => setPage('search')} className="nav-link">숙소 검색</button>
             <button onClick={() => setPage(isLoggedIn ? 'my-itineraries' : 'login-required')} className="nav-link">내 일정</button>
             <button onClick={() => setPage('community')} className="nav-link">커뮤니티</button>
@@ -52,7 +59,9 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
               </>
             )}
           </div>
-          <div className="md:hidden ml-auto">
+
+          {/* 모바일 메뉴 버튼 */}
+          <div className="md:hidden">
             <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -95,9 +104,10 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
             </div>
           </div>
         )}
-      </nav> 
+      </nav>
     </header>
   );
 };
 
 export default Header;
+

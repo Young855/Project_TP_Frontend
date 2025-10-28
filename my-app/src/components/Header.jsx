@@ -16,18 +16,13 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* [수정됨] justify-between 제거, ml-auto 적용을 위해 */}
         <div className="flex items-center h-16">
-          {/* [수정됨] "TP"를 "TP-TEST-HELLO"로 변경 (테스트 목적) */}
           <div 
             className="text-2xl font-bold text-blue-600 cursor-pointer"
             onClick={() => setPage('main')}
           >
             TP
           </div>
-
-          {/* 데스크탑 네비게이션 */}
-          {/* [수정됨] ml-auto 추가 (가장 중요) */}
           <div className="hidden md:flex items-center space-x-4 ml-auto">
             <button onClick={() => setPage('search')} className="nav-link">숙소 검색</button>
             <button onClick={() => setPage(isLoggedIn ? 'my-itineraries' : 'login-required')} className="nav-link">내 일정</button>
@@ -57,9 +52,6 @@ const Header = ({ isLoggedIn, onLogout, setPage }) => {
               </>
             )}
           </div>
-
-          {/* 모바일 메뉴 버튼 */}
-          {/* [수정됨] ml-auto 추가 (데스크탑과 동일하게) */}
           <div className="md:hidden ml-auto">
             <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X size={28} /> : <Menu size={28} />}

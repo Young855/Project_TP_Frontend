@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Outlet, RouterProvider, createBrowserRouter, useNavigate } from 'react-router-dom';
 import { mockItinerary } from './data/mockData';
 import './index.css';
-// Helper Components
+
+// Layout & Global Components
 import Modal from './components/Modal';
 import Header from './components/Header';
 
-// Page Components
+// Page Components (파일 구조를 참조하여 경로 설정)
 import MainPage from './pages/MainPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import AccommodationDetailPage from './pages/AccommodationDetailPage';
@@ -18,198 +20,174 @@ import MyPage from './pages/user/MyPage';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
-// --- Main App Component ---
+// 필요한 다른 컴포넌트들도 추가해야 합니다.
+
+// --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
+// useNavigate를 사용하기 위해 App 함수 내부에 정의
+function MainLayout() {
+    const navigate = useNavigate(); // 페이지 이동을 react-router-dom의 navigate로 대체
+    
+    // R014: 로그인 상태 (Mock)
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [searchParams, setSearchParams] = useState({});
+    const [selectedAccommodation, setSelectedAccommodation] = useState(null);
+
+    // 모달 상태 (Modal 컴포넌트에 직접 연결)
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        content: '',
+        onConfirm: null,
+    });
+
+    // 기존 App.jsx의 showModal, closeModal 함수는 그대로 사용
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', content: '', onConfirm: null });
+    };
+
+    const showModal = (title, content, onConfirm) => {
+        setModal({
+            isOpen: true,
+            title,
+            content,
+            onConfirm: onConfirm ? () => {
+                onConfirm();
+                closeModal();
+            } : null,
+        });
+    };
+    
+    // R002 (Naver Map) 로직은 그대로 유지
+    useEffect(() => {
+        const naverMapClientId = 'YOUR_NAVER_MAP_CLIENT_ID';
+        if (!document.getElementById('naver-maps-script')) {
+            const script = document.createElement('script');
+            script.id = 'naver-maps-script';
+            script.type = 'text/javascript';
+            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${naverMapClientId}`;
+            script.async = true;
+            script.onerror = () => console.error("Naver Maps API 스크립트 로드에 실패했습니다.");
+            document.head.appendChild(script);
+        }
+    }, []);
+
+    // 로그인/로그아웃 핸들러는 그대로 유지하되, navigateTo 대신 navigate 사용
+    const handleLogin = (user) => {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        // 로그인 성공 후 메인 페이지 또는 이전 페이지로 이동
+        const nextPath = localStorage.getItem('nextPath') || '/';
+        localStorage.removeItem('nextPath');
+        navigate(nextPath);
+    };
+
+    const handleLogout = () => {
+        showModal('로그아웃', '정말 로그아웃 하시겠습니까?', () => {
+            setIsLoggedIn(false);
+            setCurrentUser(null);
+            navigate('/'); // 메인 페이지로 이동
+        });
+    };
+    
+    // R013: 인증이 필요한 페이지 접근 시 처리 (라우터에서 직접 처리하기 어려워 Layout에서 처리)
+    // 이 로직은 각 페이지 컴포넌트에서 `useLocation`과 함께 더 명확하게 처리하는 것이 일반적입니다.
+    const checkAuthAndNavigate = (path) => {
+        const protectedPaths = ['/user/mypage', '/itinerary', '/booking', '/payment', '/write-review'];
+        
+        if (protectedPaths.includes(path) && !isLoggedIn) {
+            showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
+                localStorage.setItem('nextPath', path); // 로그인 후 이동할 페이지 저장
+                navigate('/login');
+            });
+            return false;
+        }
+        return true;
+    };
+    
+    // context를 사용하여 isLoggedIn, currentUser, showModal 등을 자식 페이지에 전달
+    const appProps = {
+        isLoggedIn, 
+        currentUser,
+        showModal,
+        // ... 필요한 모든 상태 및 핸들러
+        onLogin: handleLogin, 
+        onLogout: handleLogout,
+        setSearchParams,
+        searchParams,
+        setSelectedAccommodation,
+        selectedAccommodation,
+        // navigate: navigate, // react-router-dom의 navigate 사용
+        checkAuth: checkAuthAndNavigate,
+    };
+    
+    return (
+        <div className="font-sans bg-gray-50 min-h-screen">
+            <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} navigate={navigate} />
+
+            <main>
+                {/* 자식 라우트 컴포넌트가 렌더링될 위치 */}
+                <Outlet context={appProps} />
+            </main>
+
+            <Modal
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                title={modal.title}
+                confirmText={modal.onConfirm ? '확인' : null}
+                onConfirm={modal.onConfirm}
+            >
+                <p>{modal.content}</p>
+            </Modal>
+        </div>
+    );
+}
+
+// --- 라우터 설정 ---
+const router = createBrowserRouter([
+    {
+        path: "/", // 최상위 경로
+        element: <MainLayout />, // 공통 레이아웃 적용
+        children: [        // Layout 내부에서 <Outlet />을 통해 렌더링되는 자식 페이지
+            { 
+                index: true, // '/' 경로 (메인 페이지)
+                element: <MainPage />,
+                // onSearch={handleSearch}는 이제 컴포넌트 내부에서 처리하거나 context로 전달해야 함
+            },
+            
+            // 인증 관련 페이지
+            { path: "login", element: <LoginPage /> },
+            { path: "signup", element: <SignupPage /> },
+            { path: "find-password", element: <FindPasswordPage /> },
+
+            // 검색 및 예약 관련 페이지
+            { path: "search-results", element: <SearchResultsPage /> },
+            { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
+            { path: "booking", element: <BookingPage /> },
+            { path: "payment", element: <PaymentPage /> },
+            
+            // 사용자 관련 페이지 (user 폴더)
+            { path: "user/mypage", element: <MyPage /> },
+            
+            // 일정 및 후기 페이지
+            { path: "itinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
+            { path: "write-review", element: <WriteReviewPage /> },
+            
+            // 파트너 관련 페이지 (property 폴더)
+            { path: "partner/properties", element: <PartnerPropertiesPage /> },
+            
+            // 기타 (플레이스홀더)
+            { path: "community", element: (
+                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록 (R005)</h1></div>
+            )},
+            { path: "admin", element: (
+                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>
+            )},
+        ] 
+    }
+]);
 
 export default function App() {
-  const [page, setPage] = useState('main'); // 페이지 라우팅 상태
-  const [pageParams, setPageParams] = useState({}); // 페이지 이동 시 전달할 파라미터
-  
-  // R014: 로그인 상태 (Mock)
-  // 실제로는 JWT 토큰 유무 및 유효성으로 판단
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  
-  const [searchParams, setSearchParams] = useState({});
-  const [selectedAccommodation, setSelectedAccommodation] = useState(null);
-  
-  // 모달 상태
-  const [modal, setModal] = useState({
-    isOpen: false,
-    title: '',
-    content: '',
-    onConfirm: null,
-  });
-
-  // R002 (Naver Map): Naver Map API 스크립트 동적 로드
-  useEffect(() => {
-    const naverMapClientId = 'YOUR_NAVER_MAP_CLIENT_ID'; // !중요! 여기에 실제 네이버 클라우드 플랫폼 Client ID를 입력하세요.
-    
-    if (!document.getElementById('naver-maps-script')) {
-      const script = document.createElement('script');
-      script.id = 'naver-maps-script';
-      script.type = 'text/javascript';
-      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${naverMapClientId}`;
-      script.async = true;
-      script.onerror = () => console.error("Naver Maps API 스크립트 로드에 실패했습니다.");
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  /**
-   * 공용 모달 표시 함수
-   * @param {string} title - 모달 제목
-   * @param {string} content - 모달 내용
-   * @param {function} [onConfirm] - (옵션) 확인 버튼 핸들러
-   */
-  const showModal = (title, content, onConfirm) => {
-    setModal({
-      isOpen: true,
-      title,
-      content,
-      onConfirm: onConfirm ? () => {
-        onConfirm();
-        closeModal();
-      } : null,
-    });
-  };
-
-  const closeModal = () => {
-    setModal({ isOpen: false, title: '', content: '', onConfirm: null });
-  };
-
-  /**
-   * 페이지 이동 함수 (R013: 인증 필요한 페이지 리다이렉트 처리)
-   * @param {string} newPage - 이동할 페이지 이름
-   * @param {object} [params] - (옵션) 전달할 파라미터
-   */
-  const navigateTo = (newPage, params = {}) => {
-    const protectedPages = [
-      'my-page', 'my-itineraries', 'booking', 'payment', 'write-review'
-    ];
-    
-    if (protectedPages.includes(newPage) && !isLoggedIn) {
-      // R013: 권한 필요한 기능 접근 시 로그인 페이지로
-      showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
-        setPage('login');
-        setPageParams({ next: newPage, ...params }); // 로그인 후 이동할 페이지 저장
-      });
-    } else if (newPage === 'login-required') {
-      // Header 등에서 직접 호출한 경우
-       showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
-        setPage('login');
-        setPageParams(params);
-      });
-    } else {
-      setPage(newPage);
-      setPageParams(params);
-    }
-  };
-
-
-  // --- 인증 핸들러 (R014: JWT 기반으로 주석 처리) ---
-  
-  const handleLogin = (user) => {
-    // --- AUTHENTICATION LOGIC ---
-    // 실제로는 JWT 토큰을 저장
-    // localStorage.setItem('jwt', user.token); 
-    
-    // Mock: 상태 업데이트
-    setIsLoggedIn(true);
-    setCurrentUser(user);
-    
-    // R006, R013: 로그인 성공 시 이전 페이지 또는 메인으로 이동
-    const next = pageParams.next || 'main';
-    navigateTo(next);
-    // --- END AUTHENTICATION LOGIC ---
-  };
-
-  const handleLogout = () => {
-    // R010: 로그아웃 확인 팝업
-    showModal('로그아웃', '정말 로그아웃 하시겠습니까?', () => {
-      // --- AUTHENTICATION LOGIC ---
-      // localStorage.removeItem('jwt');
-      
-      // Mock: 상태 업데이트
-      setIsLoggedIn(false);
-      setCurrentUser(null);
-      navigateTo('main'); // 메인 페이지로 이동
-      // --- END AUTHENTICATION LOGIC ---
-    });
-  };
-  
-  // 검색 실행 핸들러
-  const handleSearch = (params) => {
-    setSearchParams(params);
-    navigateTo('search-results');
-  };
-
-  // 현재 페이지 렌더링
-  const renderPage = () => {
-    switch (page) {
-      case 'main':
-        return <MainPage onSearch={handleSearch} />;
-      case 'search-results':
-        return <SearchResultsPage searchParams={searchParams} setPage={navigateTo} setSelectedAccommodation={setSelectedAccommodation} />;
-      case 'accommodation-detail':
-        return <AccommodationDetailPage accommodation={selectedAccommodation} setPage={navigateTo} isLoggedIn={isLoggedIn} />;
-      case 'booking':
-        return <BookingPage setPage={navigateTo} />;
-      case 'payment':
-        return <PaymentPage setPage={navigateTo} showModal={showModal} />;
-      case 'login':
-        return <LoginPage onLogin={handleLogin} setPage={navigateTo} />;
-      case 'signup':
-        return <SignupPage setPage={navigateTo} showModal={showModal} />;
-      
-      case 'find-password':
-        return <FindPasswordPage setPage={navigateTo} />;
-      case 'my-page':
-        return <MyPage subPage={pageParams.subPage} setPage={navigateTo} user={currentUser} />;
-      case 'my-itineraries':
-        // R001: 자동 생성된 일정표 확인
-        return <ItineraryPage itinerary={mockItinerary} />;
-      case 'write-review':
-        return <WriteReviewPage setPage={navigateTo} showModal={showModal} />;
-      // R002, R005: 커뮤니티/후기 페이지 (비회원 접근 가능)
-      case 'community':
-        return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록 (R005)</h1><p>비회원도 열람 가능한 후기 목록이 표시됩니다.</p></div>;
-      // R003, R004: 어드민/파트너 (플레이스홀더)
-      case 'admin':
-        return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>;
-      case 'partner':
-        return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">파트너 페이지 (R004)</h1></div>;
-      case 'partner-properties':
-        // PartnerPropertiesPage 컴포넌트를 렌더링하며 setPage(navigateTo) 및 showModal props를 전달합니다.
-        // 현재 로그인된 사용자의 ID를 userId prop으로 전달하여 해당 파트너의 숙소를 조회할 수 있도록 합니다.
-        return <PartnerPropertiesPage setPage={navigateTo} showModal={showModal} userId={currentUser?.userId} />;
-
-      default:
-        return <MainPage onSearch={handleSearch} />;
-    }
-  };
-
-  return (
-    <div className="font-sans bg-gray-50 min-h-screen">
-      {/*         이제 <style> 태그 대신 src/index.css 파일이 전역 스타일을 관리합니다.
-      */}
-      
-      {/* R002 (공통/접근): 비회원도 메인 페이지 조회 가능 */}
-      <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} setPage={navigateTo} />
-      
-      <main>
-        {renderPage()}
-      </main>
-
-      {/* R010: 로그아웃 확인 팝업 등 공용 모달 */}
-      <Modal
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={modal.title}
-        confirmText={modal.onConfirm ? '확인' : null}
-        onConfirm={modal.onConfirm}
-      >
-        <p>{modal.content}</p>
-      </Modal>
-    </div>
-  );
+    // RouterProvider를 사용하여 SPA 라우팅 적용
+    return <RouterProvider router={router} />;
 }

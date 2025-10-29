@@ -49,7 +49,7 @@ const Header = ({ isLoggedIn, onLogout, navigate }) => {
 
     return (
       <>
-        <NavItem path="/search-results">숙소 검색</NavItem>
+        <NavItem path="/">숙소 검색</NavItem>
         
         <NavItem path="/itinerary">내 일정</NavItem>
         

@@ -77,7 +77,7 @@ const MainPage = ({ onSearch }) => {
                 id="checkin"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split('T')[0]} 
                 className="form-input"
               />
             </div>

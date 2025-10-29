@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import PropertyFormModal from '../components/PropertyFormModal'; // 숙소 추가/수정 모달
-import RoomManagementModal from '../components/RoomManagementModal'; // 객실 관리 모달
+import PropertyFormModal from '../../components/PropertyFormModal'; // 숙소 추가/수정 모달
+import RoomManagementModal from '../../components/RoomManagementModal'; // 객실 관리 모달
 
 // --- Mock API Functions ---
 // 실제로는 API를 호출해야 합니다.

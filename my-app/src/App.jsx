@@ -9,15 +9,15 @@ import Header from './components/Header';
 import MainPage from './pages/MainPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import AccommodationDetailPage from './pages/AccommodationDetailPage';
-import BookingPage from './pages/BookingPage';
+import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import FindPasswordPage from './pages/FindPasswordPage';
+import SignupPage from './pages/user/SignupPage';
+import FindPasswordPage from './pages/user/FindPasswordPage';
 import MyPage from './pages/MyPage';
-import ItineraryPage from './pages/ItineraryPage';
+import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
-import PartnerPropertiesPage from './pages/PartnerPropertiesPage';
+import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
 // --- Main App Component ---
 
 export default function App() {

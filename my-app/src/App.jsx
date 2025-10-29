@@ -157,7 +157,7 @@ const router = createBrowserRouter([
             
             // 인증 관련 페이지
             { path: "login", element: <LoginPage /> },
-            { path: "signup", element: <SignupPage /> },
+            { path: "user/signup", element: <SignupPage /> },
             { path: "find-password", element: <FindPasswordPage /> },
 
             // 검색 및 예약 관련 페이지
@@ -170,11 +170,11 @@ const router = createBrowserRouter([
             { path: "user/mypage", element: <MyPage /> },
             
             // 일정 및 후기 페이지
-            { path: "itinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
+            { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
             { path: "write-review", element: <WriteReviewPage /> },
             
             // 파트너 관련 페이지 (property 폴더)
-            { path: "partner/properties", element: <PartnerPropertiesPage /> },
+            { path: "property/properties", element: <PartnerPropertiesPage /> },
             
             // 기타 (플레이스홀더)
             { path: "community", element: (

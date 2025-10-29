@@ -14,7 +14,7 @@ import PaymentPage from './pages/PaymentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/user/SignupPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
-import MyPage from './pages/MyPage';
+import MyPage from './pages/user/MyPage';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
@@ -160,6 +160,7 @@ export default function App() {
         return <LoginPage onLogin={handleLogin} setPage={navigateTo} />;
       case 'signup':
         return <SignupPage setPage={navigateTo} showModal={showModal} />;
+      
       case 'find-password':
         return <FindPasswordPage setPage={navigateTo} />;
       case 'my-page':
@@ -177,7 +178,11 @@ export default function App() {
         return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>;
       case 'partner':
         return <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">파트너 페이지 (R004)</h1></div>;
-     
+      case 'partner-properties':
+        // PartnerPropertiesPage 컴포넌트를 렌더링하며 setPage(navigateTo) 및 showModal props를 전달합니다.
+        // 현재 로그인된 사용자의 ID를 userId prop으로 전달하여 해당 파트너의 숙소를 조회할 수 있도록 합니다.
+        return <PartnerPropertiesPage setPage={navigateTo} showModal={showModal} userId={currentUser?.userId} />;
+
       default:
         return <MainPage onSearch={handleSearch} />;
     }

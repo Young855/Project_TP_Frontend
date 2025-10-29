@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { UserCheck, ShoppingBag, Map, Star, Settings } from 'lucide-react';
-import { mockBookings } from '../data/mockData';
 
 const MyInfo = ({ user }) => (
   <div>

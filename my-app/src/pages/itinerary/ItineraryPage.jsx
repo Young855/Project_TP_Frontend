@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { mockItinerary } from '../data/mockData';
+import { mockItinerary } from '../../data/mockData';
 
 /**
  * 일정 관리 페이지 (R001, R002, R005, R006)

@@ -37,17 +37,36 @@ const MainPage = ({ onSearch }) => {
     onSearch({ destination, checkIn, checkOut, guests: totalGuests });
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (guestPickerRef.current && !guestPickerRef.current.contains(event.target)) {
-        setIsGuestPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [guestPickerRef]);
+          <div className="md:col-span-2 grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="checkin" className="form-label">
+                <Calendar size={16} className="inline-block mr-1" />
+                체크인
+              </label>
+              <input
+                type="date"
+                id="checkin"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                min={new Date().toISOString().split('T')[0]} 
+                className="form-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="checkout" className="form-label">
+                <Calendar size={16} className="inline-block mr-1" />
+                체크아웃
+              </label>
+              <input
+                type="date"
+                id="checkout"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={checkIn || new Date().toISOString().split('T')[0]}
+                className="form-input"
+              />
+            </div>
+          </div>
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-blue-50 flex flex-col items-center justify-center p-4">

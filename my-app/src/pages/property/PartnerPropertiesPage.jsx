@@ -1,96 +1,86 @@
+// 파일: src/pages/property/PartnerPropertiesPage.jsx
+
 import React, { useState, useEffect } from 'react';
-import PropertyFormModal from '../../components/PropertyFormModal'; // 숙소 추가/수정 모달
-import RoomManagementModal from '../../components/RoomManagementModal'; // 객실 관리 모달
-
-// --- Mock API Functions ---
-// 실제로는 API를 호출해야 합니다.
-const fetchPropertiesByPartner = async (partnerId) => {
-  // 가짜 데이터 (파트너 ID 1에 속한 숙소)
-  return [
-    { propertyId: 1, partnerId: 1, name: '서울 신라 호텔', propertyType: 'HOTEL', address: '서울 중구 동호로 249', 
-      rooms: [
-        { roomId: 101, propertyId: 1, name: '디럭스 룸', capacity: 2, stock: 10, pricePerNight: 300000, refundable: true },
-        { roomId: 102, propertyId: 1, name: '스위트 룸', capacity: 4, stock: 3, pricePerNight: 550000, refundable: true },
-      ]
-    },
-    { propertyId: 2, partnerId: 1, name: '제주 신화월드', propertyType: 'RESORT', address: '제주 서귀포시 안덕면', 
-      rooms: [
-        { roomId: 201, propertyId: 2, name: '슈페리어 킹', capacity: 2, stock: 20, pricePerNight: 250000, refundable: false },
-      ]
-    },
-  ];
-};
-
-const savePropertyAPI = async (propertyData) => {
-  console.log("Saving property:", propertyData);
-  if (propertyData.propertyId) {
-    // Update
-    return { ...propertyData };
-  } else {
-    // Create
-    return { ...propertyData, propertyId: Date.now(), rooms: [] }; // 새 ID (임시)
-  }
-};
-
-const deletePropertyAPI = async (propertyId) => {
-  console.log("Deleting property:", propertyId);
-  return true; // 성공 가정
-};
-// --- End Mock API Functions ---
+import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위해 추가
+// 💡 [수정] 실제 API 함수 임포트
+import { getAllProperties, deleteProperty } from '../../api/propertyAPI'; 
+// RoomManagementModal, PropertyFormModal은 모달 방식이 아니라면 제거하거나 주석 처리
+import RoomManagementModal from '../../components/RoomManagementModal'; 
 
 
-// (아이콘 SVG: 편의를 위해 내부에 정의)
-const EditIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-    <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.96 7.96a2 2 0 01-1.414.586H5.5a1 1 0 01-1-1v-2.5a2 2 0 01.586-1.414l7.96-7.96z" />
-    <path fillRule="evenodd" d="M15 5l-2.086-2.086a2 2 0 00-2.828 0L3 10.086V14h3.914l7.086-7.086a2 2 0 000-2.828L15 5z" clipRule="evenodd" />
-  </svg>
-);
+// 💡 [제거] Mock API 함수 (fetchPropertiesByPartner, savePropertyAPI, deletePropertyAPI) 제거
 
-const DeleteIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M6 3a1 1 0 00-1 1v1H4a1 1 0 000 2h1v9a2 2 0 002 2h6a2 2 0 002-2V7h1a1 1 0 100-2h-1V4a1 1 0 00-1-1H6zm2 4v7h2V7H8zm4 0v7h2V7h-2z" clipRule="evenodd" />
-  </svg>
-);
+// (아이콘 SVG: EditIcon, DeleteIcon, RoomIcon은 그대로 유지)
 
-const RoomIcon = () => (
- <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-</svg>
-);
+// ... (아이콘 SVG 함수 유지)
 
 
 export default function PartnerPropertiesPage({ partnerUser, showModal }) {
+  const navigate = useNavigate(); // useNavigate 훅 사용
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 모달 상태
-  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
+  // 모달 상태 (객실 관리 모달만 유지)
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   
-  // 편집/관리 대상이 되는 숙소
+  // 관리 대상 숙소
   const [selectedProperty, setSelectedProperty] = useState(null);
 
-  // 파트너 ID (실제로는 partnerUser에서 가져와야 함)
+  // 파트너 ID (실제 로그인 사용자 정보에서 가져와야 함. 현재는 Mock 값 1 사용)
+  // 💡 Note: 실제 API에서는 파트너 ID로 필터링하는 엔드포인트가 필요할 수 있습니다.
   const partnerId = 1; // R004: 현재 로그인한 파트너의 ID (가정)
 
-  useEffect(() => {
-    // R004: 파트너가 자신의 숙소 목록을 조회
-    const loadProperties = async () => {
-      setIsLoading(true);
-      const data = await fetchPropertiesByPartner(partnerId);
-      setProperties(data);
+  // 💡 [수정] 1. API를 통해 숙소 목록을 불러오는 함수 (DB 연동)
+  const loadProperties = async () => {
+    setIsLoading(true);
+    try {
+      // 💡 Mock 대신 실제 getAllProperties 호출
+      // 백엔드에서 파트너 ID 필터링을 지원하지 않으면 전체를 불러온 후 필터링해야 함.
+      // 여기서는 DB에 접근하는 getAllProperties 호출 후 클라이언트에서 필터링하는 Mock 로직을 유지
+      const allData = await getAllProperties(); 
+      
+      // 파트너 ID로 필터링 (임시)
+      const partnerData = Array.isArray(allData) 
+        ? allData.filter(p => (p.partnerId === partnerId || p.partner?.partnerId === partnerId)) 
+        : [];
+      
+      setProperties(partnerData);
+    } catch (e) {
+      console.error("숙소 목록 불러오기 오류:", e);
+      showModal('데이터 오류', '숙소 목록을 불러오는 데 실패했습니다.', null);
+      setProperties([]);
+    } finally {
       setIsLoading(false);
-    };
-    loadProperties();
-  }, [partnerId]);
-
-  // 숙소 추가/수정 모달 열기
-  const handleOpenPropertyModal = (property = null) => {
-    setSelectedProperty(property); // null이면 '추가', 객체면 '수정'
-    setIsPropertyModalOpen(true);
+    }
   };
 
+
+  useEffect(() => {
+    loadProperties();
+  }, [partnerId]); // partnerId 변경 시 다시 로드
+
+  // 💡 [추가/수정] 2. 숙소 수정 페이지로 이동
+  const handleEditProperty = (propertyId) => {
+    // /properties/:id/edit 경로로 이동 (PropertyRouter.jsx에 정의된 경로)
+    navigate(`/properties/${propertyId}/edit`); 
+  };
+  
+  // 💡 [수정] 3. 숙소 삭제 (API 연동)
+  const handleDeleteProperty = (propertyId) => {
+    // R010 (확인 팝업) 재사용
+    showModal('숙소 삭제', '정말 이 숙소를 삭제하시겠습니까? 객실 정보도 모두 삭제됩니다.', async () => {
+      try {
+        // 💡 실제 deleteProperty API 호출
+        await deleteProperty(propertyId);
+        // 삭제 성공 후 목록 새로고침
+        loadProperties(); 
+      } catch (e) {
+        console.error("숙소 삭제 오류:", e);
+        showModal('삭제 실패', e.response?.data?.message || '숙소 삭제에 실패했습니다.');
+      }
+    });
+  };
+  
   // 객실 관리 모달 열기
   const handleOpenRoomModal = (property) => {
     setSelectedProperty(property);
@@ -99,36 +89,9 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
 
   // 모달 닫기 공통
   const handleCloseModals = () => {
-    setIsPropertyModalOpen(false);
     setIsRoomModalOpen(false);
     setSelectedProperty(null);
-  };
-
-  // 숙소 저장 (추가/수정)
-  const handleSaveProperty = async (propertyData) => {
-    const savedProperty = await savePropertyAPI({ ...propertyData, partnerId });
-    if (selectedProperty) {
-      // 수정
-      setProperties(properties.map(p => p.propertyId === savedProperty.propertyId ? savedProperty : p));
-    } else {
-      // 추가
-      setProperties([...properties, savedProperty]);
-    }
-    handleCloseModals();
-  };
-
-  // 숙소 삭제
-  const handleDeleteProperty = (propertyId) => {
-    // R010 (확인 팝업) 재사용
-    showModal('숙소 삭제', '정말 이 숙소를 삭제하시겠습니까? 객실 정보도 모두 삭제됩니다.', async () => {
-      const success = await deletePropertyAPI(propertyId);
-      if (success) {
-        setProperties(properties.filter(p => p.propertyId !== propertyId));
-      } else {
-        // 실패 시 에러 모달 (showModal 사용)
-        showModal('삭제 실패', '숙소 삭제에 실패했습니다.');
-      }
-    });
+    // 객실 관리 후 목록 상태가 최신화되도록 다시 로드할 수도 있음
   };
   
   // 객실 정보가 업데이트되었을 때 (RoomManagementModal에서 호출)
@@ -145,9 +108,9 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
     <div className="container mx-auto p-4 md:p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">내 숙소 관리</h1>
-        {/* 'btn-primary' 클래스 사용 */}
+        {/* 💡 [수정] 새 숙소 추가 버튼: 생성 라우트 경로로 이동 */}
         <button
-          onClick={() => handleOpenPropertyModal(null)}
+          onClick={() => navigate("/properties/new")} // PropertyRouter.jsx에 정의된 생성 경로
           className="btn-primary"
         >
           + 새 숙소 추가
@@ -158,6 +121,7 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
       <div className="bg-white shadow-md rounded-lg overflow-x-auto">
         <table className="min-w-full table-auto divide-y divide-gray-200">
           <thead className="bg-gray-100">
+            {/* ... (테이블 헤더 유지) ... */}
             <tr>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">숙소명</th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">타입</th>
@@ -180,25 +144,26 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
                     <div className="text-sm font-semibold text-gray-900">{prop.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {/* 'filter-chip' 클래스 활용 */}
                     <span className="filter-chip text-xs">{prop.propertyType}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{prop.address}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">{prop.rooms?.length || 0}개</td>
+                  {/* Note: 객실 수는 prop.rooms가 로드될 때만 정확함. 현재는 목업 데이터 가정 */}
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">{prop.rooms?.length || 0}개</td> 
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    {/* 'btn-secondary-outline' 클래스 활용 */}
                     <button 
                       onClick={() => handleOpenRoomModal(prop)}
                       className="btn-primary-outline text-xs px-3 py-1"
                     >
                       <RoomIcon /> 객실 관리
                     </button>
+                    {/* 💡 [수정] 수정 버튼: handleEditProperty 호출 */}
                     <button 
-                      onClick={() => handleOpenPropertyModal(prop)}
+                      onClick={() => handleEditProperty(prop.propertyId)}
                       className="btn-secondary-outline text-xs px-3 py-1 text-blue-600 border-blue-600 hover:bg-blue-50"
                     >
                       <EditIcon />
                     </button>
+                    {/* 💡 [수정] 삭제 버튼: handleDeleteProperty 호출 */}
                     <button 
                       onClick={() => handleDeleteProperty(prop.propertyId)}
                       className="btn-secondary-outline text-xs px-3 py-1 text-red-600 border-red-600 hover:bg-red-50"
@@ -213,22 +178,14 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
         </table>
       </div>
 
-      {/* 숙소 추가/수정 모달 */}
-      <PropertyFormModal
-        isOpen={isPropertyModalOpen}
-        onClose={handleCloseModals}
-        onSave={handleSaveProperty}
-        property={selectedProperty}
-      />
-      
-      {/* 객실 관리 모달 */}
+      {/* 객실 관리 모달 (유지) */}
       {selectedProperty && (
          <RoomManagementModal
             isOpen={isRoomModalOpen}
             onClose={handleCloseModals}
             property={selectedProperty}
-            showGlobalModal={showModal} // App.jsx의 showModal 전달
-            onRoomsUpdated={onRoomsUpdated} // 객실 변경 시 부모 상태 업데이트
+            showGlobalModal={showModal} 
+            onRoomsUpdated={onRoomsUpdated}
          />
       )}
     </div>

@@ -36,16 +36,34 @@ export async function detailLoader({ params }) {
 
 export async function createAction({ request }) {
   const form = await request.formData();
+  // 💡 [수정] 프론트엔드에서 전송하는 모든 필드를 받도록 업데이트
   const payload = {
-    name: form.get("name"),
-    address: form.get("address"),
-    city: form.get("city"),
-    description: form.get("description"),
-    propertyType: form.get("propertyType"),
     partnerId: form.get("partnerId") ? Number(form.get("partnerId")) : undefined,
+    propertyType: form.get("propertyType"), // 숙소 유형
+    name: form.get("name"),
+    description: form.get("description"),
+    // 💡 [개선] 주소 관련 필드를 AddressFull과 City로 단순화 (도로명 주소 API 사용 시)
+    address: form.get("address"), // 도로명 주소 API 결과 (전체 주소)
+    city: form.get("city"), // 도시/시/구
+    
+    latitude: form.get("latitude") ? Number(form.get("latitude")) : null,
+    longitude: form.get("longitude") ? Number(form.get("longitude")) : null,
+    checkinTime: form.get("checkinTime"),
+    checkoutTime: form.get("checkoutTime"),
+    ratingAvg: form.get("ratingAvg") ? Number(form.get("ratingAvg")) : null,
   };
-  await createProperty(payload);
-  return redirect("/properties");
+  
+  // 필수 필드 검증 (백엔드에서 하겠지만, 여기서도 간단히)
+  if (!payload.partnerId || !payload.name || !payload.address || !payload.propertyType) {
+       throw json({ message: "필수 정보가 누락되었습니다." }, { status: 400 });
+  }
+
+  // API 호출
+  const res = await createProperty(payload);
+  const newId = res?.propertyId;
+  
+  // 생성 후 파트너 숙소 목록 페이지로 리다이렉트 (가정)
+  return redirect("/properties"); 
 }
 
 export async function editAction({ request, params }) {

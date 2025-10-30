@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllItineraryItems, deleteItineraryItem } from "../../api/ItineraryItemAPI";
+import { getAllItineraryItems, deleteItineraryItem } from "../../api/itineraryItemAPI";
 
 /**
  * 일정 항목 목록

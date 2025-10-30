@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createItineraryItem } from "../../api/ItineraryItemAPI";
+import { createItineraryItem } from "../../api/itineraryItemAPI";
 
 /**
  * 일정 항목 생성 (중첩형 바디)

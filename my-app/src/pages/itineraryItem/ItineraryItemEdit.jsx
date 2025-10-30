@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getItineraryItem, updateItineraryItem } from "../../api/ItineraryItemAPI";
+import { getItineraryItem, updateItineraryItem } from "../../api/itineraryItemAPI";
 
 /**
  * 일정 항목 수정 (중첩형 바디)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // useNavigate 훅 임포트
 
 /**
  * 생년월일 선택 컴포넌트 (변경 없음)
@@ -14,13 +15,33 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const days = Array.from({ length: 31 }, (_, i) => i + 1); // 간단한 구현 (월별 일수 미적용)
+  
+  // 선택된 연도와 월에 따라 유효한 일수를 계산하는 로직 추가 (강화된 BirthDatePicker)
+  const getDaysInMonth = (y, m) => {
+    if (!y || !m) return 31;
+    const yearInt = parseInt(y, 10);
+    const monthInt = parseInt(m, 10);
+    return new Date(yearInt, monthInt, 0).getDate();
+  };
+
+  const daysInCurrentMonth = getDaysInMonth(year, month);
+  // 선택된 일수가 현재 월의 최대 일수를 초과하면, 최대 일수로 자동 조정 (예: 2월 30일 -> 2월 29일)
+  useEffect(() => {
+    if (day && parseInt(day, 10) > daysInCurrentMonth) {
+      setDay(String(daysInCurrentMonth).padStart(2, '0'));
+    }
+  }, [daysInCurrentMonth, day, setDay]);
+
+  const days = Array.from({ length: daysInCurrentMonth }, (_, i) => i + 1);
 
   return (
     <div className="flex space-x-2">
       <select 
         value={year} 
-        onChange={(e) => setYear(e.target.value)} 
+        onChange={(e) => {
+          setYear(e.target.value);
+          // 연도가 바뀌면 월/일을 다시 검토해야 함
+        }} 
         className="form-select flex-1"
         aria-label="Year of birth"
       >
@@ -31,7 +52,10 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
       </select>
       <select 
         value={month} 
-        onChange={(e) => setMonth(e.target.value)} 
+        onChange={(e) => {
+          setMonth(e.target.value);
+          // 월이 바뀌면 일수를 다시 검토해야 함
+        }} 
         className="form-select flex-1"
         aria-label="Month of birth"
       >
@@ -59,9 +83,12 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
 /**
  * 회원가입 페이지 (R002)
  * @param {object} props
- * @param {function} props.setPage - 페이지 이동 함수
+ * @param {function} props.setPage - (삭제됨) React Router DOM의 navigate로 대체
  */
-export default function SignupPage({ setPage }) {
+export default function SignupPage() {
+  // useNavigate 훅을 사용하여 페이지 이동 처리
+  const navigate = useNavigate();
+
   // R002: 입력 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,7 +105,7 @@ export default function SignupPage({ setPage }) {
 
   // R002: 에러 및 유효성 상태 관리
   const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState(''); // 비밀번호 에러 상태 추가
+  const [passwordError, setPasswordError] = useState(''); 
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false); // 이메일 중복 확인 여부
@@ -197,7 +224,10 @@ export default function SignupPage({ setPage }) {
     // 1. 이메일
     if (!validateEmail(email)) isValid = false;
     if (!isEmailVerified) {
-        setEmailError('이메일 중복 확인이 필요합니다.');
+        // 이미 유효성 검사를 통과한 경우 (validateEmail)에만 중복 확인 필요 메시지 표시
+        if (validateEmail(email)) { 
+             setEmailError('이메일 중복 확인이 필요합니다.');
+        }
         isValid = false;
     }
 
@@ -213,11 +243,9 @@ export default function SignupPage({ setPage }) {
     }
     
     // 닉네임 중복 확인이 안 된 경우
-    if (nicknameError !== '사용 가능한 닉네임입니다.') {
-        // 닉네임이 입력되지 않은 경우를 제외하고, 중복 확인 요청
-        if (nickname.trim() && nicknameError.length === 0) {
-            setNicknameError('닉네임 중복 확인이 필요합니다.');
-        }
+    if (nickname.trim() && nicknameError !== '사용 가능한 닉네임입니다.') {
+        // 닉네임이 입력되었고 (trim() 체크), 아직 유효한 상태가 아닌 경우
+        setNicknameError(nicknameError || '닉네임 중복 확인이 필요합니다.');
         isValid = false;
     }
 
@@ -235,8 +263,9 @@ export default function SignupPage({ setPage }) {
 
       // R002: 성공 모달 대신 간단한 알림 후 로그인 페이지로 이동
       console.log('회원가입 성공 (Mock)');
-      // alert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.'); // alert 대신 콘솔 메시지 사용
-      setPage('login');
+      
+      // *** 변경 사항: setPage('login') 대신 navigate('/login') 사용 ***
+      navigate('/login'); 
     } else {
       console.log('회원가입 실패: 유효성 검사 실패');
       // 유효성 검사 실패 시 각 필드의 에러 메시지가 표시됨
@@ -276,7 +305,7 @@ export default function SignupPage({ setPage }) {
                 중복 확인
               </button>
             </div>
-            {emailError && <p className={`text-sm mt-1 ${isEmailVerified ? 'text-blue-500' : 'text-red-500'}`}>{emailError}</p>}
+            {emailError && <p className={`text-sm mt-1 ${isEmailVerified && emailError === '사용 가능한 이메일입니다.' ? 'text-blue-500' : 'text-red-500'}`}>{emailError}</p>}
           </div>
 
           {/* R002: 비밀번호 */}
@@ -338,7 +367,7 @@ export default function SignupPage({ setPage }) {
                         setNicknameError(''); // 입력 시 에러 메시지 초기화
                     }}
                     onBlur={handleNicknameCheck}
-                    className={`form-input flex-1 ${nicknameError === '이미 사용 중인 닉네임입니다.' && 'border-red-500'}`}
+                    className={`form-input flex-1 ${nicknameError && nicknameError !== '사용 가능한 닉네임입니다.' && 'border-red-500'}`}
                     placeholder="다른 사용자와 구분되는 별명"
                     required
                 />
@@ -378,9 +407,7 @@ export default function SignupPage({ setPage }) {
           </div>
           
           <div>
-
-               <input type="hidden" name="role" value="user" /> 
-            
+             <input type="hidden" name="role" value="user" /> 
           </div>
 
           {/* 회원가입 버튼 */}
@@ -396,9 +423,10 @@ export default function SignupPage({ setPage }) {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             이미 계정이 있으신가요?{' '}
+            {/* *** 변경 사항: setPage('LoginPage') 대신 navigate('/login') 사용 *** */}
             <button
               type="button"
-              onClick={() => setPage('LoginPage')}
+              onClick={() => navigate('/login')} // 라우터 경로 '/login'으로 이동
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               로그인하기

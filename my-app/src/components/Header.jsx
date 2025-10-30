@@ -57,6 +57,8 @@ const Header = ({ isLoggedIn, onLogout, navigate }) => {
 
         <NavItem path="/property/properties">숙소 등록</NavItem>
        
+        <NavItem path="/user/mypage">마이페이지</NavItem>
+
         {isLoggedIn ? (  
           <>
             <NavItem path="/user/mypage">

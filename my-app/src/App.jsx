@@ -183,6 +183,8 @@ const router = createBrowserRouter([
             { path: "admin", element: (
                 <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>
             )},
+
+        
         ] 
     }
 ]);

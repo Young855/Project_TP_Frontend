@@ -2,11 +2,11 @@ const API_BASE_URL = "http://localhost:9090";
 
 export const USER_ENDPOINTS = {
     USERS: {
-        LIST: `${API_BASE_URL}/users`, // GET /users
-        ADD : `${API_BASE_URL}/users`, // POST /users
-        GET : (id) => `${API_BASE_URL}/users/${id}`, // GET /users/{id}
-        MODIFY : (id) => `${API_BASE_URL}/users/${id}`, // PUT /users/{id}
-        DELETE : (id) => `${API_BASE_URL}/users/${id}`, // DELETE /users/{id}
+        LIST: `${API_BASE_URL}/user`, // GET /user
+        ADD : `${API_BASE_URL}/user/signup`, // POST /user/signup
+        GET : (id) => `${API_BASE_URL}/user/${id}`, // GET /user/{id}
+        MODIFY : (id) => `${API_BASE_URL}/user/${id}`, // PUT /user/{id}
+        DELETE : (id) => `${API_BASE_URL}/user/${id}`, // DELETE /user/{id}
     },
 }
 

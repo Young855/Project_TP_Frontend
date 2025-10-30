@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // useNavigate 훅 임포트
-
+import { createUser } from '../../api/userAPI';
 /**
  * 생년월일 선택 컴포넌트 (변경 없음)
  * @param {object} props
@@ -83,7 +83,6 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
 /**
  * 회원가입 페이지 (R002)
  * @param {object} props
- * @param {function} props.setPage - (삭제됨) React Router DOM의 navigate로 대체
  */
 export default function SignupPage() {
   // useNavigate 훅을 사용하여 페이지 이동 처리
@@ -214,7 +213,7 @@ export default function SignupPage() {
 
 
   // 회원가입 제출 핸들러
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     let isValid = true;
@@ -250,27 +249,42 @@ export default function SignupPage() {
     }
 
     if (isValid) {
-      // Mock 회원가입 로직
-      console.log('회원가입 정보:', {
-        email,
-        password: '***', // 보안상 실제 비밀번호 로그 방지
-        name,
-        nickname,
-        phone,
-        birthDate: `${birthYear}-${birthMonth}-${birthDay}`,
-        role,
-      });
+  const userData = {
+    email,
+    passwordHash: password, // UserDTO 필드명과 일치
+    name,
+    nickname,
+    phone: phone.trim() || null, 
+    birthDate: (birthYear && birthMonth && birthDay) 
+                ? `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}` 
+                : null,
+    role: 'ROLE_USER', 
+    isDeleted: false,
+  };
 
-      // R002: 성공 모달 대신 간단한 알림 후 로그인 페이지로 이동
-      console.log('회원가입 성공 (Mock)');
-      
-      // *** 변경 사항: setPage('login') 대신 navigate('/login') 사용 ***
-      navigate('/login'); 
+     try {
+        // *** API 통신 로직: createUser 함수 사용 ***
+        const createdUser = await createUser(userData);
+
+        console.log('회원가입 성공. 생성된 유저:', createdUser);
+        alert('회원가입이 완료되었습니다!');
+        
+        // 로그인 페이지로 이동
+        navigate('/login'); 
+      } catch (error) {
+        // userAPI에서 던진 axios 오류 처리
+        const errorMessage = error.response?.data?.message || '회원가입 중 알 수 없는 오류가 발생했습니다.';
+        console.error('회원가입 API 호출 오류:', error);
+        alert(`회원가입 실패: ${errorMessage}`);
+      }
+
     } else {
       console.log('회원가입 실패: 유효성 검사 실패');
       // 유효성 검사 실패 시 각 필드의 에러 메시지가 표시됨
     }
   };
+  
+    
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -495,3 +509,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

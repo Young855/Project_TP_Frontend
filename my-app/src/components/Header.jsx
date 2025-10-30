@@ -56,8 +56,8 @@ const Header = ({ isLoggedIn, onLogout, navigate }) => {
         <NavItem path="/community">커뮤니티</NavItem>
 
         <NavItem path="/property/properties">숙소 등록</NavItem>
-        
-        {isLoggedIn ? (
+       
+        {isLoggedIn ? (  
           <>
             <NavItem path="/user/mypage">
               <User size={20} className="inline-block mr-1" />

@@ -3,7 +3,11 @@ import PropertyCreate from "../pages/property/PropertyCreate";
 import PropertyDetail from "../pages/property/PropertyDetail";
 import PropertyEdit from "../pages/property/PropertyEdit";
 
-const PropertyRouter = [
+
+/* ------------------------------
+   Route objects & provider
+--------------------------------*/
+export const propertyRoutes = [
   {
     path: "properties", // 기본 경로: /properties
     children: [

@@ -1,223 +1,151 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { getProperty, updateProperty } from "../../api/propertyAPI";
+// 파일: src/pages/property/PropertyEdit.jsx (수정)
 
-/**
- * 숙소 수정
- * - 기본: 평면형 바디
- * - 백엔드가 중첩형 요구 시 partner: { partnerId }로 전환
- */
-const PROPERTY_TYPES = ["HOTEL", "MOTEL", "PENSION", "HOSTEL"]; // ★ 실제 Enum에 맞게 수정하세요
+import React, { useState } from "react";
+// 💡 [수정] useLoaderData와 Form 임포트
+import { useNavigate, useParams, useLoaderData, Form, Link } from "react-router-dom"; 
+// import { getProperty, updateProperty } from "../../api/propertyAPI"; // 이제 loader에서 처리
 
-const PropertyEdit = () => {
+const PROPERTY_TYPES = ["HOTEL", "HOUSE", "RESORT"]; // Property.java의 PropertyType Enum 값으로 통일
+
+const PropertyEditPage = () => { // 컴포넌트 이름을 페이지 형태로 변경
+  // 💡 [수정] loader에서 불러온 데이터 사용
+  const { property } = useLoaderData(); 
   const { id } = useParams();
-  const navigate = useNavigate();
+  
+  // NOTE: 로딩, 에러, 제출 상태는 이제 라우터가 관리합니다.
+  
+  // 💡 [추가] 초기값 설정 및 주소 상태 관리
+  // (PropertyCreate와 일관성을 위해 주소 관련 필드를 상태로 관리)
+  // 폼의 defaultValue로 값을 설정합니다.
+  
+  const initialCity = property.city || '';
+  const initialAddress = property.address || '';
+  const initialLat = property.latitude || '';
+  const initialLng = property.longitude || '';
 
-  const [partnerId, setPartnerId] = useState("");
-  const [accountRole, setAccountRole] = useState(PROPERTY_TYPES[0]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [checkinTime, setCheckinTime] = useState("");
-  const [checkoutTime, setCheckoutTime] = useState("");
-  const [ratingAvg, setRatingAvg] = useState("");
+  const [addressFull, setAddressFull] = useState(initialAddress); 
+  const [city, setCity] = useState(initialCity); 
+  const [latitude, setLatitude] = useState(initialLat);
+  const [longitude, setLongitude] = useState(initialLng);
 
-  const [errMsg, setErrMsg] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
-  const validate = () => {
-    if (!partnerId || Number(partnerId) <= 0) return "partnerId를 올바르게 입력하세요.";
-    if (!accountRole) return "숙소 유형을 선택하세요.";
-    const n = name.trim();
-    if (!n) return "숙소명을 입력하세요.";
-    if (n.length > 255) return "숙소명은 최대 255자입니다.";
-    const a = address.trim();
-    if (!a) return "주소를 입력하세요.";
-    if (a.length > 255) return "주소는 최대 255자입니다.";
-    if (city && city.length > 100) return "도시는 최대 100자입니다.";
-    if (checkinTime && checkoutTime && checkoutTime < checkinTime) return "체크아웃은 체크인 이후여야 합니다.";
-    if (ratingAvg !== "" && (Number(ratingAvg) < 0 || Number(ratingAvg) > 5)) return "평점은 0~5 사이여야 합니다.";
-    return "";
+  // --- Mock/Demo 함수 (주소 검색) ---
+  const handleAddressSearch = () => {
+    alert("도로명 주소 검색 API를 호출합니다.");
+    setAddressFull("서울 강남구 테헤란로 123"); // Mock 주소
+    setCity("강남구"); // Mock 도시
+    setLatitude(37.50123); // Mock 위도
+    setLongitude(127.03789); // Mock 경도
   };
-
-  const toFloatOrNull = (v) => (v === "" ? null : parseFloat(v));
-  const toNullIfEmpty = (v) => (v === "" ? null : v);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setErrMsg("");
-      const data = await getProperty(id);
-      setPartnerId(data?.partner?.partnerId ?? data?.partnerId ?? "");
-      setAccountRole(data?.accountRole ?? PROPERTY_TYPES[0]);
-      setName(data?.name ?? "");
-      setDescription(data?.description ?? "");
-      setAddress(data?.address ?? "");
-      setCity(data?.city ?? "");
-      setLatitude(data?.latitude ?? "");
-      setLongitude(data?.longitude ?? "");
-      setCheckinTime(data?.checkinTime ?? "");
-      setCheckoutTime(data?.checkoutTime ?? "");
-      setRatingAvg(data?.ratingAvg ?? "");
-    } catch (e) {
-      console.error(e);
-      setErrMsg("기존 숙소 정보를 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const v = validate();
-    if (v) { setErrMsg(v); return; }
-
-    try {
-      setSubmitting(true);
-      setErrMsg("");
-
-      // 기본: 평면형 요청 바디
-      const body = {
-        partnerId: Number(partnerId),
-        accountRole,
-        name: name.trim(),
-        description: toNullIfEmpty(description.trim()),
-        address: address.trim(),
-        city: toNullIfEmpty(city.trim()),
-        latitude: toFloatOrNull(latitude),
-        longitude: toFloatOrNull(longitude),
-        checkinTime: toNullIfEmpty(checkinTime),
-        checkoutTime: toNullIfEmpty(checkoutTime),
-        ratingAvg: ratingAvg === "" ? null : Number(ratingAvg),
-      };
-
-      /* 중첩형이 필요하면:
-      const body = {
-        partner: { partnerId: Number(partnerId) },
-        accountRole,
-        name: name.trim(),
-        description: toNullIfEmpty(description.trim()),
-        address: address.trim(),
-        city: toNullIfEmpty(city.trim()),
-        latitude: toFloatOrNull(latitude),
-        longitude: toFloatOrNull(longitude),
-        checkinTime: toNullIfEmpty(checkinTime),
-        checkoutTime: toNullIfEmpty(checkoutTime),
-        ratingAvg: ratingAvg === "" ? null : Number(ratingAvg),
-      };
-      */
-
-      await updateProperty(id, body);
-      navigate(`/properties/${id}`);
-    } catch (e) {
-      console.error(e);
-      if (e?.response?.status === 400) setErrMsg(e?.response?.data?.message || "필드 검증에 실패했습니다.");
-      else setErrMsg("숙소 수정에 실패했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  useEffect(() => { load(); }, [id]);
-
-  if (loading) return <div>로딩 중...</div>;
+  // ------------------------------------
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>숙소 수정</h1>
-      {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
-
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            Partner ID{" "}
-            <input type="number" value={partnerId} onChange={(e) => setPartnerId(e.target.value)} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            숙소 유형{" "}
-            <select value={accountRole} onChange={(e) => setAccountRole(e.target.value)}>
-              {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            숙소명 (≤255){" "}
-            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            설명{" "}
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            주소 (≤255){" "}
-            <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={255} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            도시 (≤100){" "}
-            <input value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            위도{" "}
-            <input type="number" step="0.0000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            경도{" "}
-            <input type="number" step="0.0000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            체크인{" "}
-            <input type="time" value={checkinTime} onChange={(e) => setCheckinTime(e.target.value)} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            체크아웃{" "}
-            <input type="time" value={checkoutTime} onChange={(e) => setCheckoutTime(e.target.value)} />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            평균 평점(0~5, 소수2){" "}
-            <input type="number" step="0.01" min={0} max={5} value={ratingAvg} onChange={(e) => setRatingAvg(e.target.value)} />
-          </label>
-        </div>
-
+    <div className="container mx-auto p-4 md:p-8">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">숙소 수정: {property.name}</h1>
+      
+      {/* 💡 [수정] react-router-dom의 Form 사용: action으로 editAction으로 보냄 */}
+      <Form 
+          method="post" 
+          action={`/properties/${id}/edit`} // PropertyRouter.jsx의 editAction 경로
+          className="bg-white shadow-md rounded-lg p-6 space-y-4"
+      >
+        {/* 파트너 ID (수정 시에도 필요) */}
+        <input type="hidden" name="partnerId" defaultValue={property.partner?.partnerId || property.partnerId} />
+        
+        {/* 숙소명 */}
         <div>
-          <button type="submit" disabled={submitting}>{submitting ? "수정 중..." : "수정"}</button>{" "}
-          <button type="button" onClick={() => navigate(`/properties/${id}`)}>상세</button>
+          <label className="form-label" htmlFor="name">숙소명</label>
+          <input name="name" id="name" defaultValue={property.name} className="form-input w-full" maxLength={255} required />
         </div>
-      </form>
+        
+        {/* 숙소 유형 */}
+        <div>
+          <label className="form-label" htmlFor="propertyType">숙소 유형</label>
+          <select 
+            name="propertyType" 
+            id="propertyType"
+            className="form-select w-full" 
+            defaultValue={property.propertyType}
+          >
+            {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        {/* 💡 [수정] 주소 입력: 도로명 주소 API를 염두에 둔 레이아웃 */}
+        <div>
+          <label className="form-label">주소</label>
+          <div className="flex space-x-2">
+            <input 
+                type="text"
+                name="address"
+                value={addressFull} 
+                onChange={(e) => setAddressFull(e.target.value)}
+                className="form-input flex-1" 
+                placeholder="도로명 주소 검색 버튼을 눌러주세요" 
+                maxLength={255}
+                required
+                readOnly
+            />
+             <button
+                type="button"
+                onClick={handleAddressSearch}
+                className="btn-secondary w-32"
+              >
+                주소 검색
+              </button>
+          </div>
+        </div>
+        
+        {/* 도시 (City) */}
+        <div>
+          <label className="form-label" htmlFor="city">도시 (시/군/구)</label>
+          <input 
+              name="city" 
+              id="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="form-input w-full"
+              maxLength={100}
+              placeholder="예: 서울, 강남구"
+          />
+        </div>
+        
+        {/* 💡 [필수] 위도/경도 Hidden Field: 상태를 폼 데이터로 보내기 위해 name과 value 연결 */}
+        <input type="hidden" name="latitude" value={latitude} />
+        <input type="hidden" name="longitude" value={longitude} />
+        
+        {/* 설명 */}
+        <div>
+          <label className="form-label" htmlFor="description">숙소 설명</label>
+          <textarea name="description" id="description" defaultValue={property.description} className="form-input w-full" rows={3} />
+        </div>
+
+        {/* 체크인/체크아웃 시간 */}
+        <div className="flex space-x-4">
+          <div className="flex-1">
+            <label className="form-label" htmlFor="checkinTime">체크인 시간</label>
+            <input type="time" name="checkinTime" id="checkinTime" defaultValue={property.checkinTime} className="form-input w-full" />
+          </div>
+          <div className="flex-1">
+            <label className="form-label" htmlFor="checkoutTime">체크아웃 시간</label>
+            <input type="time" name="checkoutTime" id="checkoutTime" defaultValue={property.checkoutTime} className="form-input w-full" />
+          </div>
+        </div>
+        
+        {/* 평점 */}
+        <div>
+          <label className="form-label" htmlFor="ratingAvg">평균 평점 (0~5)</label>
+          <input type="number" step="0.01" min={0} max={5} name="ratingAvg" id="ratingAvg" defaultValue={property.ratingAvg} className="form-input w-full" />
+        </div>
+        
+        {/* 💡 [수정] 버튼 위치 변경 */}
+        <div className="flex justify-end space-x-2 pt-4">
+          <Link to={`/properties/${id}`} className="btn-secondary">취소</Link> 
+          <button type="submit" className="btn-primary bg-amber-600 hover:bg-amber-700">수정 저장</button>
+        </div>
+      </Form>
     </div>
   );
 };
 
-export default PropertyEdit;
+export default PropertyEditPage;

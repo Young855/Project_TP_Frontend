@@ -36,7 +36,6 @@ const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로
           <div><b>위도/경도:</b> {property.latitude ?? "-"} / {property.longitude ?? "-"}</div>
         </div>
 
-        {/* 💡 [추가] 객실 관리 섹션 (Room CRUD 뼈대) */}
         <div className="pt-6 mt-6 border-t border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">객실 관리 ({property.rooms?.length || 0}개)</h2>
@@ -48,13 +47,10 @@ const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로
             </button>
           </div>
 
-          {/* 💡 [뼈대] 객실 목록 테이블 */}
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-gray-500 mb-2">객실 목록이 여기에 표시됩니다.</p>
             {property.rooms && property.rooms.length > 0 ? (
-                // 실제 객실 데이터를 매핑하는 테이블/리스트가 들어갈 위치
                 <div>
-                    {/* ... (객실 정보) */}
                     <p>Room 1: 스탠다드, 100,000원 <Link to={`/rooms/${property.rooms[0].roomId}/edit`}>[수정/삭제]</Link></p>
                 </div>
             ) : (
@@ -63,9 +59,7 @@ const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로
           </div>
         </div>
 
-        {/* 액션 버튼 */}
         <div className="mt-6 border-t pt-4 flex justify-end space-x-2">
-          {/* 수정 버튼 */}
           <button 
             onClick={() => navigate(`/properties/${id}/edit`)}
             className="btn-secondary bg-amber-600 text-white hover:bg-amber-700"

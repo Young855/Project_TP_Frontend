@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // useNavigate 훅 임포트
+import { useNavigate } from 'react-router-dom'; 
 import { createUser } from '../../api/userAPI';
 /**
- * 생년월일 선택 컴포넌트 (변경 없음)
  * @param {object} props
  * @param {string} props.year - 현재 선택된 연도
  * @param {function} props.setYear - 연도 설정 함수
@@ -16,7 +15,6 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   
-  // 선택된 연도와 월에 따라 유효한 일수를 계산하는 로직 추가 (강화된 BirthDatePicker)
   const getDaysInMonth = (y, m) => {
     if (!y || !m) return 31;
     const yearInt = parseInt(y, 10);
@@ -25,7 +23,6 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
   };
 
   const daysInCurrentMonth = getDaysInMonth(year, month);
-  // 선택된 일수가 현재 월의 최대 일수를 초과하면, 최대 일수로 자동 조정 (예: 2월 30일 -> 2월 29일)
   useEffect(() => {
     if (day && parseInt(day, 10) > daysInCurrentMonth) {
       setDay(String(daysInCurrentMonth).padStart(2, '0'));
@@ -40,7 +37,6 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
         value={year} 
         onChange={(e) => {
           setYear(e.target.value);
-          // 연도가 바뀌면 월/일을 다시 검토해야 함
         }} 
         className="form-select flex-1"
         aria-label="Year of birth"
@@ -54,7 +50,6 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
         value={month} 
         onChange={(e) => {
           setMonth(e.target.value);
-          // 월이 바뀌면 일수를 다시 검토해야 함
         }} 
         className="form-select flex-1"
         aria-label="Month of birth"
@@ -81,14 +76,11 @@ const BirthDatePicker = ({ year, setYear, month, setMonth, day, setDay }) => {
 
 
 /**
- * 회원가입 페이지 (R002)
  * @param {object} props
  */
 export default function SignupPage() {
-  // useNavigate 훅을 사용하여 페이지 이동 처리
   const navigate = useNavigate();
 
-  // R002: 입력 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -97,21 +89,17 @@ export default function SignupPage() {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('user'); // 기본값 'user'
   
-  // 생년월일
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
 
-  // R002: 에러 및 유효성 상태 관리
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState(''); 
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false); // 이메일 중복 확인 여부
 
-  // 비밀번호 유효성 검사 함수 (요청 사항 반영)
   const validatePassword = (currentPassword) => {
-    // 영문 대/소문자, 숫자, 특수기호(@$!%*?&)를 포함하여 8~20자
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
     if (!currentPassword) {
         setPasswordError('비밀번호를 입력해주세요.');
@@ -126,7 +114,6 @@ export default function SignupPage() {
     }
   };
 
-  // 비밀번호 확인 유효성 검사 함수
   const validatePasswordConfirm = (currentPasswordConfirm) => {
     if (currentPasswordConfirm !== password) {
       setPasswordConfirmError('비밀번호가 일치하지 않습니다.');
@@ -137,26 +124,22 @@ export default function SignupPage() {
     }
   };
   
-  // 이메일 유효성 검사 (간단화)
   const validateEmail = (currentEmail) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(currentEmail)) {
         setEmailError('유효한 이메일 주소를 입력해주세요.');
-        return false;
+        return false; 
     } else {
         setEmailError('');
         return true;
     }
   };
 
-  // R002: 이메일 중복 확인 (Mock)
   const handleEmailCheck = () => {
     if (!validateEmail(email)) return;
 
-    // Mock 서버 요청
     setTimeout(() => {
-      // 실제로는 서버에서 이메일 중복 확인
-      const isDuplicated = email === 'test@example.com'; // Mock 데이터
+      const isDuplicated = email === 'test@example.com'; 
       if (isDuplicated) {
         setEmailError('이미 사용 중인 이메일입니다.');
         setIsEmailVerified(false);
@@ -167,7 +150,6 @@ export default function SignupPage() {
     }, 500);
   };
   
-  // R002: 닉네임 중복 확인 (Mock)
   const handleNicknameCheck = () => {
       // 닉네임이 입력되었는지 확인
       if (!nickname.trim()) {
@@ -175,10 +157,8 @@ export default function SignupPage() {
           return;
       }
 
-      // Mock 서버 요청
       setTimeout(() => {
-          // 실제로는 서버에서 닉네임 중복 확인
-          const isDuplicated = nickname === 'admin'; // Mock 데이터
+          const isDuplicated = nickname === 'admin'; 
           if (isDuplicated) {
               setNicknameError('이미 사용 중인 닉네임입니다.');
           } else {
@@ -217,13 +197,10 @@ export default function SignupPage() {
     e.preventDefault();
 
     let isValid = true;
-    
-    // R002: 필수 필드 유효성 검사
 
     // 1. 이메일
     if (!validateEmail(email)) isValid = false;
     if (!isEmailVerified) {
-        // 이미 유효성 검사를 통과한 경우 (validateEmail)에만 중복 확인 필요 메시지 표시
         if (validateEmail(email)) { 
              setEmailError('이메일 중복 확인이 필요합니다.');
         }
@@ -241,9 +218,7 @@ export default function SignupPage() {
         isValid = false; 
     }
     
-    // 닉네임 중복 확인이 안 된 경우
     if (nickname.trim() && nicknameError !== '사용 가능한 닉네임입니다.') {
-        // 닉네임이 입력되었고 (trim() 체크), 아직 유효한 상태가 아닌 경우
         setNicknameError(nicknameError || '닉네임 중복 확인이 필요합니다.');
         isValid = false;
     }
@@ -263,16 +238,14 @@ export default function SignupPage() {
   };
 
      try {
-        // *** API 통신 로직: createUser 함수 사용 ***
         const createdUser = await createUser(userData);
 
         console.log('회원가입 성공. 생성된 유저:', createdUser);
         alert('회원가입이 완료되었습니다!');
         
-        // 로그인 페이지로 이동
         navigate('/login'); 
       } catch (error) {
-        // userAPI에서 던진 axios 오류 처리
+        console.log(userData);
         const errorMessage = error.response?.data?.message || '회원가입 중 알 수 없는 오류가 발생했습니다.';
         console.error('회원가입 API 호출 오류:', error);
         alert(`회원가입 실패: ${errorMessage}`);
@@ -280,7 +253,6 @@ export default function SignupPage() {
 
     } else {
       console.log('회원가입 실패: 유효성 검사 실패');
-      // 유효성 검사 실패 시 각 필드의 에러 메시지가 표시됨
     }
   };
   
@@ -292,7 +264,6 @@ export default function SignupPage() {
         <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">회원가입</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* R002: 이메일 (아이디) */}
           <div>
             <label htmlFor="email" className="form-label">이메일 (아이디)</label>
             <div className="flex space-x-2">
@@ -338,7 +309,6 @@ export default function SignupPage() {
             {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
           </div>
 
-          {/* R002: 비밀번호 확인 */}
           <div>
             <label htmlFor="passwordConfirm" className="form-label">비밀번호 확인</label>
             <input

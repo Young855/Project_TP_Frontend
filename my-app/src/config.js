@@ -17,7 +17,6 @@ export const BOOKING_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/bookings/${id}`, // GET /bookings/{id}
         MODIFY : (id) => `${API_BASE_URL}/bookings/${id}`, // PUT /bookings/{id}
         DELETE : (id) => `${API_BASE_URL}/bookings/${id}`, // DELETE /bookings/{id}
-        // BookingController의 추가 엔드포인트
         GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`, // GET /bookings/user/{userId}
     },
 }

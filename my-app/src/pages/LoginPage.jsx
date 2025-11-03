@@ -88,10 +88,8 @@ const LoginPage = () => {
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
 
-        {/* R007: 일반 로그인 섹션 (하단) */}
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* 이메일 */}
           <div>
             <label htmlFor="email" className="form-label flex items-center">
               <Mail size={16} className="mr-2 text-gray-400" /> 이메일

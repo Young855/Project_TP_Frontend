@@ -184,7 +184,6 @@ export default function RoomManagementModal({ isOpen, onClose, property, showGlo
         </div>
       </div>
       
-      {/* 객실 추가/수정 모달 (모달 위 모달) */}
       <RoomFormModal
         isOpen={isRoomFormOpen}
         onClose={() => setIsRoomFormOpen(false)}

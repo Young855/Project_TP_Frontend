@@ -146,37 +146,30 @@ function MainLayout() {
 // --- 라우터 설정 ---
 const router = createBrowserRouter([
     {
-        path: "/", // 최상위 경로
-        element: <MainLayout />, // 공통 레이아웃 적용
-        children: [        // Layout 내부에서 <Outlet />을 통해 렌더링되는 자식 페이지
+        path: "/",
+        element: <MainLayout />,
+        children: [ 
             { 
                 index: true, // '/' 경로 (메인 페이지)
                 element: <MainPage />,
-                // onSearch={handleSearch}는 이제 컴포넌트 내부에서 처리하거나 context로 전달해야 함
             },
             
-            // 인증 관련 페이지
             { path: "login", element: <LoginPage /> },
             { path: "user/signup", element: <SignupPage /> },
             { path: "find-password", element: <FindPasswordPage /> },
 
-            // 검색 및 예약 관련 페이지
             { path: "search-results", element: <SearchResultsPage /> },
             { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
             { path: "booking", element: <BookingPage /> },
             { path: "payment", element: <PaymentPage /> },
             
-            // 사용자 관련 페이지 (user 폴더)
             { path: "user/mypage", element: <MyPage /> },
             
-            // 일정 및 후기 페이지
             { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
             { path: "write-review", element: <WriteReviewPage /> },
             
-            // 파트너 관련 페이지 (property 폴더)
             { path: "property/properties", element: <PartnerPropertiesPage /> },
-            
-            // 기타 (플레이스홀더)
+        
             { path: "community", element: (
                 <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록 (R005)</h1></div>
             )},
@@ -190,6 +183,5 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-    // RouterProvider를 사용하여 SPA 라우팅 적용
     return <RouterProvider router={router} />;
 }

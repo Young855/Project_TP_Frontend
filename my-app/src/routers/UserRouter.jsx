@@ -1,7 +1,7 @@
 import UserList from "../pages/user/UserList";
-import UserCreate from "../pages/user/UserCreate";
 import USerDetail from "../pages/user/UserDetail";
 import UserEdit from "../pages/user/UserEdit";
+import SignupPage from "../pages/user/SignupPage";
 
 const AmenityRouter = [
   {
@@ -12,8 +12,8 @@ const AmenityRouter = [
         element: <UserList />,
       },
       {
-        path: "create",   
-        element: <UserCreate />,
+        path: "signup",   
+        element: <SignupPage />,
       },
       {
         path: ":id",            

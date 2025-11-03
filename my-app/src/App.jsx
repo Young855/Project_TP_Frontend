@@ -20,6 +20,7 @@ import MyPage from './pages/user/MyPage';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
+import UserRouter from "./pages/routers/UserRouter";
 // 필요한 다른 컴포넌트들도 추가해야 합니다.
 
 // --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
@@ -155,7 +156,6 @@ const router = createBrowserRouter([
             },
             
             { path: "login", element: <LoginPage /> },
-            { path: "user/signup", element: <SignupPage /> },
             { path: "find-password", element: <FindPasswordPage /> },
 
             { path: "search-results", element: <SearchResultsPage /> },
@@ -176,7 +176,7 @@ const router = createBrowserRouter([
             { path: "admin", element: (
                 <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>
             )},
-
+            ...UserRouter,
         
         ] 
     }

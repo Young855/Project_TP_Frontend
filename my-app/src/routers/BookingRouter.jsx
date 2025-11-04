@@ -1,8 +1,8 @@
 import { Children } from "react";
-import BookingList from "../pages/booking/BookingList";
-import BookingCreate from "../pages/booking/BookingCreate";
-import BookingDetail from "../pages/booking/BookongDetail";
-import BookingEdit from "../pages/booking/BookingEdit";
+import BookingList from "../booking/BookingList";
+import BookingCreate from "../booking/BookingCreate";
+import BookingDetail from "../booking/BookongDetail";
+import BookingEdit from "../booking/BookingEdit";
 
 const BookingRouter = [
   {

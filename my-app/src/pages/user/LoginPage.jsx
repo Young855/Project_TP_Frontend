@@ -20,7 +20,7 @@ const LoginPage = () => {
     setError('');
 
     if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요.');
+      alert('이메일과 비밀번호를 입력해주세요.');
       return;
     }
 
@@ -56,37 +56,6 @@ const LoginPage = () => {
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">로그인</h2>
 
-        {/* R008: API 로그인 섹션 (상단) */}
-        <div className="space-y-4 mb-8">
-          <SocialLoginButton
-            provider="Google"
-            bgColor="bg-white"
-            textColor="text-gray-700"
-            icon={<Globe size={20} className="text-red-500" />}
-            onClick={() => handleApiLogin('Google')}
-          />
-          <SocialLoginButton
-            provider="Kakao"
-            bgColor="bg-[#FEE500]"
-            textColor="text-gray-900"
-            icon={<Key size={20} />}
-            onClick={() => handleApiLogin('Kakao')}
-          />
-          <SocialLoginButton
-            provider="Naver"
-            bgColor="bg-[#03C75A]"
-            textColor="text-white"
-            icon={<User size={20} />}
-            onClick={() => handleApiLogin('Naver')}
-          />
-        </div>
-
-        {/* 구분선 */}
-        <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="flex-shrink mx-4 text-gray-500 text-sm font-medium">또는</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
@@ -133,7 +102,7 @@ const LoginPage = () => {
           {/* 로그인 버튼 */}
           <div>
             <button type="submit" className="btn-primary w-full text-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200">
-              일반 로그인
+              로그인
             </button>
           </div>
         </form>

@@ -1,7 +1,7 @@
-import FavoriteList from "../pages/favorite/FavoriteList";
-import FavoriteCreate from "../pages/favorite/FavoriteCreate";
-import FavoriteDetail from "../pages/favorite/FavoriteDetail";
-import FavoriteEdit from "../pages/favorite/FavoriteEdit";
+import FavoriteList from "../favorite/FavoriteList";
+import FavoriteCreate from "../favorite/FavoriteCreate";
+import FavoriteDetail from "../favorite/FavoriteDetail";
+import FavoriteEdit from "../favorite/FavoriteEdit";
 
 const FavoriteRouter = [
   {

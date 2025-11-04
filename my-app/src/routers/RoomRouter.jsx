@@ -1,7 +1,7 @@
-import RoomList from "../pages/room/RoomList";
-import RoomCreate from "../pages/room/RoomCreate";
-import RoomDetail from "../pages/room/RoomDetail";
-import RoomList from "../pages/room/RoomList";
+import RoomList from "../room/RoomList";
+import RoomCreate from "../room/RoomCreate";
+import RoomDetail from "../room/RoomDetail";
+import RoomList from "../room/RoomList";
 
 const RoomRouter = [
   {

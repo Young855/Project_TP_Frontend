@@ -1,27 +1,27 @@
-import UserList from "../pages/user/UserList";
-import USerDetail from "../pages/user/UserDetail";
+// import UserList from "../pages/user/UserList";
 import UserEdit from "../pages/user/UserEdit";
 import SignupPage from "../pages/user/SignupPage";
+import LoginPage from "../pages/user/LoginPage";
 
 const UserRouter = [
   {
     path: "user",
     children: [
-      {
-        index: true, 
-        element: <UserList />,
-      },
+      // {
+      //   index: true, 
+      //   element: <UserList />,
+      // },
       {
         path: "signup",   
         element: <SignupPage />,
       },
       {
-        path: ":id",            
-        element: <USerDetail />,
-      },
-      {
         path: ":id/edit",     
         element: <UserEdit />,
+      },
+      {
+        path: "login",
+        element: <LoginPage/>
       },
     ],
   },

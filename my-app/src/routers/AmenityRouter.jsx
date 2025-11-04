@@ -1,7 +1,7 @@
-import AmenityList from "../pages/amenity/AmenityList";
-import AmenityCreate from "../pages/amenity/AmenityCreate";
-import AmenityDetail from "../pages/amenity/AmenityDetail";
-import AmenityEdit from "../pages/amenity/AmenityEdit";
+import AmenityList from "../amenity/AmenityList";
+import AmenityCreate from "../amenity/AmenityCreate";
+import AmenityDetail from "../amenity/AmenityDetail";
+import AmenityEdit from "../amenity/AmenityEdit";
 
 const AmenityRouter = [
   {

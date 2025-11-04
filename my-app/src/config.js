@@ -4,10 +4,24 @@ export const USER_ENDPOINTS = {
     USERS: {
         LIST: `${API_BASE_URL}/user`, // GET /user
         ADD : `${API_BASE_URL}/user/signup`, // POST /user/signup
+        LOGIN : `${API_BASE_URL}/user/login`, 
+        CHECK_EMAIL : `${API_BASE_URL}/user/check-email`, 
         GET : (id) => `${API_BASE_URL}/user/${id}`, // GET /user/{id}
         MODIFY : (id) => `${API_BASE_URL}/user/${id}`, // PUT /user/{id}
         DELETE : (id) => `${API_BASE_URL}/user/${id}`, // DELETE /user/{id}
     },
+}
+
+export const PARTNER_ENDPOINTS = {
+    PARTNERS: { // USERS 대신 PARTNERS로 변경하여 Partner 엔티티의 API를 명확히 함
+        LIST: `${API_BASE_URL}/partner`, // GET /partner
+        ADD : `${API_BASE_URL}/partner/signup`, // POST /partner/signup (회원가입/등록)
+        LOGIN : `${API_BASE_URL}/partner/login`, // POST /partner/login (파트너 로그인)
+        CHECK_EMAIL : `${API_BASE_URL}/partner/check-email`, // GET /partner/check-email (파트너 이메일 중복 확인)
+        GET : (id) => `${API_BASE_URL}/partner/${id}`, // GET /partner/{id}
+        MODIFY : (id) => `${API_BASE_URL}/partner/${id}`, // PUT /partner/{id}
+        DELETE : (id) => `${API_BASE_URL}/partner/${id}`, // DELETE /partner/{id}
+    }
 }
 
 export const BOOKING_ENDPOINTS = {

@@ -71,14 +71,11 @@ const Header = ({ isLoggedIn, onLogout, navigate }) => {
           </>
         ) : (
           <>
-            <NavItem path="/login">
+            <NavItem path="loginSelection">
               <LogIn size={20} className="inline-block mr-1" />
-              로그인
+              로그인/회원가입
             </NavItem>
-            <NavItem path="user/signup" className={buttonClass}>
-              <UserPlus size={20} className="inline-block mr-1" />
-              회원가입
-            </NavItem>
+            
           </>
         )}
       </>

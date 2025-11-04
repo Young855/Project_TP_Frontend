@@ -13,14 +13,13 @@ import SearchResultsPage from './pages/SearchResultsPage';
 import AccommodationDetailPage from './pages/AccommodationDetailPage';
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/user/SignupPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
-import MyPage from './pages/user/MyPage';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
-import UserRouter from "./pages/routers/UserRouter";
+import UserRouter from "./routers/UserRouter";
+import LoginSelectionPage from './pages/LoginSelection';
+import PartnerRouter from './routers/PartnerRouter';
 // 필요한 다른 컴포넌트들도 추가해야 합니다.
 
 // --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
@@ -155,15 +154,13 @@ const router = createBrowserRouter([
                 element: <MainPage />,
             },
             
-            { path: "login", element: <LoginPage /> },
             { path: "find-password", element: <FindPasswordPage /> },
 
             { path: "search-results", element: <SearchResultsPage /> },
             { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
             { path: "booking", element: <BookingPage /> },
             { path: "payment", element: <PaymentPage /> },
-            
-            { path: "user/mypage", element: <MyPage /> },
+            { path: "loginSelection", element: <LoginSelectionPage/> },
             
             { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
             { path: "write-review", element: <WriteReviewPage /> },
@@ -177,6 +174,8 @@ const router = createBrowserRouter([
                 <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>
             )},
             ...UserRouter,
+            ...PartnerRouter,
+            
         
         ] 
     }

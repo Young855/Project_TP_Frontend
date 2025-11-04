@@ -39,10 +39,6 @@ const PartnerLoginPage = () => {
         // 실제 API 호출: const result = await partnerLoginAPI(email, password);
         await new Promise(resolve => setTimeout(resolve, 1000)); 
         
-        // 로그인 성공 시 로직 (임시)
-        // showModal('로그인 성공', '파트너 로그인에 성공했습니다!', null);
-        // navigate('/partner/dashboard'); // 파트너 대시보드로 이동
-        
         // 기능 미구현 Placeholder (원래 코드의 의도 유지)
         showModal('파트너 로그인 준비', '파트너 일반 로그인 기능은 백엔드 Security 설정 후 구현될 예정입니다.', null);
 
@@ -64,61 +60,22 @@ const PartnerLoginPage = () => {
   };
 
   // 소셜 로그인 버튼 컴포넌트
-  const SocialLoginButton = ({ provider, bgColor, textColor, icon, onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center justify-center w-full py-3 px-4 rounded-xl font-semibold text-lg transition duration-200 border ${bgColor} ${textColor} hover:opacity-90 shadow-md`}
-      aria-label={`${provider}로 로그인`}
-    >
-      {icon}
-      <span className="ml-3">{provider} 로그인</span>
-    </button>
-  );
+  
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">파트너 로그인</h2>
 
-        {/* R008: API 로그인 섹션 (상단) - 파트너 시스템에서는 보통 주석 처리하거나 제거함 */}
-        <div className="space-y-4 mb-8">
-          <SocialLoginButton
-            provider="Google"
-            bgColor="bg-white"
-            textColor="text-gray-700"
-            icon={<Globe size={20} className="text-red-500" />}
-            onClick={() => handleApiLogin('Google')}
-          />
-          <SocialLoginButton
-            provider="Kakao"
-            bgColor="bg-[#FEE500]"
-            textColor="text-gray-900"
-            icon={<Key size={20} />}
-            onClick={() => handleApiLogin('Kakao')}
-          />
-          <SocialLoginButton
-            provider="Naver"
-            bgColor="bg-[#03C75A]"
-            textColor="text-white"
-            icon={<User size={20} />}
-            onClick={() => handleApiLogin('Naver')}
-          />
-        </div>
-
-        {/* 구분선 */}
-        <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="flex-shrink mx-4 text-gray-500 text-sm font-medium">또는</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
+        
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* 이메일 */}
           <div>
+            {/* .form-label 사용 */}
             <label htmlFor="email" className="form-label flex items-center">
-              <Mail size={16} className="mr-2 text-gray-400" /> 이메일
+              <Mail size={16} className="mr-2 text-gray-400" /> 비즈네스 이메일
             </label>
             <input
               type="email"
@@ -126,7 +83,8 @@ const PartnerLoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="partner@email.com"
-              className="form-input transition duration-200"
+              // .form-input 사용, 중복되는 transition duration-200 제거
+              className="form-input" 
               autoComplete="email"
               required
               disabled={isLoading}
@@ -135,6 +93,7 @@ const PartnerLoginPage = () => {
           
           {/* 비밀번호 */}
           <div>
+             {/* .form-label 사용 */}
             <label htmlFor="password" className="form-label flex items-center">
               <Key size={16} className="mr-2 text-gray-400" /> 비밀번호
             </label>
@@ -144,7 +103,8 @@ const PartnerLoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
-              className="form-input transition duration-200"
+              // .form-input 사용, 중복되는 transition duration-200 제거
+              className="form-input"
               autoComplete="current-password"
               required
               disabled={isLoading}
@@ -188,47 +148,6 @@ const PartnerLoginPage = () => {
         </div>
       </div>
 
-      {/* R002: 커스텀 스타일 (LoginPage.jsx에서 복사) */}
-      <style jsx global>{`
-        .form-label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-          color: #374151; /* text-gray-700 */
-        }
-        .form-input {
-          display: block;
-          width: 100%;
-          padding: 0.75rem;
-          border: 1px solid #D1D5DB; /* border-gray-300 */
-          border-radius: 0.75rem; /* rounded-xl */
-          background-color: #F9FAFB; /* bg-gray-50 */
-          transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .form-input:focus {
-          outline: none;
-          border-color: #3B82F6; /* focus:border-blue-500 */
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); /* focus:ring-blue-500/20 */
-          background-color: white;
-        }
-        .btn-primary {
-          padding: 0.9rem 1rem;
-          background-color: #3B82F6; /* bg-blue-600 */
-          color: white;
-          font-weight: 700;
-          border-radius: 0.75rem; /* rounded-xl */
-          border: 1px solid transparent;
-          cursor: pointer;
-          transition: background-color 0.2s, transform 0.2s;
-        }
-        .btn-primary:hover:not(:disabled) {
-          background-color: #2563EB; /* hover:bg-blue-700 */
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-      `}</style>
     </div>
   );
 };

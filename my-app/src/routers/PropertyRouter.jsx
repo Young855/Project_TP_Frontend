@@ -1,7 +1,7 @@
-import PropertyList from "../pages/property/PropertyList";
-import PropertyCreate from "../pages/property/PropertyCreate";
-import PropertyDetail from "../pages/property/PropertyDetail";
-import PropertyEdit from "../pages/property/PropertyEdit";
+import PropertyList from "../property/PropertyList";
+import PropertyCreate from "../property/PropertyCreate";
+import PropertyDetail from "../property/PropertyDetail";
+import PropertyEdit from "../property/PropertyEdit";
 
 
 /* ------------------------------

@@ -3,7 +3,7 @@ import USerDetail from "../pages/user/UserDetail";
 import UserEdit from "../pages/user/UserEdit";
 import SignupPage from "../pages/user/SignupPage";
 
-const AmenityRouter = [
+const UserRouter = [
   {
     path: "user",
     children: [
@@ -27,4 +27,4 @@ const AmenityRouter = [
   },
 ];
 
-export default AmenityRouter;
+export default UserRouter;

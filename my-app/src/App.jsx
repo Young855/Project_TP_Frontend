@@ -20,6 +20,7 @@ import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
 import UserRouter from "./routers/UserRouter";
 import LoginSelectionPage from './pages/LoginSelection';
 import PartnerRouter from './routers/PartnerRouter';
+import SideDrawer from './components/SideDrawer';
 // 필요한 다른 컴포넌트들도 추가해야 합니다.
 
 // --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
@@ -32,6 +33,7 @@ function MainLayout() {
     const [currentUser, setCurrentUser] = useState(null);
     const [searchParams, setSearchParams] = useState({});
     const [selectedAccommodation, setSelectedAccommodation] = useState(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 드로어 상태 관리
 
     // 모달 상태 (Modal 컴포넌트에 직접 연결)
     const [modal, setModal] = useState({
@@ -123,7 +125,18 @@ function MainLayout() {
     
     return (
         <div className="font-sans bg-gray-50 min-h-screen">
-            <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} navigate={navigate} />
+            <Header 
+        isLoggedIn={isLoggedIn} 
+        navigate={navigate} 
+        onOpenDrawer={() => setIsDrawerOpen(true)} // 드로어 열기 함수 전달
+      />
+      
+      <SideDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)} // 드로어 닫기 함수 전달
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
+      />
 
             <main>
                 {/* 자식 라우트 컴포넌트가 렌더링될 위치 */}

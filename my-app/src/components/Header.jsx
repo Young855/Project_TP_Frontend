@@ -1,121 +1,61 @@
-import React, { useState } from 'react';
+// Header.jsx
+
+import React from 'react';
 import { 
-  User, LogOut, LogIn, UserPlus, X, Menu 
+  Menu 
 } from 'lucide-react';
-import { Link } from 'react-router-dom'; // 1. Link 컴포넌트 추가
+import { Link } from 'react-router-dom';
 
 /**
- * 헤더 컴포넌트 (react-router-dom 버전)
+ * 헤더 컴포넌트 (Side Drawer 트리거 역할)
  * @param {object} props
  * @param {boolean} props.isLoggedIn - 로그인 여부
- * @param {function} props.onLogout - 로그아웃 처리 함수
- * @param {function} props.navigate - useNavigate() 훅으로 전달된 페이지 이동 함수 (setPage 대체)
+ * @param {function} props.navigate - useNavigate() 훅으로 전달된 페이지 이동 함수
+ * @param {function} props.onOpenDrawer - 드로어를 여는 함수 (새로 추가)
  */
-// 2. setPage Prop을 제거하고 navigate Prop을 받도록 변경
-const Header = ({ isLoggedIn, onLogout, navigate }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // 모바일 메뉴 닫기 및 페이지 이동 처리
-  const handleMobileNavClick = (path) => {
-    navigate(path);
-    setIsMenuOpen(false);
+// onOpenDrawer Prop을 새로 받도록 변경
+const Header = ({ isLoggedIn, navigate, onOpenDrawer }) => {
+  // onLogout은 SideDrawer에서 처리하므로 여기서 제거
+  
+  // 로그인/회원가입 버튼 클릭 처리
+  const handleAuthClick = () => {
+    // 로그인/회원가입 경로는 'loginSelection'으로 가정합니다.
+    navigate('/loginSelection');
   };
-
-  // 데스크탑/모바일 메뉴에서 반복되는 Link 코드를 컴포넌트로 분리
-  const NavLinks = ({ isMobile = false }) => {
-    
-    const linkClass = isMobile ? "nav-link-mobile" : "nav-link";
-    const buttonClass = isMobile ? "btn-primary w-full mt-2" : "btn-primary-outline";
-
-    // 모바일 메뉴에서는 Link 대신 버튼과 navigate를 사용하여 메뉴 닫기 로직을 함께 처리
-    const NavItem = ({ path, children, onClick = null, className = linkClass }) => {
-      if (isMobile) {
-        // 모바일: 버튼 클릭 시 메뉴를 닫고 navigate 실행
-        return (
-          <button 
-            onClick={() => { 
-              if (onClick) onClick(); 
-              handleMobileNavClick(path); 
-            }} 
-            className={className}
-          >
-            {children}
-          </button>
-        );
-      }
-      // 데스크탑: <Link> 사용
-      return <Link to={path} className={className}>{children}</Link>;
-    };
-
-    return (
-      <>
-        <NavItem path="/itinerary">내 일정</NavItem>
-        
-        <NavItem path="/community">커뮤니티</NavItem>
-
-        <NavItem path="/property/properties">숙소 등록</NavItem>
-       
-        <NavItem path="/user/mypage">마이페이지</NavItem>
-
-        {isLoggedIn ? (  
-          <>
-            <NavItem path="/user/mypage">
-              <User size={20} className="inline-block mr-1" />
-              마이페이지
-            </NavItem>
-            {/* 로그아웃은 onLogout 함수(App.jsx에서 Modal 띄우는 로직 포함)를 사용 */}
-            <NavItem path="/" onClick={onLogout} className={linkClass}>
-              <LogOut size={20} className="inline-block mr-1" />
-              로그아웃
-            </NavItem>
-          </>
-        ) : (
-          <>
-            <NavItem path="loginSelection">
-              <LogIn size={20} className="inline-block mr-1" />
-              로그인/회원가입
-            </NavItem>
-            
-          </>
-        )}
-      </>
-    );
-  };
-
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        {/* 로고와 오른쪽 그룹을 양 끝으로 분리 */}
+        <div className="flex justify-between items-center h-16"> 
           <Link 
             to="/" 
             className="text-2xl font-bold text-blue-600 cursor-pointer"
           >
             TP
           </Link>
-          </div>
-          {/* 데스크탑 네비게이션 */}
-          <div className="hidden md:flex items-center space-x-4">
-            <NavLinks />
-          </div>
+        </div>
+          {/* 햄버거 메뉴 버튼과 로그인/회원가입 버튼 그룹 (오른쪽 정렬) */}
+          <div className="flex items-center space-x-3"> 
+            
+            {/* 로그인/회원가입 버튼 (isLoggedIn이 false일 때만 표시) */}
+            {!isLoggedIn && (
+              <button 
+                onClick={handleAuthClick}
+                className="btn-primary-outline px-4 py-2 rounded-lg text-sm font-semibold"
+              >
+                로그인/회원가입
+              </button>
+            )}
 
-          {/* 모바일 메뉴 버튼 */}
-          <div className="md:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            {/* 햄버거 메뉴 버튼: 클릭 시 SideDrawer 열기 */}
+            <button onClick={onOpenDrawer} className="p-1">
+              <Menu size={28} />
             </button>
           </div>
         
 
-        {/* 모바일 메뉴 */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-3">
-              {/* 모바일에서는 isMobile=true로 전달하여 Link 대신 버튼 사용 */}
-              <NavLinks isMobile={true} />
-            </div>
-          </div>
-        )}
+        {/* 기존 모바일 메뉴 로직 (isMenuOpen)은 SideDrawer.jsx로 이동하며 여기서는 제거됩니다. */}
       </nav>
     </header>
   );

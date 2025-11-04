@@ -1,5 +1,6 @@
 import PartnerLoginPage from "../pages/partner/PartnerLoginPage";
 import PartnerSignupPage from "../pages/partner/partnerSignupPage";
+import BizVerificationPage from "../pages/partner/BizVerificationPage";
 
 const PartnerRouter = [
     {
@@ -16,6 +17,10 @@ const PartnerRouter = [
             {
                 path : "login",
                 element: <PartnerLoginPage/>
+            },
+            {
+                path : "bizverification",
+                element: <BizVerificationPage/>
             },
 
         ],

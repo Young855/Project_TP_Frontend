@@ -15,10 +15,6 @@ import {
     deleteProperty 
 } from "../api/propertyAPI";
 
-/* ------------------------------
-    Router Loaders and Actions
---------------------------------*/
-
 const propertyLoader = async ({ params }) => {
     const property = await getProperty(params.id); 
     return { property }; 
@@ -60,10 +56,6 @@ const propertyDeleteAction = async ({ params }) => {
     }
 };
 
-
-/* ------------------------------
-    Route Definition
---------------------------------*/
 export const propertyRoutes = [
     {
         path: "partner/properties",

@@ -27,54 +27,39 @@ const createPartner = async (data) => {
     return { success: true, partnerId: 'P12345', ...data };
 };
 
-// 🚀 API 호출 로직 구조 Placeholder 2: 이메일 중복 확인 (무조건 사용 가능: false 반환)
-// TODO: 실제 서버의 이메일 중복 확인 API 엔드포인트로 교체해야 합니다.
 const checkPartnerEmailDuplication = async (email) => {
     console.log("--- 이메일 중복 확인 API 호출 시도 (Placeholder: 무조건 사용 가능) ---");
     console.log("확인 이메일:", email);
     
-    // 1. API 호출 시뮬레이션 (네트워크 지연)
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // 2. ⚠️ 실제 API 호출 로직 Placeholder (주석 처리)
-    /*
     try {
-       const response = await axios.get(`YOUR_SERVER_URL/api/partner/check-email?email=${email}`);
-       return response.data.isDuplicated; // 서버 응답 반환 (true/false)
+       const response = await axios.get(`partner/checkEmail?email=${email}`);
+       return response.data.isDuplicated;
     } catch (error) {
        console.error("실제 API 호출 오류:", error);
-       // throw error; 
     }
-    */
     
-    // 3. Mock 성공 응답 반환 (중복 아님/사용 가능: false)
     return false; 
 };
 
-/**
- * 파트너 등록 페이지 (PartnerSignupPage) - Step 2
- */
 export default function PartnerSignupPage() {
   const navigate = useNavigate();
   const location = useLocation(); 
   
-  // Step 1에서 전달받은 데이터
   const verifiedBizData = location.state || {};
 
-  // Step 1에서 확인된 데이터
   const bizRegNumber = verifiedBizData.bizRegNumber || '';
   const ceoName = verifiedBizData.ceoName || '';
   const openingDate = verifiedBizData.openingDate || '';
   const isBizInfoVerified = verifiedBizData.isBizInfoVerified || false; 
 
-  // Partner 엔티티 필드 기반 상태 (Step 2에서 입력받는 필드)
   const [bizName, setBizName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [password, setPassword] = useState(''); 
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   
-  // 에러 및 검증 상태
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState(''); 
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
@@ -84,13 +69,11 @@ export default function PartnerSignupPage() {
   const [isEmailVerified, setIsEmailVerified] = useState(false); 
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
-  // 💡 Step 1 데이터 없으면 이전 페이지로 리다이렉트 (유효성)
   useEffect(() => {
     if (!isBizInfoVerified) {
       console.warn('사업자 정보 진위 확인이 필요합니다. Step 1로 이동합니다.');
       navigate('/partner/bizverification', { replace: true }); 
     }
-    // Step 1 데이터가 있다면, 확인 완료 메시지를 표시
     if (isBizInfoVerified) {
         setBizVerificationError('사업자 정보 진위 확인이 완료되었습니다.');
     }

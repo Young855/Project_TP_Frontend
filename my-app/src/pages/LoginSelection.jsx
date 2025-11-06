@@ -64,10 +64,7 @@ const LoginSelectionPage = () => {
           <span className="flex-shrink mx-4 text-gray-500 text-sm font-medium">또는</span>
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
-
-        {/* 일반 로그인 및 비즈니스 로그인 선택 버튼 */}
         <div className="space-y-4">
-          {/* 이메일로 로그인하기 (기존 로그인 페이지로 이동) */}
           <button
             type="button"
             onClick={() => navigate('../user/login')} 
@@ -75,8 +72,6 @@ const LoginSelectionPage = () => {
           >
             <Mail size={20} className="mr-3" /> 이메일로 로그인하기
           </button>
-          
-          {/* 비즈니스 계정으로 로그인하기 (새로운 경로 및 알림) */}
           <button
             type="button"
             onClick={() => navigate('../partner/login')}

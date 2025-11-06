@@ -1,20 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Mail, Key, User, Globe } from 'lucide-react'; // 아이콘 추가
+import { Mail, Key} from 'lucide-react';
 
-/**
- * 로그인 페이지
- */
 const LoginPage = () => {
-  // useOutletContext를 사용하여 MainLayout에서 제공된 context를 가져옵니다.
   const { onLogin, showModal } = useOutletContext();
   const navigate = useNavigate();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  // R007: 일반 로그인 처리 (기능 없음, 틀만 유지)
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -23,22 +16,13 @@ const LoginPage = () => {
       alert('이메일과 비밀번호를 입력해주세요.');
       return;
     }
-
-    // --- R007: 일반 로그인 기능의 Placeholder ---
     console.log('일반 로그인 시도 (이메일:', email, ') - 기능 구현 예정');
     showModal('로그인 준비', '일반 로그인 기능은 백엔드 Security 설정 후 구현될 예정입니다.', null);
-    // ----------------------------------------
   };
-  
-  // R008: API 로그인 처리 (기능 없음, 틀만 유지)
   const handleApiLogin = (provider) => {
-    // --- R008: API 로그인 기능의 Placeholder ---
     console.log(`${provider} API 로그인 시도 - 기능 구현 예정`);
     showModal('API 로그인 준비', `${provider}를 이용한 소셜 로그인 기능은 Security 설정 후 구현될 예정입니다.`, null);
-    // ----------------------------------------
   };
-
-  // 소셜 로그인 버튼 컴포넌트
   const SocialLoginButton = ({ provider, bgColor, textColor, icon, onClick }) => (
     <button
       type="button"
@@ -74,8 +58,6 @@ const LoginPage = () => {
               required
             />
           </div>
-          
-          {/* 비밀번호 */}
           <div>
             <label htmlFor="password" className="form-label flex items-center">
               <Key size={16} className="mr-2 text-gray-400" /> 비밀번호
@@ -91,23 +73,17 @@ const LoginPage = () => {
               required
             />
           </div>
-
-          {/* 에러 메시지 표시 */}
           {error && (
             <div className="text-sm text-red-600 p-3 bg-red-50 border border-red-200 rounded-lg">
               {error}
             </div>
           )}
-          
-          {/* 로그인 버튼 */}
           <div>
             <button type="submit" className="btn-primary w-full text-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200">
               로그인
             </button>
           </div>
         </form>
-        
-        {/* 회원가입, 비밀번호 찾기 링크 */}
         <div className="text-sm text-center text-gray-600 mt-8 flex justify-center space-x-6">
           <button 
             onClick={() => navigate('/find-password')} 
@@ -125,43 +101,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      <style jsx global>{`
-        /* Tailwind CSS 기반의 스타일 정의 (전역 스타일 분리) */
-        .form-label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-          color: #374151; /* text-gray-700 */
-        }
-        .form-input {
-          display: block;
-          width: 100%;
-          padding: 0.75rem;
-          border: 1px solid #D1D5DB; /* border-gray-300 */
-          border-radius: 0.75rem; /* rounded-xl */
-          background-color: #F9FAFB; /* bg-gray-50 */
-          transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .form-input:focus {
-          outline: none;
-          border-color: #3B82F6; /* focus:border-blue-500 */
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); /* focus:ring-blue-500/20 */
-          background-color: white;
-        }
-        .btn-primary {
-          padding: 0.9rem 1rem;
-          background-color: #3B82F6; /* bg-blue-600 */
-          color: white;
-          font-weight: 700;
-          border-radius: 0.75rem; /* rounded-xl */
-          border: 1px solid transparent;
-          cursor: pointer;
-          transition: background-color 0.2s, transform 0.2s;
-        }
-        .btn-primary:hover {
-          background-color: #2563EB; /* hover:bg-blue-700 */
-        }
-      `}</style>
+      
     </div>
   );
 };

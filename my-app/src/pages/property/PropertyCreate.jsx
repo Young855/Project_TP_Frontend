@@ -135,7 +135,6 @@ const PropertyCreatePage = () => {
                     />
                 </div>
 
-                {/* 7. 체크인/체크아웃 시간 (checkinTime/checkoutTime) - 필수 */}
                 <div className="flex space-x-4">
                     <div className="flex-1">
                         <label className="form-label" htmlFor="checkinTime">체크인 시간</label>

@@ -18,13 +18,11 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
   const loadProperties = async () => {
     setIsLoading(true);
     try {
-      // 💡 API 호출: 서버가 성공적으로 빈 배열([])을 반환하면 다음 줄로 넘어갑니다.
       const partnerData = await getPropertiesByPartnerId(partnerId); 
       
       setProperties(Array.isArray(partnerData) ? partnerData : []);
       
     } catch (e) {
-      // 🚨 서버/네트워크 오류(throw)가 발생했을 때만 이 블록이 실행됩니다.
       console.error("숙소 목록 불러오기 오류:", e);
       showModal('데이터 오류', '숙소 목록을 불러오는 데 실패했습니다.', null);
       setProperties([]);

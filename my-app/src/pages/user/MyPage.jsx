@@ -200,5 +200,4 @@ const MyPage = ({ subPage, setPage, user: propUser }) => {
     </div>
   );
 };
-
 export default MyPage;

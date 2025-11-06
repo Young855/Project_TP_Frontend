@@ -1,58 +1,46 @@
-// PartnerDashboardPage.jsx (신규 파일)
-
-import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Home, Bed, Calendar, MessageSquare, ListPlus, Edit } from 'lucide-react';
 
-/**
- * 호텔 관리자(파트너) 대시보드 페이지
- * - 파트너 로그인 후 진입하는 메인 허브 역할
- */
 export default function PartnerDashboardPage() {
   const navigate = useNavigate();
-  // MainLayout에서 제공하는 showModal 함수를 가져옴
   const { showModal } = useOutletContext(); 
-  
-  // 💡 [image_90e9db.png]의 기능을 라우트 경로에 맞춰 매핑
   const dashboardActions = [
     { 
       id: 1, 
       name: '내 숙소 관리', 
       description: '등록된 숙소의 상세 정보 수정 및 삭제', 
       icon: Home, 
-      path: '/partner/properties' // PartnerPropertiesPage 경로 (PartnerPropertiesPage.jsx에 정의)
+      path: '/partner/properties'
     },
     { 
       id: 2, 
       name: '새 숙소 등록', 
       description: '새로운 숙소 정보를 등록합니다.', 
       icon: ListPlus, 
-      path: '/properties/new' // PropertyCreatePage 경로
+      path: '/properties/new'
     },
     { 
       id: 3, 
       name: '예약 현황 확인', 
       description: '기간별, 숙소별 예약 및 매출 현황을 확인합니다.', 
       icon: Calendar, 
-      path: '/partner/bookings' // 예약 관리 페이지 (가정)
+      path: '/partner/bookings' 
     },
     { 
       id: 4, 
       name: '리뷰 관리 및 답변', 
       description: '사용자 리뷰 열람 및 답변을 등록합니다.', 
       icon: MessageSquare, 
-      path: '/partner/reviews' // 리뷰 관리 페이지 (가정)
+      path: '/partner/reviews' 
     },
     { 
       id: 5, 
       name: '파트너 정보 수정', 
       description: '사업자 정보 및 계정 정보를 수정합니다.', 
       icon: Edit, 
-      path: '/partner/profile/edit' // 파트너 정보 수정 페이지 (가정)
+      path: '/partner/profile/edit' 
     },
   ];
-
-  // 액션 버튼 클릭 핸들러
   const handleActionClick = (action) => {
     if (action.path) {
       navigate(action.path);
@@ -65,8 +53,6 @@ export default function PartnerDashboardPage() {
     <div className="container mx-auto p-4 md:p-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">파트너 대시보드</h1>
         <p className="text-gray-600 mb-8">호텔 관리자 페이지에 오신 것을 환영합니다. 주요 업무를 선택해주세요.</p>
-
-        {/* 대시보드 액션 카드 목록 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardActions.map((action) => {
             const IconComponent = action.icon; 

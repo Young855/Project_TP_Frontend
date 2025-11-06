@@ -89,20 +89,10 @@ const userDeleteAction = async ({ params }) => {
         return { error: '삭제에 실패했습니다.' }; 
     }
 };
-
-
-/* ------------------------------
-    Route Definition
---------------------------------*/
 export const userRoutes = [
     {
         path: "user", 
         children: [
-            // {
-            //     index: true, 
-            //     element: <UserList />, 
-            //     loader: userListLoader, 
-            // },
             {
                 path: "signup", 
                 element: <SignupPage />, 
@@ -120,11 +110,6 @@ export const userRoutes = [
                 path: "find-password",
                 element: <FindPasswordPage />,
             },
-            // {
-            //     path: ":id", 
-            //     element: <UserDetailPage />, 
-            //     loader: userLoader, 
-            // },
             {
                 path: ":id/edit", 
                 element: <UserEdit />, 

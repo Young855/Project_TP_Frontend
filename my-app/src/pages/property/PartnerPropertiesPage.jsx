@@ -97,7 +97,6 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {/* 🚨 properties.length === 0 일 때 실행 (등록된 숙소가 없을 때) */}
             {properties.length === 0 ? (
               <tr>
                 <td colSpan="5" className="px-6 py-12 text-center text-gray-500">

@@ -108,7 +108,7 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
           <div className="mt-4 space-y-1">
             <NavItem to="/itinerary">내 일정</NavItem>
             <NavItem to="/community">커뮤니티</NavItem>
-            <NavItem to="/property/properties">숙소 등록</NavItem>
+            <NavItem to="/partner/properties">숙소 등록</NavItem>
             <div className="border-t my-2"></div> {/* 구분선 */}
             
             

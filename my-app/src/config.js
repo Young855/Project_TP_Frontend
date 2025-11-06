@@ -47,15 +47,18 @@ export const ROOM_ENDPOINTS = {
     },
 }
 
-export const PROPERTIES_ENDPOINTS ={
+export const PROPERTIES_ENDPOINTS = {
     PROPERTIES: {
-        LIST: `${API_BASE_URL}/properties`, // GET /properties
-        ADD : `${API_BASE_URL}/properties`, // POST /properties
-        GET : (id) => `${API_BASE_URL}/properties/${id}`, // GET /properties/{id}
-        MODIFY : (id) => `${API_BASE_URL}/properties/${id}`, // PUT /properties/{id}
-        DELETE : (id) => `${API_BASE_URL}/properties/${id}`, // DELETE /properties/{id}
+        // 모든 숙소 조회 (관리자용)
+        LIST_ALL: `${API_BASE_URL}/properties`, 
+        LIST_BY_PARTNER: (partnerId) => `${API_BASE_URL}/properties/partner/${partnerId}`, 
+        ADD: `${API_BASE_URL}/properties`, // POST /properties
+        // 특정 숙소 조회/수정/삭제
+        GET: (id) => `${API_BASE_URL}/properties/${id}`,
+        MODIFY: (id) => `${API_BASE_URL}/properties/${id}`,
+        DELETE: (id) => `${API_BASE_URL}/properties/${id}`,
     },
-}
+};
 
 export const AMENITIES_ENDPOINTS ={
     AMENITIES: {

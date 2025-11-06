@@ -13,6 +13,15 @@ export const getAllProperties = async () => {
     throw error;
   }
 };
+export const getPropertiesByPartnerId = async (partnerId) => {
+  try {
+    const response = await api.get(PROPERTIES_ENDPOINTS.PROPERTIES.LIST_BY_PARTNER(partnerId));
+    return response.data;
+  } catch (error) {
+    console.error(`파트너 ${partnerId}의 숙소 목록 조회 오류:`, error);
+    throw error;
+  }
+};
 
 // 단일 숙소 조회 (GET /properties/{id})
 export const getProperty = async (id) => {

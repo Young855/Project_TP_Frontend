@@ -1,34 +1,100 @@
-import PropertyList from "../property/PropertyList";
-import PropertyCreate from "../property/PropertyCreate";
-import PropertyDetail from "../property/PropertyDetail";
-import PropertyEdit from "../property/PropertyEdit";
+// PropertyRouter.jsx
+
+import React from "react";
+import { redirect } from "react-router-dom"; 
+
+import PartnerPropertiesPage from "../pages/property/PartnerPropertiesPage"; 
+import PropertyCreate from "../pages/property/PropertyCreate";
+import PropertyDetail from "../pages/property/PropertyDetail";
+import PropertyEdit from "../pages/property/PropertyEdit";
+
+import { 
+    getProperty, 
+    createProperty, 
+    updateProperty, 
+    deleteProperty 
+} from "../api/propertyAPI";
+
+/* ------------------------------
+    Router Loaders and Actions
+--------------------------------*/
+
+const propertyLoader = async ({ params }) => {
+    const property = await getProperty(params.id); 
+    return { property }; 
+};
+
+const propertyCreateAction = async ({ request }) => {
+    const formData = await request.formData();
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const newProperty = await createProperty(data);
+        return redirect(`/properties/${newProperty.propertyId}`); 
+    } catch (error) {
+        console.error("숙소 등록 실패:", error);
+        return { error: '숙소 등록에 실패했습니다. 입력값을 확인해주세요.' }; 
+    }
+};
+
+const propertyEditAction = async ({ params, request }) => {
+    const formData = await request.formData();
+    const data = Object.fromEntries(formData);
+    
+    try {
+        await updateProperty(params.id, data);
+        return redirect(`/properties/${params.id}`); 
+    } catch (error) {
+        console.error("숙소 수정 실패:", error);
+        return { error: '숙소 수정에 실패했습니다.' }; 
+    }
+};
+
+const propertyDeleteAction = async ({ params }) => {
+    try {
+        await deleteProperty(params.id);
+        return redirect('/partner/properties'); 
+    } catch (error) {
+        console.error("숙소 삭제 실패:", error);
+        return { error: '숙소 삭제에 실패했습니다.' }; 
+    }
+};
 
 
 /* ------------------------------
-   Route objects & provider
+    Route Definition
 --------------------------------*/
 export const propertyRoutes = [
-  {
-    path: "properties", // 기본 경로: /properties
-    children: [
-      {
-        index: true, // /properties
-        element: <PropertyList />, // 숙소 목록 페이지
-      },
-      {
-        path: "create", // /properties/create
-        element: <PropertyCreate />, // 숙소 등록 페이지
-      },
-      {
-        path: ":id", // /properties/:id
-        element: <PropertyDetail />, // 숙소 상세 페이지
-      },
-      {
-        path: ":id/edit", // /properties/:id/edit
-        element: <PropertyEdit />, // 숙소 수정 페이지
-      },
-    ],
-  },
+    {
+        path: "partner/properties",
+        children: [
+            {
+                index: true, 
+                element: <PartnerPropertiesPage />, 
+            },
+            {
+                path: "new", 
+                element: <PropertyCreate />, 
+                action: propertyCreateAction, 
+            },
+            {
+                path: ":id", 
+                element: <PropertyDetail />, 
+                loader: propertyLoader, 
+            },
+            {
+                path: ":id/edit", 
+                element: <PropertyEdit />, 
+                loader: propertyLoader, 
+                action: propertyEditAction, 
+            },
+             {
+                path: ":id/delete",
+                action: propertyDeleteAction, 
+            },
+        ],
+    },
+    
 ];
 
-export default PropertyRouter;
+export default propertyRoutes;

@@ -16,11 +16,11 @@ import PaymentPage from './pages/PaymentPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
-import PartnerPropertiesPage from './pages/property/PartnerPropertiesPage';
 import UserRouter from "./routers/UserRouter";
 import LoginSelectionPage from './pages/LoginSelection';
 import PartnerRouter from './routers/PartnerRouter';
 import SideDrawer from './components/SideDrawer';
+import PropertyRouter from './routers/PropertyRouter';
 // 필요한 다른 컴포넌트들도 추가해야 합니다.
 
 // --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
@@ -177,8 +177,6 @@ const router = createBrowserRouter([
             
             { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
             { path: "write-review", element: <WriteReviewPage /> },
-            
-            { path: "property/properties", element: <PartnerPropertiesPage /> },
         
             { path: "community", element: (
                 <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록 (R005)</h1></div>
@@ -188,6 +186,7 @@ const router = createBrowserRouter([
             )},
             ...UserRouter,
             ...PartnerRouter,
+            ...PropertyRouter,
             
         
         ] 

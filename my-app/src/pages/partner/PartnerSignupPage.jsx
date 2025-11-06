@@ -92,7 +92,7 @@ export default function PartnerSignupPage() {
     }
     // Step 1 데이터가 있다면, 확인 완료 메시지를 표시
     if (isBizInfoVerified) {
-        setBizVerificationError('✅ 사업자 정보 진위 확인이 완료되었습니다.');
+        setBizVerificationError('사업자 정보 진위 확인이 완료되었습니다.');
     }
   }, [isBizInfoVerified, navigate]);
 
@@ -251,12 +251,12 @@ export default function PartnerSignupPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-lg bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">파트너 등록 2/2: 회원 정보 입력</h2>
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">파트너 등록</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
             
           {/* --- Step 1 확인 정보 요약 섹션 --- */}
           <div className="space-y-2 pt-2 pb-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">✅ 확인된 사업자 정보</h3>
+              <h3 className="text-lg font-semibold text-gray-800"> 확인된 사업자 정보</h3>
               <p className="text-gray-700 text-sm">
                   **사업자등록번호**: {bizRegNumber} <br/>
                   **대표자 성명**: {ceoName} <br/>

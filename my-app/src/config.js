@@ -6,6 +6,9 @@ export const USER_ENDPOINTS = {
         ADD : `${API_BASE_URL}/user/signup`, // POST /user/signup
         LOGIN : `${API_BASE_URL}/user/login`, 
         CHECK_EMAIL : `${API_BASE_URL}/user/check-email`, 
+        CHECK_NICKNAME : `${API_BASE_URL}/user/check-nickname`,
+        SEND_VERIFICATION: `${API_BASE_URL}/user/send-verification`,
+        VERIFY_CODE: `${API_BASE_URL}/user/verify-code`,
         GET : (id) => `${API_BASE_URL}/user/${id}`, // GET /user/{id}
         MODIFY : (id) => `${API_BASE_URL}/user/${id}`, // PUT /user/{id}
         DELETE : (id) => `${API_BASE_URL}/user/${id}`, // DELETE /user/{id}

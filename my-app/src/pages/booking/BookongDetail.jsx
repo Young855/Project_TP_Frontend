@@ -1,74 +1,80 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { getBooking, deleteBooking } from "../../api/bookingAPI";
+import { useEffect, useState } from "react";
+import { getBooking } from "../../api/bookingAPI";
 
-/**
- * 예약 상세
- * - GET 단건 조회
- * - 수정 이동, 삭제
- */
-const BookingDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [errMsg, setErrMsg] = useState("");
+export default function BookongDetail(){
+    const { id } = useParams();
+    const [data, setData] = useState(null);
+    const [note, setNote] = useState("");
+    const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      setErrMsg("");
-      const data = await getBooking(id);
-      setItem(data);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("상세 정보를 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const load = async () => {
+        try {
+            const res = await getBooking(id);
+            setData(res);
+        } catch (err) {
+            alert(err.message);
+        }
+    };
 
-  const onDelete = async () => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    try {
-      await deleteBooking(id);
-      navigate("/bookings");
-    } catch (e) {
-      console.error(e);
-      alert("삭제에 실패했습니다.");
-    }
-  };
+    useEffect(() => { load(); }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+    const doCheckIn = async () => {
+        if (!window.confirm("체크인 하곘습니까 ?")) return;
+        setBusy(true);
+        try {
+            await checkInBooking(id);
+            await load();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+    const onAddNote = async () => {
+        const v = note.trim();
+        if (!v) return;
+        setBusy(true);
+        try {
+            await addBookingNote(id, v);
+            setNote("");
+            await load();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setBusy(false);
+        }
+    };
 
-  if (loading) return <div>로딩 중...</div>;
-  if (errMsg) return <div style={{ color: "red" }}>{errMsg}</div>;
-  if (!item) return <div>데이터가 없습니다.</div>;
+    if (!data) return <div>불러오는 중 . . . </div>;
 
-  return (
-    <div style={{ padding: 16 }}>
-      <h1>예약 상세</h1>
+    return (
+        <div>
+            <h2>예약 #{data.id}</h2>
+            <div>숙소: {data.propertyName ?? data.propertyId}</div>
+            <div>객실: {data.roomName ?? data.roonId}</div>
+            <div>기간: {data.checkIn} ~ {data.checkout}</div>
+            <div>인원: {data.guests}</div>
+            <div>상태: {data.status}</div>
 
-      <div style={{ margin: "8px 0" }}><b>ID:</b> {item.bookingId}</div>
-      <div style={{ margin: "8px 0" }}>
-        <b>User:</b> {item.user?.username || item.user?.email || item.user?.userId || "-"}
-      </div>
-      <div style={{ margin: "8px 0" }}><b>Status:</b> {item.status}</div>
-      <div style={{ margin: "8px 0" }}><b>Payment:</b> {item.paymentStatus}</div>
-      <div style={{ margin: "8px 0" }}><b>Check-in:</b> {item.checkinDate}</div>
-      <div style={{ margin: "8px 0" }}><b>Check-out:</b> {item.checkoutDate}</div>
-      <div style={{ margin: "8px 0" }}><b>Guests:</b> {item.guests}</div>
-      <div style={{ margin: "8px 0" }}><b>Total Amount:</b> {item.totalAmount}</div>
-      <div style={{ margin: "8px 0" }}><b>Created:</b> {item.createdAt}</div>
-      <div style={{ margin: "8px 0" }}><b>Updated:</b> {item.updatedAt}</div>
+            <p>
+                <Link to={`/booking/${id}/edit`}>수정</Link>{" "}
+                <button disabled={busy} onclick={doCheckIn}>체크인</button>{" "}
+                <button disabled={busy} onclick={doCheckIn}>체크아웃</button>
+            </p>
 
-      <div style={{ marginTop: 16 }}>
-        <button onClick={() => navigate(`/bookings/${id}/edit`)}>수정</button>{" "}
-        <button onClick={onDelete}>삭제</button>{" "}
-        <button onClick={() => navigate("/bookings")}>목록</button>
-      </div>
-    </div>
-  );
-};
+            <h3>메모</h3>
+            <input 
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="메모 입력"
+            />
+            <button disabled={busy} onClick={onAddNote}>추가</button>
 
-export default BookingDetail;
+            {Array.isArray(data.notes) && data.notes.length > 0 && (
+                <ul>
+                    {data.notes.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+            )}
+        </div>
+    );    
+}

@@ -1,142 +1,70 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { getBooking, updateBooking } from "../../api/bookingAPI";
 
-/**
- * 예약 수정
- * - 기존 데이터 로드 후 수정
- */
-const STATUSES = ["PENDING", "CONFIRMED", "CANCELLED"];
-const PAYMENT_STATUSES = ["UNPAID", "PAID", "REFUNDED"];
+export default function BookingEdit(){
+    const { id } = useParams();
+    const nav = useNavigate();
+    const [form, setForm] = useState(null);
+    const [saving, setSaving] = useState(false);
 
-const BookingEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await getBooking(id);
+                setForm({
+                    userId: data.userId ?? "",
+                    propertyId: data.propertyId ?? "",
+                    roomId: data.roomId ?? "",
+                    checkIn: data.checkIn ?? "", 
+                    checkOut: data.checkOut ?? "",
+                    guests: data.guests ?? 1,
+                    note: data.note ?? ""
+                });
+            } catch (e) {
+                alert(e.message);
+            }
+        })();
+    }, [id]);
 
-  const [status, setStatus] = useState("PENDING");
-  const [paymentStatus, setPaymentStatus] = useState("UNPAID");
-  const [checkinDate, setCheckinDate] = useState("");
-  const [checkoutDate, setCheckoutDate] = useState("");
-  const [guests, setGuests] = useState(1);
-  const [totalAmount, setTotalAmount] = useState(0);
+    const onChange = (e) => {
+        const { name, value } = e.target;
+        setForm((f) => ({ ...f, [name]: value }));
+    };
 
-  const [errMsg, setErrMsg] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            const payload = {
+                ...form,
+                userId: form.userId ? Number(form.userId) : undefined,
+                propertyId: form.propertyId ? Number(form.propertyId) : undefined,
+                roomId: form.roomId ? Number(form.roomId) : undefined,
+                guests: Number(form.guests)
+            };
+            await updateBooking(id, payload);
+            alert("수정되었다.");
+            nav(`/booking/${id}`);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
 
-  const validate = () => {
-    if (!checkinDate) return "체크인 날짜를 선택하세요.";
-    if (!checkoutDate) return "체크아웃 날짜를 선택하세요.";
-    if (checkoutDate < checkinDate) return "체크아웃은 체크인 이후여야 합니다.";
-    if (!Number.isFinite(Number(guests)) || Number(guests) <= 0) return "인원 수는 1 이상이어야 합니다.";
-    if (!Number.isFinite(Number(totalAmount)) || Number(totalAmount) < 0) return "총 금액은 0 이상이어야 합니다.";
-    return "";
-  };
+    if (!form) return <div>불러오는 중 . . . </div>;
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      setErrMsg("");
-      const data = await getBooking(id);
-      setStatus(data.status || "PENDING");
-      setPaymentStatus(data.paymentStatus || "UNPAID");
-      setCheckinDate(data.checkinDate || "");
-      setCheckoutDate(data.checkoutDate || "");
-      setGuests(data.guests ?? 1);
-      setTotalAmount(data.totalAmount ?? 0);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("기존 예약 정보를 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const v = validate();
-    if (v) { setErrMsg(v); return; }
-
-    try {
-      setSubmitting(true);
-      setErrMsg("");
-
-      const body = {
-        status,
-        paymentStatus,
-        checkinDate,
-        checkoutDate,
-        guests: Number(guests),
-        totalAmount: Number(totalAmount),
-      };
-
-      await updateBooking(id, body);
-      navigate(`/bookings/${id}`);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("예약 수정에 실패했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  useEffect(() => { load(); }, [id]);
-
-  if (loading) return <div>로딩 중...</div>;
-
-  return (
-    <div style={{ padding: 16 }}>
-      <h1>예약 수정</h1>
-      {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            상태{" "}
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            결제 상태{" "}
-            <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)}>
-              {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            체크인{" "}
-            <input type="date" value={checkinDate} onChange={(e) => setCheckinDate(e.target.value)} required />
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            체크아웃{" "}
-            <input type="date" value={checkoutDate} onChange={(e) => setCheckoutDate(e.target.value)} required />
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            인원 수{" "}
-            <input type="number" min={1} value={guests} onChange={(e) => setGuests(e.target.value)} required />
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            총 금액{" "}
-            <input type="number" min={0} value={totalAmount} onChange={(e) => setTotalAmount(e.target.value)} required />
-          </label>
-        </div>
-
-        <div>
-          <button type="submit" disabled={submitting}>{submitting ? "수정 중..." : "수정"}</button>{" "}
-          <button type="button" onClick={() => navigate(`/bookings/${id}`)}>상세</button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-export default BookingEdit;
+    return (
+        <form onSubmit={onSubmit}>
+            <label>User ID <input name="userId" value={form.userId} onChange={onChange} /></label><br/>
+            <label>Property ID <input name="propertyId" value={form.propertyId} onChange={onChange} /></label><br/>
+            <label>Room Id <input name="roomId" value={form.roomID} onChange={onChange} /></label><br/>
+            <label>Check In <input type="date" name="checkIn" value={form.checkIn} onChange={onChange} /></label><br/>
+            <label>Check Out<input type="date" name="checkOut" value={form.checkOut} onChange={onChange} /></label><br/>
+            <label>Guests <input type="number" name="guests" value={form.guests} onChange={onChange} /></label><br/>
+            <label>Note <textarea name="note" value={form.note} onChange={onChange} rows={3} /></label><br/>
+            <button disabled={saving} type="submit">{saving ? "저장 중. . ." : "저장"}</button>
+            <button type="button"  onClick={() => window.history.back()}>취소</button>
+        </form>
+    )
+}

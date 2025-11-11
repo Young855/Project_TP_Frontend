@@ -1,15 +1,15 @@
-import FavoriteList from "../favorite/FavoriteList";
-import FavoriteCreate from "../favorite/FavoriteCreate";
-import FavoriteDetail from "../favorite/FavoriteDetail";
-import FavoriteEdit from "../favorite/FavoriteEdit";
+import FavoriteCreate from "../pages/favorite/FavoriteCreate";
+import FavoriteDetail from "../pages/favorite/FavoriteDetail";
+import FavoriteEdit from "../pages/favorite/FavoriteEdit";
+import FavoritePage from "../pages/favorite/FavoritePage";
 
 const FavoriteRouter = [
   {
-    path: "favorite",
+    path: "favorites",
     children: [
       {
         index: true,
-        element: <FavoriteList />,
+        element: <FavoritePage />,
       },
       {
         path: "create",

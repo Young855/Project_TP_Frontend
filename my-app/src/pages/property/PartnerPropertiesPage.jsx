@@ -139,7 +139,7 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
           </tbody>
         </table>
       </div>
-\
+      
       {selectedProperty && (
          <RoomManagementModal
             isOpen={isRoomModalOpen}

@@ -1,102 +1,91 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createFavorite } from "../../api/favoriteAPI";
+import { addFavorite } from "../../api/favoriteAPI";
 
-/**
- * 즐겨찾기 생성
- * - 기본적으로 targetType / targetId만 필요(백엔드 정책에 따라 user는 인증 컨텍스트)
- * - targetType은 enum(TargetType). 현재는 PROPERTY 고정 가능
- */
-const FavoriteCreate = () => {
+export default function FavoriteCreate({ userId }) {
+  const [targetType] = useState("PROPERTY");
+  const [targetId, setTargetId] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // targetType이 고정(PROPERTY)이라면 아래를 상수로 두고 select를 제거해도 됨.
-  const [targetType, setTargetType] = useState("PROPERTY");
-  const [targetId, setTargetId] = useState("");
-
-  // 필요 시 userId를 직접 넘겨야 하는 백엔드 정책이라면 폼에 추가하세요.
-  // const [userId, setUserId] = useState("");
-
-  const [errMsg, setErrMsg] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const validate = () => {
-    if (!targetType?.trim()) return "targetType을 선택하세요.";
-    if (!targetId || Number(targetId) <= 0) return "targetId를 올바르게 입력하세요.";
-    return "";
-  };
-
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const v = validate();
-    if (v) { setErrMsg(v); return; }
+    if (!targetId) return alert("숙소를 검색하세요. ");
 
     try {
-      setSubmitting(true);
-      setErrMsg("");
-
-      const body = {
-        targetType,
-        targetId: Number(targetId),
-        // ...(userId ? { userId: Number(userId) } : {}) // 정책에 따라 사용
-      };
-
-      const res = await createFavorite(body);
-      const newId = res?.favoriteId;
-      if (newId) navigate(`/favorites/${newId}`);
-      else navigate("/favorites");
-    } catch (e) {
-      console.error(e);
-      setErrMsg("즐겨찾기 생성에 실패했습니다.");
+      setLoading(true);
+      await addFavorite(userId, { targetType, targetId });
+      alert("찜이 추가되었습니다!");
+      navigate("/favorites");
+    } catch (err) {
+      alert("찜 추가 실패: " + err.message);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>즐겨찾기 추가</h1>
-      {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
+    // 🔹 화면 전체 중앙 정렬
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",   // 가로 중앙
+        alignItems: "center",       // 세로 중앙
+        minHeight: "80vh",          // 화면 세로 기준 높이 확보
+        backgroundColor: "#f9fafb", // (선택) 배경색 살짝
+      }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "grid",
+          gap: 12,
+          maxWidth: 400,
+          width: "100%",
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 12,
+          padding: 24,
+          boxShadow: "0 4px 14px rgba(0,0,0,0.06)", // 박스 그림자
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 22, textAlign: "center" }}>숙소 이름 검색</h2>
 
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            Target Type{" "}
-            <select value={targetType} onChange={(e) => setTargetType(e.target.value)}>
-              <option value="PROPERTY">PROPERTY</option>
-              {/* 다른 타입이 생기면 여기에 추가 */}
-            </select>
-          </label>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            Target ID{" "}
-            <input
-              type="number"
-              value={targetId}
-              onChange={(e) => setTargetId(e.target.value)}
-              min={1}
-              required
-              placeholder="숙소 ID"
-            />
-          </label>
-        </div>
+        <label style={{ fontWeight: 500 }}>
+          
+          <input
+            type="number"
+            value={targetId}
+            onChange={(e) => setTargetId(e.target.value)}
+            style={{
+              marginTop: 4,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "1px solid #e5e7eb",
+              outline: "none",
+              width: "100%",
+            }}
+          />
+        </label>
 
-        {/* 백엔드 정책에 따라 노출 */}
-        {/* <div style={{ marginBottom: 10 }}>
-          <label>
-            User ID (옵션){" "}
-            <input type="number" value={userId} onChange={(e) => setUserId(e.target.value)} />
-          </label>
-        </div> */}
-
-        <div>
-          <button type="submit" disabled={submitting}>{submitting ? "생성 중..." : "생성"}</button>{" "}
-          <button type="button" onClick={() => navigate("/favorites")}>목록</button>
-        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 10,
+            border: "1px solid #e5e7eb",
+            background: loading ? "#9ca3af" : "#111827",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+            minWidth: 160,
+            justifySelf: "center", 
+          }}
+        >
+          {loading ? "등록 중 ..." : "찜 추가"}
+        </button>
       </form>
     </div>
   );
-};
-
-export default FavoriteCreate;
+}

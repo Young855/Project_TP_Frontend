@@ -1,51 +1,58 @@
 import axios from "axios";
-import { FAVORITE_ENDPOINTS, axiosConfig } from "../config"; 
 
-// axios 인스턴스 생성
-const api = axios.create(axiosConfig);
+const api = axios.create({
+  baseURL: "http://localhost:8080", // 백엔드 주소에 맞게 조정
+  withCredentials: true,
+});
 
-// 모든 즐겨찾기 조회 (GET /favorites)
-export const getAllFavorites = async () => {
-    try {
-        const response = await api.get(FAVORITE_ENDPOINTS.FAVORITES.LIST);
-        return response.data;
-    } catch (error) {
-        console.error("즐겨찾기 리스트 조회 오류:", error);
-        throw error;
-    }
+// 1 내 즐겨찾기 목록 조회
+export const getFavorites = async (userId) => {
+  try {
+    const res = await api.get("/favorites", {
+      params: { userId },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("즐겨찾기 목록 조회 오류:", err);
+    throw err;
+  }
 };
 
-// 단일 즐겨찾기 조회 (GET /favorites/{id})
-export const getFavorite = async (id) => {
-    try {
-        const response = await api.get(FAVORITE_ENDPOINTS.FAVORITES.GET(id));
-        return response.data;
-    } catch (error) {
-        console.error(`즐겨찾기 ${id} 조회 오류:`, error);
-        throw error;
-    }
+// 2 즐겨찾기 생성 (찜 추가)
+export const addFavorite = async (userId, data) => {
+  try {
+    const res = await api.post("/favorites", data, {
+      params: { userId },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("즐겨찾기 생성 오류:", err);
+    throw err;
+  }
 };
 
-// 즐겨찾기 생성 (POST /favorites)
-export const createFavorite = async (favoriteData) => {
-    try {
-        const response = await api.post(FAVORITE_ENDPOINTS.FAVORITES.ADD, favoriteData);
-        return response.data;
-    } catch (error) {
-        console.error("즐겨찾기 생성 오류:", error);
-        throw error;
-    }
+// 3 즐겨찾기 삭제 (찜 해제)
+export const removeFavorite = async (userId, targetType, targetId) => {
+  try {
+    const res = await api.delete("/favorites", {
+      params: { userId, targetType, targetId },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("즐겨찾기 삭제 오류:", err);
+    throw err;
+  }
 };
 
-// 즐겨찾기 삭제 (DELETE /favorites/{id})
-export const deleteFavorite = async (id) => {
-    try {
-        const response = await api.delete(FAVORITE_ENDPOINTS.FAVORITES.DELETE(id));
-        return response.data;
-    } catch (error) {
-        console.error(`즐겨찾기 ${id} 삭제 오류:`, error);
-        throw error;
-    }
+// 4 즐겨찾기 여부 확인
+export const checkFavorite = async (userId, targetType, targetId) => {
+  try {
+    const res = await api.get("/favorites/check", {
+      params: { userId, targetType, targetId },
+    });
+    return res.data; // true or false
+  } catch (err) {
+    console.error("즐겨찾기 여부 확인 오류:", err);
+    throw err;
+  }
 };
-
-// 참고: FavoriteController.java 파일에 PUT/UPDATE 엔드포인트가 없으므로 updateFavorite 함수는 정의하지 않습니다.

@@ -21,6 +21,9 @@ import LoginSelectionPage from './pages/LoginSelection';
 import PartnerRouter from './routers/PartnerRouter';
 import SideDrawer from './components/SideDrawer';
 import PropertyRouter from './routers/PropertyRouter';
+import FavoritePage from './pages/favorite/FavoritePage';
+import FavoriteRouter from './routers/FavoriteRouter';
+
 // 필요한 다른 컴포넌트들도 추가해야 합니다.
 
 // --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
@@ -168,13 +171,13 @@ const router = createBrowserRouter([
             },
             
             { path: "find-password", element: <FindPasswordPage /> },
-
+         
             { path: "search-results", element: <SearchResultsPage /> },
             { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
             { path: "booking", element: <BookingPage /> },
             { path: "payment", element: <PaymentPage /> },
             { path: "loginSelection", element: <LoginSelectionPage/> },
-            
+
             { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
             { path: "write-review", element: <WriteReviewPage /> },
         
@@ -187,7 +190,7 @@ const router = createBrowserRouter([
             ...UserRouter,
             ...PartnerRouter,
             ...PropertyRouter,
-            
+            ...FavoriteRouter,
         
         ] 
     }

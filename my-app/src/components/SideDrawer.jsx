@@ -1,9 +1,7 @@
 // SideDrawer.jsx
 
 import React from 'react';
-import { 
-  X, LogOut, User 
-} from 'lucide-react';
+import { X, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -109,7 +107,9 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
             <NavItem to="/itinerary">내 일정</NavItem>
             <NavItem to="/community">커뮤니티</NavItem>
             <NavItem to="/partner/properties">숙소 등록</NavItem>
-            <div className="border-t my-2"></div> {/* 구분선 */}
+            <NavItem to="/bookings">예약 내역</NavItem>
+            <NavItem to="/favorites">찜 목록</NavItem>
+          <div className="border-t my-2"></div> {/* 구분선 */}
             
             
           </div>

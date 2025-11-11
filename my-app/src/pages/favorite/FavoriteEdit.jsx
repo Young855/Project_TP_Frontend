@@ -1,30 +1,75 @@
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, useParams } from "react-router-dom";
+import { addFavorite, getFavorites, removeFavorite } from "../../api/favoriteAPI";
 
-/**
- * 즐겨찾기 수정
- * - 현재 백엔드에 PUT/UPDATE 엔드포인트가 없어 수정 불가
- * - 안내 화면: 필요 시 삭제 후 재생성하도록 유도
- */
-const FavoriteEdit = () => {
+export default function FavoriteEdit({ userId }) {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const [targetType, setTargetType] = useState("");
+  const [targetId, setTargetId] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await getFavorites(userId);
+        const fav = list.find((f) => String(f.favoriteId) === id);
+        if (fav) {
+          setTargetType(fav.targetType);
+          setTargetId(fav.targetId);
+        }
+      } catch (err) {
+        console.error("수정 데이터 불러오기 오류:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [userId, id]);
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await removeFavorite(userId, targetType, targetId);
+      await addFavorite(userId, { targetType, targetId });
+      alert ("찜이 수정되었다.");
+      Navigate("/favorites");
+    } catch (err) {
+      alert("수정 실패:" + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>로 딩 중 . . . </div>;
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>즐겨찾기 수정</h1>
-      <div style={{ margin: "12px 0", color: "#b45309" }}>
-        현재 시스템에서는 즐겨찾기 수정(UPDATE)을 지원하지 않습니다.
-        <br />
-        변경이 필요하다면 <b>기존 즐겨찾기를 삭제</b>하고 <b>새로 생성</b>해 주세요.
-      </div>
-      <div>
-        <button onClick={() => navigate(`/favorites/${id}`)}>상세로</button>{" "}
-        <button onClick={() => navigate("/favorites")}>목록으로</button>{" "}
-        <button onClick={() => navigate("/favorites/create")}>새로 생성</button>
-      </div>
+    <div>
+      <h2>찜 수정</h2>
+      <form onSubmit={handleUpdate} style={{ display: "grid", gap: 12, maxWidth: 400}}>
+        <label>
+          대상 종류
+          <select value={targetType}
+           onChange={(e) => setTargetType(e.target.value)}
+           >
+            <option value="PROPERTY">숙소</option>
+            <option value="REVIEW">리뷰</option>
+            <option value="POST">게시글</option>
+          </select>
+        </label>
+
+        <label>
+          대상 ID
+          <input 
+            type="number"
+            value={targetId}
+            onChange={(e) => setTargetId(e.target.value)}
+          />
+        </label>
+
+        <button type="submit" disabled={loading}>
+          {loading ? "저장 중..." : "저장"}
+        </button>
+      </form>
     </div>
   );
-};
-
-export default FavoriteEdit;
+}

@@ -1,41 +1,82 @@
+import axios from "axios"; 
 import React, { useState } from "react";
 import { useNavigate, Form, Link, useSearchParams } from "react-router-dom"; 
-import DaumPostcode from 'react-daum-postcode';
-
-// 💡 PropertyType.java Enum 값에 맞춥니다.
 const PROPERTY_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; 
 
 const PropertyCreatePage = () => { 
     const navigate = useNavigate();
-    // URL에서 partnerId를 추출합니다.
-    const [searchParams] = useSearchParams();
-    // 쿼리 파라미터가 없을 경우 임시 기본값 1을 사용합니다.
+    const [searchParams] = useSearchParams();  
     const partnerId = searchParams.get('partnerId') || 1; 
-
-    // 주소 및 위치 상태
     const [addressFull, setAddressFull] = useState(""); 
     const [city, setCity] = useState(""); 
     const [latitude, setLatitude] = useState("");
     const [longitude, setLongitude] = useState("");
     
     const [errMsg, setErrMsg] = useState("");
-    
-
-    
-    // 💡 도로명 주소 API 연동을 위한 구조만 유지하고, 현재는 텍스트 입력 가능하도록 수정
-    const handleAddressSearch = () => {
-        // [수정] alert 대신 console.log 사용
-        console.log("도로명 주소 검색 API를 호출합니다. (실제 구현 예정)");
+    const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
+    const handleAddressSearch = async () => {
         
-        // Mock/Demo 주소 설정
-        setAddressFull("서울 강남구 테헤란로 123");
-        setCity("강남구");
-        setLatitude(37.50123);
-        setLongitude(127.03789);
+        if (!KAKAO_API_KEY) {
+            setErrMsg("Kakao API 키가 설정되지 않았습니다. .env 파일을 확인하세요.");
+            return;
+        }
+        
+        // 입력값이 비어있는지 확인
+        if (addressFull.trim() === '') {
+            setErrMsg('주소를 입력한 후 검색 버튼을 눌러주세요.');
+            return;
+        }
+
+        try {
+            const response = await axios.get(
+                'https://dapi.kakao.com/v2/local/search/address.json',
+                {
+                    params: { 
+                        query: addressFull // state에 저장된 addressFull 값을 query로 사용
+                    },
+                    headers: { 
+                        Authorization: `KakaoAK ${KAKAO_API_KEY}` 
+                    },
+                }
+            );
+
+            // API 결과가 1개 이상 있을 경우
+            if (response.data.documents.length > 0) {
+                const firstResult = response.data.documents[0];
+                
+                // 도로명 주소가 있으면 도로명 주소를, 없으면 지번 주소를 사용
+                const fullAddr = firstResult.road_address 
+                               ? firstResult.road_address.address_name 
+                               : firstResult.address.address_name;
+                
+                // 시/군/구 (API 응답의 region_2depth_name 사용)
+                const cityAddr = firstResult.road_address 
+                               ? firstResult.road_address.region_2depth_name 
+                               : firstResult.address.region_2depth_name;
+
+                // [수정] 검색된 결과로 state를 업데이트합니다.
+                setAddressFull(fullAddr); // 표준화된 전체 주소로 업데이트
+                setCity(cityAddr || "");  // 시/군/구 정보로 업데이트
+                setLatitude(firstResult.y);   // 위도
+                setLongitude(firstResult.x);  // 경도
+                
+                setErrMsg(""); // 성공 시 에러 메시지 초기화
+
+            } else {
+                // 검색 결과가 없을 경우
+                setErrMsg('검색 결과가 없습니다. 주소를 확인해주세요.');
+                setLatitude(""); // 기존 좌표 초기화
+                setLongitude("");
+                setCity("");
+            }
+
+        } catch (error) {
+            console.error('API 호출 중 오류 발생:', error);
+            setErrMsg('API 호출 중 오류가 발생했습니다.');
+        }
     };
 
     const handleCancel = () => {
-        // 취소 버튼 클릭 시 숙소 목록 페이지로 이동
         navigate("/partner/properties");
     }
 
@@ -47,10 +88,8 @@ const PropertyCreatePage = () => {
                 action="/partner/properties/new" 
                 className="bg-white shadow-md rounded-lg p-6 space-y-4"
             >
-                {/* 1. 파트너 ID (FK) - Hidden Field (URL에서 가져온 값을 사용) */}
                 <input type="hidden" name="partnerId" defaultValue={partnerId} />
                 
-                {/* 2. 숙소명 (name) - 필수 */}
                 <div>
                     <label className="form-label" htmlFor="name">숙소명</label>
                     <input 
@@ -80,7 +119,6 @@ const PropertyCreatePage = () => {
                     </select>
                 </div>
 
-                {/* 4. 주소 (address) 및 도시 (city) - 필수 */}
                 <div>
                     <label className="form-label">주소</label>
                     <div className="flex space-x-2">
@@ -88,6 +126,7 @@ const PropertyCreatePage = () => {
                             type="text"
                             name="address"
                             value={addressFull} 
+                            // [수정] 사용자가 직접 입력할 수 있도록 onChange 핸들러 유지
                             onChange={(e) => setAddressFull(e.target.value)}
                             className="form-input flex-1" 
                             placeholder="도로명 주소를 입력하거나 '주소 검색'을 이용하세요" 
@@ -97,12 +136,16 @@ const PropertyCreatePage = () => {
                         <button
                             type="button" // 폼 전송 방지
                             onClick={handleAddressSearch}
-                            // [수정] 버튼 폭을 w-28로 지정하여 글자 깨짐 방지 및 가로 크기 확보
                             className="btn-secondary whitespace-nowrap w-30 text-gray-700" 
                         >
                             주소 검색
                         </button>
                     </div>
+                    
+                    {/* [추가] 에러 메시지를 사용자에게 보여줍니다. */}
+                    {errMsg && (
+                        <p className="text-sm text-red-500 mt-1">{errMsg}</p>
+                    )}
                 </div>
                 
                 <div>
@@ -111,19 +154,20 @@ const PropertyCreatePage = () => {
                         name="city" 
                         id="city"
                         value={city}
+                        // [수정] '주소 검색' 결과로 자동 채워지므로 읽기 전용 또는 disabled 처리 권장
+                        // 여기서는 수동 입력도 가능하도록 onChange를 유지합니다.
                         onChange={(e) => setCity(e.target.value)}
                         className="form-input w-full"
                         maxLength={100}
-                        placeholder="예: 서울, 강남구"
+                        placeholder="예: 서울, 강남구 (주소 검색 시 자동 입력)"
                         required
                     />
                 </div>
                 
-                {/* 5. 위도/경도 (latitude/longitude) - Hidden Fields (주소 검색 시 채워짐) */}
+                {/* 위도/경도는 state 값에 의해 자동으로 채워집니다. */}
                 <input type="hidden" name="latitude" value={latitude} />
                 <input type="hidden" name="longitude" value={longitude} />
 
-                {/* 6. 숙소 설명 (description) */}
                 <div>
                     <label className="form-label" htmlFor="description">숙소 설명</label>
                     <textarea 

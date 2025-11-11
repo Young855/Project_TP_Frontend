@@ -95,8 +95,6 @@ function MainLayout() {
         });
     };
     
-    // R013: 인증이 필요한 페이지 접근 시 처리 (라우터에서 직접 처리하기 어려워 Layout에서 처리)
-    // 이 로직은 각 페이지 컴포넌트에서 `useLocation`과 함께 더 명확하게 처리하는 것이 일반적입니다.
     const checkAuthAndNavigate = (path) => {
         const protectedPaths = ['/user/mypage', '/itinerary', '/booking', '/payment', '/write-review'];
         
@@ -146,12 +144,17 @@ function MainLayout() {
                 <Outlet context={appProps} />
             </main>
 
+            {/* --- [이 부분을 수정했습니다] --- */}
             <Modal
                 isOpen={modal.isOpen}
                 onClose={closeModal}
                 title={modal.title}
+                // 1. onConfirm 함수가 있으면 '확인' 텍스트를 전달
                 confirmText={modal.onConfirm ? '확인' : null}
                 onConfirm={modal.onConfirm}
+                // 2. onConfirm 함수가 있으면 '취소' 텍스트를 null로 만들어 숨김
+                //    (Modal.jsx가 cancelText="취소"를 기본값으로 가졌다고 가정)
+                cancelText={modal.onConfirm ? null : '취소'}
             >
                 <p>{modal.content}</p>
             </Modal>

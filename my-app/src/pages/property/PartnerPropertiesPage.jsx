@@ -1,6 +1,6 @@
 // 파일: src/pages/property/PartnerPropertiesPage.jsx (최종 확인 및 코드 유지)
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { getPropertiesByPartnerId, deleteProperty } from '../../api/propertyAPI'; 
 import RoomManagementModal from '../../components/RoomManagementModal'; 

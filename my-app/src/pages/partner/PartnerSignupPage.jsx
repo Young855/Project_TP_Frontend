@@ -1,47 +1,14 @@
 // PartnerSignupPage.jsx (Step 2)
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
-// 🚀 API 호출 로직 구조 Placeholder 1: 파트너 생성 (무조건 성공)
-// TODO: 실제 서버의 파트너 등록 API 엔드포인트로 교체해야 합니다.
-const createPartner = async (data) => {
-    console.log("--- 파트너 등록 API 호출 시도 (Placeholder: 무조건 성공) ---");
-    console.log("전송 데이터:", data);
-    
-    // 1. API 호출 시뮬레이션 (네트워크 지연)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 2. ⚠️ 실제 API 호출 로직 Placeholder (주석 처리)
-    /*
-    try {
-        const response = await axios.post('YOUR_SERVER_URL/api/partner/signup', data);
-        return response.data; // 서버 응답 반환
-    } catch (error) {
-        console.error("실제 API 호출 오류:", error);
-        // throw error; // 오류 발생 시 catch 블록으로 던지기
-    }
-    */
-
-    // 3. Mock 성공 응답 반환 (로직 구조 완성 시까지 유지)
-    return { success: true, partnerId: 'P12345', ...data };
-};
-
-const checkPartnerEmailDuplication = async (email) => {
-    console.log("--- 이메일 중복 확인 API 호출 시도 (Placeholder: 무조건 사용 가능) ---");
-    console.log("확인 이메일:", email);
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    try {
-       const response = await axios.get(`partner/checkEmail?email=${email}`);
-       return response.data.isDuplicated;
-    } catch (error) {
-       console.error("실제 API 호출 오류:", error);
-    }
-    
-    return false; 
-};
+import { 
+    createPartner, 
+    checkPartnerEmailDuplication, 
+    sendPartnerVerificationEmail, 
+    verifyPartnerEmailCode        
+} from '../../api/partnerAPI'; 
 
 export default function PartnerSignupPage() {
   const navigate = useNavigate();
@@ -66,6 +33,9 @@ export default function PartnerSignupPage() {
   const [bizNameError, setBizNameError] = useState('');
   const [bizVerificationError, setBizVerificationError] = useState(''); 
   
+  const [showAuthCodeInput, setShowAuthCodeInput] = useState(false);
+  const [authCode, setAuthCode] = useState('');
+  const [authCodeError, setAuthCodeError] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false); 
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
@@ -117,31 +87,60 @@ export default function PartnerSignupPage() {
     }
   };
   
-  /* --- 중복 확인 핸들러 --- */
   const handleEmailCheck = async () => {
-    if (!validateEmail(contactEmail)) return;
+    if (!validateEmail(contactEmail)) {
+        setIsEmailVerified(false); 
+        setShowAuthCodeInput(false);
+        return;
+    }
 
     try {
         setIsSubmitting(true); 
-        
-        // 💡 Placeholder 함수 호출
         const isDuplicated = await checkPartnerEmailDuplication(contactEmail); 
         
         if (isDuplicated) { 
-            // Mock이 false를 반환하므로 실행 안 됨
             setEmailError('이미 등록된 사업자 이메일입니다.'); 
             setIsEmailVerified(false);
+            setShowAuthCodeInput(false);
         } else {
-            // Mock이 false를 반환하므로 실행됨 (사용 가능)
-            setEmailError('사용 가능한 이메일입니다.');
-            setIsEmailVerified(true);
+            await sendPartnerVerificationEmail(contactEmail);
+            setEmailError('사용 가능한 이메일입니다. 인증번호를 발송했습니다.');
+            setShowAuthCodeInput(true);
+            setIsEmailVerified(false); // 코드를 확인해야만 true가 됨
+            setAuthCodeError('');
         }
     } catch (error) {
-        console.error('이메일 중복 확인 중 예기치 않은 오류 발생:', error);
-        setEmailError('중복 확인 중 오류가 발생했습니다.');
+        const errorMsg = error.response?.data?.message || '이메일 확인 중 오류가 발생했습니다.';
+        console.error('이메일 확인 중 예기치 않은 오류 발생:', error);
+        setEmailError(errorMsg);
         setIsEmailVerified(false);
+        setShowAuthCodeInput(false);
     } finally {
         setIsSubmitting(false); 
+    }
+  };
+  const handleVerifyCode = async () => {
+    if (!authCode.trim()) {
+      setAuthCodeError('인증번호를 입력해주세요.');
+      return;
+    }
+    
+    try {
+      const isVerified = await verifyPartnerEmailCode(contactEmail, authCode);
+      
+      if (isVerified) {
+        setIsEmailVerified(true);
+        setAuthCodeError('');
+        setShowAuthCodeInput(false);
+        setEmailError('이메일 인증이 완료되었습니다.');
+        window.alert('이메일 인증이 완료되었습니다.');
+      } else {
+        setIsEmailVerified(false);
+        setAuthCodeError('인증번호가 올바르지 않습니다.');
+      }
+    } catch (error) {
+      setIsEmailVerified(false);
+      setAuthCodeError('인증번호 확인 중 오류가 발생했습니다.');
     }
   };
   
@@ -160,7 +159,7 @@ export default function PartnerSignupPage() {
     if (newPasswordConfirm.length > 0 && passwordConfirmError) { setPasswordConfirmError(''); }
   };
 
-  /* --- 최종 제출 핸들러 (Mock 로직에 맞게 조정) --- */
+  /* --- 최종 제출 핸들러 --- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting || !isBizInfoVerified) return;
@@ -198,22 +197,22 @@ export default function PartnerSignupPage() {
     if (isValid) {
         setIsSubmitting(true);
         
+        // [수정] partnerData 객체를 Partner.java Entity 필드명과 100% 일치시킵니다.
         const partnerData = {
-            email: contactEmail, 
-            passwordHash: password, 
-            name: bizName,  
-
-            // Partner 상세 정보 (Step 2 입력 및 Step 1 전달 데이터)
+            // 'email'과 'name' 필드는 Partner.java에 없으므로 제거합니다.
+            
+            // Partner Entity 필드
             bizName,
             contactEmail,
             contactPhone: contactPhone.trim() || null, 
             bizRegNumber,
             ceoName,
-            openingDate, 
+            openingDate,
+            passwordHash: password // React의 'password' state 값을 'passwordHash' key로 보냅니다.
         };
 
         try {
-            // 💡 Placeholder 함수 호출
+            // 💡 [수정] import한 API 함수를 호출합니다.
             const createdPartner = await createPartner(partnerData); 
 
             console.log('파트너 등록 성공:', createdPartner);
@@ -221,7 +220,7 @@ export default function PartnerSignupPage() {
             
             navigate('/partner/login'); 
         } catch (error) {
-            // Placeholder는 throw를 안 하므로 실행되지 않음. 실제 API 연동을 위해 구조 유지
+            // partnerAPI.js에서 throw한 에러를 처리합니다.
             const errorMessage = error.response?.data?.message || error.message || '파트너 등록 중 알 수 없는 오류가 발생했습니다.';
             console.error('파트너 등록 중 예기치 않은 오류 발생:', error);
             window.alert(`등록 실패: ${errorMessage}`);
@@ -273,7 +272,6 @@ export default function PartnerSignupPage() {
               {bizNameError && <p className="text-red-500 text-sm mt-1">{bizNameError}</p>}
           </div>
           
-          {/* 비즈니스 이메일 (contactEmail) */}
           <div>
             <label htmlFor="contactEmail" className="form-label">비즈네스 이메일 (아이디)</label>
             <div className="flex space-x-2 items-center">
@@ -286,27 +284,62 @@ export default function PartnerSignupPage() {
                     setContactEmail(e.target.value);
                     setIsEmailVerified(false); 
                     setEmailError('');
+                    setShowAuthCodeInput(false);
+                    setAuthCode('');
+                    setAuthCodeError('');
                 }}
                 onBlur={() => validateEmail(contactEmail)}
-                className={`form-input flex-1 ${emailError && 'border-red-500'}`} 
+                className={`form-input flex-1 ${emailError && !isEmailVerified ? 'border-red-500' : ''} ${isEmailVerified ? 'border-green-500' : ''}`} 
                 placeholder="파트너 연락용 이메일"
                 required
-                disabled={isSubmitting} 
+                disabled={isSubmitting || showAuthCodeInput || isEmailVerified} // [수정] 인증 중/완료 시 비활성화
               />
               <button
                 type="button"
                 onClick={handleEmailCheck}
-                // isEmailVerified가 true이면 비활성화됨
-                disabled={!contactEmail || !!emailError || isSubmitting || isEmailVerified}
+                disabled={!contactEmail || !!emailError || isSubmitting || isEmailVerified || showAuthCodeInput} // [수정]
                 className="bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors duration-200 
                            rounded-lg font-medium text-sm flex-shrink-0 whitespace-nowrap flex items-center justify-center 
-                           w-28 py-3 px-4 disabled:text-gray-600 disabled:opacity-100" 
+                           w-28 py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed" // [수정] disabled 스타일 변경
               >
-                {isSubmitting && emailError === '' ? '확인 중...' : '중복 확인'}
+                {isEmailVerified ? "인증 완료" : (isSubmitting && emailError === '' ? '확인 중...' : '중복 확인')}
               </button>
             </div>
-            {emailError && <p className={`text-sm mt-1 ${isEmailVerified && emailError === '사용 가능한 이메일입니다.' ? 'text-blue-500' : 'text-red-500'}`}>{emailError}</p>}
+            {emailError && (
+                <p className={`text-sm mt-1 ${isEmailVerified ? 'text-green-500' : (emailError === '사용 가능한 이메일입니다. 인증번호를 발송했습니다.' ? 'text-blue-500' : 'text-red-500')}`}>
+                    {emailError}
+                </p>
+            )}
           </div>
+
+          {showAuthCodeInput && (
+            <div>
+              <label htmlFor="authCode" className="form-label">인증번호</label>
+              <div className="flex space-x-2">
+                <input
+                  id="authCode"
+                  type="text"
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value)}
+                  className={`form-input flex-1 ${authCodeError ? 'border-red-500' : ''}`}
+                  placeholder="이메일로 전송된 6자리 숫자"
+                  maxLength={6}
+                />
+                <button 
+                  type="button" 
+                  onClick={handleVerifyCode} 
+                  className="w-28 bg-blue-500 text-white hover:bg-blue-600 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out"
+                >
+                  번호 확인
+                </button>
+              </div>
+              {authCodeError && (
+                <p className="text-sm mt-1 text-red-500">
+                  {authCodeError}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 비밀번호 */}
           <div>

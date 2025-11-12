@@ -1,81 +1,122 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getAllItineraries, deleteItinerary } from "../../api/itineraryAPI";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getItinerary, updateItinerary } from "../../api/itineraryAPI";
 
-/**
- * 여행 일정 목록
- */
-const ItineraryList = () => {
-  const navigate = useNavigate();
+const toFromForBackend = (fromDateStr) =>
+  fromDateStr ? `${fromDateStr}T00:00:00` : undefined;
+
+export default function ItineraryList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [errMsg, setErrMsg] = useState("");
+  const [err, setErr] = useState("");
 
-  const load = async () => {
+  const [filters, setFilters] = useState({
+    userId: "",
+    from: "",
+    to: "",
+  });
+
+  const fetchList = async () => {
+    setErr("");
+    setLoading(true);
     try {
-      setLoading(true);
-      setErrMsg("");
-      const data = await getAllItineraries();
-      setItems(Array.isArray(data) ? data : data?.content || []);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("여행 일정 목록을 불러오지 못했습니다.");
+      const params = {};
+      if (filters.userId) params.userId = Number(filters.userId);
+      if (filters.from) params.from = toFromForBackend(filters.from); 
+      if (filters.to) params.to = filters.to;
+      
+      const data = await getItineraries(params);
+      setItems(data);
+    } catch (error) {
+      setErr(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { fetchList(); /* 초기 로드 */ }, []);
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((p) => ({ ...p, [name]: value }));
+  };
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    fetchList();
+  };
+
   const onDelete = async (id) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     try {
       await deleteItinerary(id);
-      await load();
-    } catch (e) {
-      console.error(e);
-      alert("삭제에 실패했습니다.");
+      fetchList();
+    } catch (error) {
+      alert(error.message);
     }
   };
 
-  useEffect(() => { load(); }, []);
-
-  if (loading) return <div>로딩 중...</div>;
-
   return (
-    <div style={{ padding: 16 }}>
-      <h1>여행 일정 목록</h1>
-      {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
+    <div style={{ maxWidth: 980, margin: "0 auto" }}>
+      <h2>일정 목록</h2>
+      <form onSubmit={onSearch} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <input
+          type="number"
+          name="userId"
+          value={filters.userId}
+          onChange={onChange}
+          placeholder="사용자 ID"
+          style={{ width: 140 }}
+        />
+        <input
+          type="date"
+          name="from"
+          value={filters.from}
+          onChange={onChange}
+          placeholder="from"
+        />
+        <input
+          type="date"
+          name="to"
+          value={filters.to}
+          onChange={onChange}
+          placeholder="to"
+        />
+        <button type="submit">검색</button>
+        <Link to="/itineraries/new">새 일정</Link>
+      </form>
 
-      <div style={{ margin: "12px 0" }}>
-        <button onClick={() => navigate("/itineraries/create")}>+ 새 일정</button>
-      </div>
+      {loading && <div>불러오는 중...</div>}
+      {err && <div style={{ color: "red" }}>{err}</div>}
 
-      {items.length === 0 ? (
-        <div>데이터가 없습니다.</div>
-      ) : (
-        <table border="1" cellPadding="8" cellSpacing="0" width="100%">
+      {!loading && items.length === 0 && <div>데이터 없음</div>}
+
+      {!loading && items.length > 0 && (
+        <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>제목</th>
-              <th>기간</th>
-              <th>생성방식</th>
-              <th>소유자</th>
-              <th>생성일</th>
-              <th>액션</th>
+            <tr style={{ borderBottom: "1px solid #ddd" }}>
+              <th align="left">ID</th>
+              <th align="left">User</th>
+              <th align="left">제목</th>
+              <th align="left">시작일</th>
+              <th align="left">종료일</th>
+              <th align="left">생성방식</th>
+              <th align="left">액션</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.itineraryId}>
+              <tr key={it.itineraryId} style={{ borderBottom: "1px solid #f1f1f1" }}>
                 <td>{it.itineraryId}</td>
-                <td>{it.title}</td>
-                <td>{it.startDate} ~ {it.endDate}</td>
-                <td>{it.generatedFrom}</td>
-                <td>{it.user?.username || it.user?.email || it.user?.userId || "-"}</td>
-                <td>{it.createdAt}</td>
+                <td>{it.userId}</td>
                 <td>
-                  <button onClick={() => navigate(`/itineraries/${it.itineraryId}`)}>상세</button>{" "}
-                  <button onClick={() => navigate(`/itineraries/${it.itineraryId}/edit`)}>수정</button>{" "}
+                  <Link to={`/itineraries/${it.itineraryId}`}>{it.title}</Link>
+                </td>
+                <td>{it.startDate}</td>
+                <td>{it.endDate}</td>
+                <td>{it.generatedFrom}</td>
+                <td style={{ display: "flex", gap: 6 }}>
+                  <Link to={`/itineraries/${it.itineraryId}/edit`}>수정</Link>
                   <button onClick={() => onDelete(it.itineraryId)}>삭제</button>
                 </td>
               </tr>
@@ -85,6 +126,4 @@ const ItineraryList = () => {
       )}
     </div>
   );
-};
-
-export default ItineraryList;
+}

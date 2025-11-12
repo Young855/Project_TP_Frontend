@@ -1,126 +1,119 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { getItinerary, updateItinerary } from "../../api/itineraryAPI";
 
-/**
- * 여행 일정 수정
- * - 기존 데이터 로드 → 수정
- */
-const GENERATED_FROM = ["RECOMMENDED", "MANUAL"]; // 백엔드 enum 값에 맞게 조정
-
-const ItineraryEdit = () => {
+export default function ItineraryEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [generatedFrom, setGeneratedFrom] = useState(GENERATED_FROM[0]);
-
-  const [errMsg, setErrMsg] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    startDate: "",
+    endDate: "",
+    generatedFrom: "MANUAL",
+  });
+  const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const validate = () => {
-    const t = title.trim();
-    if (!t) return "제목을 입력하세요.";
-    if (t.length > 255) return "제목은 최대 255자입니다.";
-    if (!startDate) return "시작일을 선택하세요.";
-    if (!endDate) return "종료일을 선택하세요.";
-    if (endDate < startDate) return "종료일은 시작일 이후여야 합니다.";
-    if (!generatedFrom) return "생성 방식을 선택하세요.";
-    return "";
-  };
-
-  const load = async () => {
-    try {
+  useEffect(() => {
+    const fetchOne = async () => {
+      setErr("");
       setLoading(true);
-      setErrMsg("");
-      const data = await getItinerary(id);
-      setTitle(data?.title || "");
-      setStartDate(data?.startDate || "");
-      setEndDate(data?.endDate || "");
-      setGeneratedFrom(data?.generatedFrom || GENERATED_FROM[0]);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("기존 일정을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
+      try {
+        const res = await getItinerary(id);
+        setForm({
+          title: res.title ?? "",
+          startDate: res.startDate ?? "",
+          endDate: res.endDate ?? "",
+          generatedFrom: res.generatedFrom ?? "MANUAL",
+        });
+      } catch (error) {
+        setErr(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOne();
+  }, [id]);
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((p) => ({ ...p, [name]: value }));
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    const v = validate();
-    if (v) { setErrMsg(v); return; }
-
+    setSaving(true);
+    setErr("");
     try {
-      setSubmitting(true);
-      setErrMsg("");
-      const body = {
-        title: title.trim(),
-        startDate,
-        endDate,
-        generatedFrom,
-      };
-      await updateItinerary(id, body);
-      navigate(`/itineraries/${id}`);
-    } catch (e) {
-      console.error(e);
-      if (e?.response?.status === 400) setErrMsg(e?.response?.data?.message || "필드 검증에 실패했습니다.");
-      else setErrMsg("일정 수정에 실패했습니다.");
+      const updated = await updateItinerary(id, {
+        title: form.title.trim(),
+        startDate: form.startDate,
+        endDate: form.endDate,
+        generatedFrom: form.generatedFrom,
+      });
+      navigate(`/itineraries/${updated.itineraryId}`);
+    } catch (error) {
+      setErr(error.message);
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  useEffect(() => { load(); }, [id]);
-
-  if (loading) return <div>로딩 중...</div>;
+  if (loading) return <div>불러오는 중...</div>;
+  if (err) return <div style={{ color: "red" }}>{err}</div>;
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>여행 일정 수정</h1>
-      {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
-
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            제목 (≤255){" "}
-            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={255} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            시작일{" "}
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            종료일{" "}
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            생성 방식{" "}
-            <select value={generatedFrom} onChange={(e) => setGeneratedFrom(e.target.value)}>
-              {GENERATED_FROM.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </label>
-        </div>
-
-        <div>
-          <button type="submit" disabled={submitting}>{submitting ? "수정 중..." : "수정"}</button>{" "}
-          <button type="button" onClick={() => navigate(`/itineraries/${id}`)}>상세</button>
-        </div>
+    <div style={{ maxWidth: 520, margin: "0 auto" }}>
+      <h2>일정 수정</h2>
+      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
+        <label>
+          제목
+          <input
+            type="text"
+            name="title"
+            value={form.title}
+            onChange={onChange}
+            required
+          />
+        </label>
+        <label>
+          시작일
+          <input
+            type="date"
+            name="startDate"
+            value={form.startDate}
+            onChange={onChange}
+            required
+          />
+        </label>
+        <label>
+          종료일
+          <input
+            type="date"
+            name="endDate"
+            value={form.endDate}
+            onChange={onChange}
+            required
+          />
+        </label>
+        <label>
+          생성 방식
+          <select
+            name="generatedFrom"
+            value={form.generatedFrom}
+            onChange={onChange}
+            required
+          >
+            <option value="MANUAL">MANUAL</option>
+            <option value="RECOMMENDED">RECOMMENDED</option>
+          </select>
+        </label>
+        {err && <div style={{ color: "red" }}>{err}</div>}
+        <button type="submit" disabled={saving}>
+          {saving ? "저장 중..." : "저장"}
+        </button>
       </form>
     </div>
   );
-};
-
-export default ItineraryEdit;
+}

@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate } from "react-router-dom";
-import FavoriteCreate from "./FavoriteCreate";
+
 import FavoriteDetail from "./FavoriteDetail";
 import FavoriteEdit from "./FavoriteEdit";
 import FavoriteList from "./FavoriteList";

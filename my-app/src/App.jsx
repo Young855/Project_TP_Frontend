@@ -177,24 +177,24 @@ const router = createBrowserRouter([
          
             { path: "search-results", element: <SearchResultsPage /> },
             { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
-            { path: "booking", element: <BookingPage /> },
+            { path: "bookings", element: <BookingPage /> },
             { path: "payment", element: <PaymentPage /> },
             { path: "loginSelection", element: <LoginSelectionPage/> },
 
-            { path: "inptinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
+            { path: "itinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
+
             { path: "write-review", element: <WriteReviewPage /> },
         
             { path: "community", element: (
-                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록 (R005)</h1></div>
+                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록</h1></div>
             )},
             { path: "admin", element: (
-                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지 (R003)</h1></div>
+                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지</h1></div>
             )},
             ...UserRouter,
             ...PartnerRouter,
             ...PropertyRouter,
             ...FavoriteRouter,
-        
         ] 
     }
 ]);

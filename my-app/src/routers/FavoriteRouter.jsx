@@ -1,4 +1,3 @@
-import FavoriteCreate from "../pages/favorite/FavoriteCreate";
 import FavoriteDetail from "../pages/favorite/FavoriteDetail";
 import FavoriteEdit from "../pages/favorite/FavoriteEdit";
 import FavoritePage from "../pages/favorite/FavoritePage";
@@ -10,10 +9,6 @@ const FavoriteRouter = [
       {
         index: true,
         element: <FavoritePage />,
-      },
-      {
-        path: "create",
-        element: <FavoriteCreate />,
       },
       {
         path: ":id",

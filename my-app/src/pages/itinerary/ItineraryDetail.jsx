@@ -1,66 +1,61 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getItinerary, deleteItinerary } from "../../api/itineraryAPI";
+import { getItinerary, updateItinerary } from "../../api/itineraryAPI";
 
-/**
- * 여행 일정 상세
- */
-const ItineraryDetail = () => {
+export default function ItineraryDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [item, setItem] = useState(null);
+  const ㅜavigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [errMsg, setErrMsg] = useState("");
 
-  const load = async () => {
+  const fetchOne = async () => {
+    setErr("");
+    setLoading(true);
     try {
-      setLoading(true);
-      setErrMsg("");
-      const data = await getItinerary(id);
-      setItem(data);
-    } catch (e) {
-      console.error(e);
-      setErrMsg("상세 정보를 불러오지 못했습니다.");
+      const res = await getItinerary(id);
+      setData(res);
+    } catch (err) {
+      setErr(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {fetchOne(); }, [id]);
+
   const onDelete = async () => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    if (!window.confirm("이 일정을 삭제하시겠습니까?")) return;
     try {
       await deleteItinerary(id);
       navigate("/itineraries");
-    } catch (e) {
-      console.error(e);
-      alert("삭제에 실패했습니다.");
+    } catch (err) {
+      alert(err.message);
     }
   };
 
-  useEffect(() => { load(); }, [id]);
-
-  if (loading) return <div>로딩 중...</div>;
-  if (errMsg) return <div style={{ color: "red" }}>{errMsg}</div>;
-  if (!item) return <div>데이터가 없습니다.</div>;
+  if (loading) return <div>불러오는 중 . . . </div>;
+  if (err) return <div style={{ color: "red" }}>{err}</div>;
+  if (!data) return <div>데이터 없음</div>;
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>여행 일정 상세</h1>
+    <div style={{ maxWidth: 720, margin: "0  auto"}}>
+      <h2>상세 일정</h2>
+      <div style={{ display: "grid", gap: 8 }}>
+        <div><b>ID:</b>{data.itineraryId}</div>
+        <div><b>사용자 ID:</b>{data.userId}</div>
+        <div><b>제목:</b>{data.title}</div>
+        <div><b>시작일:</b>{data.startDate}</div>
+        <div><b>종료일:</b>{data.endDate}</div>
+        <div><b>생성 방식:</b>{data.generatedFrom}</div>
+        <div><b>생성일:</b>{data.createdAt}</div>
+      </div>
 
-      <div style={{ margin: "8px 0" }}><b>ID:</b> {item.itineraryId}</div>
-      <div style={{ margin: "8px 0" }}><b>제목:</b> {item.title}</div>
-      <div style={{ margin: "8px 0" }}><b>기간:</b> {item.startDate} ~ {item.endDate}</div>
-      <div style={{ margin: "8px 0" }}><b>생성방식:</b> {item.generatedFrom}</div>
-      <div style={{ margin: "8px 0" }}><b>소유자:</b> {item.user?.username || item.user?.email || item.user?.userId || "-"}</div>
-      <div style={{ margin: "8px 0" }}><b>생성일:</b> {item.createdAt}</div>
-
-      <div style={{ marginTop: 16 }}>
-        <button onClick={() => navigate(`/itineraries/${id}/edit`)}>수정</button>{" "}
-        <button onClick={onDelete}>삭제</button>{" "}
-        <button onClick={() => navigate("/itineraries")}>목록</button>
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <Link to={`/itineraries/${id}/edit`}>수정</Link>
+        <button onClick={{onDelete}}>삭제</button>
+        <Link to="/itineraries">목록</Link>
       </div>
     </div>
   );
-};
-
-export default ItineraryDetail;
+}

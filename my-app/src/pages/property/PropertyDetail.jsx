@@ -1,22 +1,13 @@
-// 파일: src/pages/property/PropertyDetail.jsx (수정)
-
 import React from "react";
-// 💡 [수정] useLoaderData와 Form 임포트
 import { useNavigate, useParams, useLoaderData, Form, Link } from "react-router-dom"; 
-// import { getProperty, deleteProperty } from "../../api/propertyAPI"; // 이제 loader와 action이 처리
 
-/**
- * 숙소 상세
- * - 데이터는 Router Loader에서 로드됨
- * - Room 관리 섹션 뼈대 포함
- */
-const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로 변경
-  // 💡 [수정] loader에서 불러온 데이터 사용
-  const { property } = useLoaderData(); 
+const PropertyDetailPage = () => {
+  const { property } = useLoaderData();
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const partnerPk = property.partner?.partnerId ?? property.partnerId;
+  // [수정] partnerId 접근 방식 (PropertyService.toDTO 기준)
+  const partnerPk = property.partnerId; //
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -35,6 +26,25 @@ const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로
           <div><b>체크아웃:</b> {property.checkoutTime ?? "-"}</div>
           <div><b>위도/경도:</b> {property.latitude ?? "-"} / {property.longitude ?? "-"}</div>
         </div>
+
+        {/* --- [수정] 편의시설 섹션 --- */}
+        <div className="pt-6 mt-6 border-t border-gray-200">
+          <h2 className="text-xl font-semibold mb-3">편의시설</h2>
+          {/* amenities field added */}
+          {property.amenities && property.amenities.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {property.amenities.map(amenity => (
+                // index.css에 정의된 .amenity-chip 스타일 사용
+                <span key={amenity.amenityId} className="amenity-chip">
+                  {amenity.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">등록된 편의시설이 없습니다.</p>
+          )}
+        </div>
+        {/* -------------------------- */}
 
         <div className="pt-6 mt-6 border-t border-gray-200">
           <div className="flex justify-between items-center mb-4">
@@ -61,27 +71,27 @@ const PropertyDetailPage = () => { // 컴포넌트 이름을 페이지 형태로
 
         <div className="mt-6 border-t pt-4 flex justify-end space-x-2">
           <button 
-            onClick={() => navigate(`/properties/${id}/edit`)}
-            className="btn-secondary bg-amber-600 text-white hover:bg-amber-700"
+            onClick={() => navigate(`/partner/properties/${id}/edit`)} // [수정] 경로 수정
+            className="btn-primary-outline" // [수정] CSS 클래스 통일
           >
             수정
           </button>
           
-          {/* 삭제 버튼 (Form Action 사용 권장) */}
           <Form
             method="post"
-            action={`/properties/${id}/delete`} // PropertyRouter.jsx의 deleteAction 경로
+            action={`/partner/properties/${id}/delete`} // PropertyRouter.jsx의 deleteAction 경로
             onSubmit={(e) => {
               if (!confirm(`숙소 '${property.name}'을(를) 정말 삭제하시겠습니까?`)) e.preventDefault();
             }}
           >
-            <button className="btn-secondary bg-red-600 text-white hover:bg-red-700">
+            {/* [수정] CSS 클래스 통일 (btn-secondary-outline + red) */}
+            <button className="btn-secondary-outline text-red-600 border-red-600 hover:bg-red-50">
               삭제
             </button>
           </Form>
 
-          {/* 목록 버튼 */}
-          <Link to="/property/properties" className="btn-secondary">
+          {/* [수정] 경로 및 CSS 클래스 통일 */}
+          <Link to="/partner/properties" className="btn-secondary-outline"> 
             목록
           </Link>
         </div>

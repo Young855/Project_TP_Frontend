@@ -1,77 +1,109 @@
-// 파일: src/pages/property/PropertyEdit.jsx (수정)
-
 import React, { useState } from "react";
-// 💡 [수정] useLoaderData와 Form 임포트
 import { useNavigate, useParams, useLoaderData, Form, Link } from "react-router-dom"; 
-// import { getProperty, updateProperty } from "../../api/propertyAPI"; // 이제 loader에서 처리
+import AmenitySelector from "../../components/AmenitySelector"; // [추가]
+import axios from "axios"; // [추가] 카카오 API 사용
 
-const PROPERTY_TYPES = ["HOTEL", "HOUSE", "RESORT"]; // Property.java의 PropertyType Enum 값으로 통일
+const PROPERTY_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; // [수정] Create와 통일
 
-const PropertyEditPage = () => { // 컴포넌트 이름을 페이지 형태로 변경
-  // 💡 [수정] loader에서 불러온 데이터 사용
-  const { property } = useLoaderData(); 
+const PropertyEditPage = () => {
+  const { property } = useLoaderData();
   const { id } = useParams();
+  const navigate = useNavigate(); // [추가]
   
-  // NOTE: 로딩, 에러, 제출 상태는 이제 라우터가 관리합니다.
-  
-  // 💡 [추가] 초기값 설정 및 주소 상태 관리
-  // (PropertyCreate와 일관성을 위해 주소 관련 필드를 상태로 관리)
-  // 폼의 defaultValue로 값을 설정합니다.
-  
-  const initialCity = property.city || '';
-  const initialAddress = property.address || '';
-  const initialLat = property.latitude || '';
-  const initialLng = property.longitude || '';
+  // 주소 및 좌표 상태 관리
+  const [addressFull, setAddressFull] = useState(property.address || "");
+  const [city, setCity] = useState(property.city || "");
+  const [latitude, setLatitude] = useState(property.latitude || "");
+  const [longitude, setLongitude] = useState(property.longitude || "");
+  const [errMsg, setErrMsg] = useState(""); // [추가]
 
-  const [addressFull, setAddressFull] = useState(initialAddress); 
-  const [city, setCity] = useState(initialCity); 
-  const [latitude, setLatitude] = useState(initialLat);
-  const [longitude, setLongitude] = useState(initialLng);
+  // [추가] 편의시설 선택 상태 (loader 데이터로 초기화)
+  const initialAmenityIds = new Set(property.amenities?.map(a => a.amenityId) || []); //
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState(initialAmenityIds);
 
+  // [추가] 카카오 API 키
+  const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
-  // --- Mock/Demo 함수 (주소 검색) ---
-  const handleAddressSearch = () => {
-    alert("도로명 주소 검색 API를 호출합니다.");
-    setAddressFull("서울 강남구 테헤란로 123"); // Mock 주소
-    setCity("강남구"); // Mock 도시
-    setLatitude(37.50123); // Mock 위도
-    setLongitude(127.03789); // Mock 경도
+  // [수정] 주소 검색 로직 (Create와 동일하게)
+  const handleAddressSearch = async () => {
+    if (!KAKAO_API_KEY) {
+        setErrMsg("Kakao API 키가 설정되지 않았습니다.");
+        return;
+    }
+    if (addressFull.trim() === '') {
+        setErrMsg('주소를 입력한 후 검색 버튼을 눌러주세요.');
+        return;
+    }
+    try {
+        const response = await axios.get(
+            'https://dapi.kakao.com/v2/local/search/address.json',
+            {
+                params: { query: addressFull },
+                headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` },
+            }
+        );
+        if (response.data.documents.length > 0) {
+            const firstResult = response.data.documents[0];
+            const fullAddr = firstResult.road_address ? firstResult.road_address.address_name : firstResult.address.address_name;
+            const cityAddr = firstResult.road_address ? firstResult.road_address.region_2depth_name : firstResult.address.region_2depth_name;
+            setAddressFull(fullAddr);
+            setCity(cityAddr || "");
+            setLatitude(firstResult.y);
+            setLongitude(firstResult.x);
+            setErrMsg("");
+        } else {
+            setErrMsg('검색 결과가 없습니다. 주소를 확인해주세요.');
+            setLatitude(""); setLongitude(""); setCity("");
+        }
+    } catch (error) {
+        setErrMsg('API 호출 중 오류가 발생했습니다.');
+    }
   };
-  // ------------------------------------
+
+  // [추가] 편의시설 체크박스 핸들러
+  const handleAmenityChange = (amenityId) => {
+      setSelectedAmenityIds((prevSet) => {
+          const newSet = new Set(prevSet);
+          if (newSet.has(amenityId)) {
+              newSet.delete(amenityId);
+          } else {
+              newSet.add(amenityId);
+          }
+          return newSet;
+      });
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">숙소 수정: {property.name}</h1>
       
-      {/* 💡 [수정] react-router-dom의 Form 사용: action으로 editAction으로 보냄 */}
       <Form 
           method="post" 
-          action={`/properties/${id}/edit`} // PropertyRouter.jsx의 editAction 경로
+          action={`/partner/properties/${id}/edit`} // [수정] action 경로 (PropertyRouter.jsx와 일치)
           className="bg-white shadow-md rounded-lg p-6 space-y-4"
       >
-        {/* 파트너 ID (수정 시에도 필요) */}
         <input type="hidden" name="partnerId" defaultValue={property.partner?.partnerId || property.partnerId} />
         
-        {/* 숙소명 */}
         <div>
           <label className="form-label" htmlFor="name">숙소명</label>
           <input name="name" id="name" defaultValue={property.name} className="form-input w-full" maxLength={255} required />
         </div>
         
-        {/* 숙소 유형 */}
         <div>
           <label className="form-label" htmlFor="propertyType">숙소 유형</label>
           <select 
             name="propertyType" 
             id="propertyType"
-            className="form-select w-full" 
+            className="form-input w-full" // [수정] form-select -> form-input
             defaultValue={property.propertyType}
+            required // [추가]
           >
+             <option value="">-- 숙소 유형 선택 --</option>
             {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
-        {/* 💡 [수정] 주소 입력: 도로명 주소 API를 염두에 둔 레이아웃 */}
+        {/* [수정] 주소 입력 (Create와 동일하게) */}
         <div>
           <label className="form-label">주소</label>
           <div className="flex space-x-2">
@@ -80,23 +112,22 @@ const PropertyEditPage = () => { // 컴포넌트 이름을 페이지 형태로 �
                 name="address"
                 value={addressFull} 
                 onChange={(e) => setAddressFull(e.target.value)}
-                className="form-input flex-1" 
-                placeholder="도로명 주소 검색 버튼을 눌러주세요" 
+                className="form-input flex-1"
+                placeholder="도로명 주소를 입력하거나 '주소 검색'을 이용하세요" 
                 maxLength={255}
                 required
-                readOnly
             />
              <button
                 type="button"
                 onClick={handleAddressSearch}
-                className="btn-secondary w-32"
+                className="btn-secondary-outline" // [수정]
               >
                 주소 검색
               </button>
           </div>
+          {errMsg && (<p className="text-sm text-red-500 mt-1">{errMsg}</p>)}
         </div>
         
-        {/* 도시 (City) */}
         <div>
           <label className="form-label" htmlFor="city">도시 (시/군/구)</label>
           <input 
@@ -107,41 +138,58 @@ const PropertyEditPage = () => { // 컴포넌트 이름을 페이지 형태로 �
               className="form-input w-full"
               maxLength={100}
               placeholder="예: 서울, 강남구"
+              required // [추가]
           />
         </div>
         
-        {/* 💡 [필수] 위도/경도 Hidden Field: 상태를 폼 데이터로 보내기 위해 name과 value 연결 */}
         <input type="hidden" name="latitude" value={latitude} />
         <input type="hidden" name="longitude" value={longitude} />
         
-        {/* 설명 */}
         <div>
           <label className="form-label" htmlFor="description">숙소 설명</label>
-          <textarea name="description" id="description" defaultValue={property.description} className="form-input w-full" rows={3} />
+          <textarea name="description" id="description" defaultValue={property.description} className="form-input w-full" rows={4} /> 
         </div>
 
-        {/* 체크인/체크아웃 시간 */}
+        {/* --- [추가] AmenitySelector --- */}
+        <AmenitySelector 
+            selectedIds={selectedAmenityIds}
+            onChange={handleAmenityChange}
+        />
+        
+        {/* [추가] 선택된 ID를 콤마(,)로 구분된 문자열로 폼에 포함 */}
+        <input 
+            type="hidden" 
+            name="amenityIds" 
+            value={Array.from(selectedAmenityIds).join(',')} 
+        />
+        {/* ----------------------------- */}
+
         <div className="flex space-x-4">
           <div className="flex-1">
             <label className="form-label" htmlFor="checkinTime">체크인 시간</label>
-            <input type="time" name="checkinTime" id="checkinTime" defaultValue={property.checkinTime} className="form-input w-full" />
+            <input type="time" name="checkinTime" id="checkinTime" defaultValue={property.checkinTime} className="form-input w-full" required /> 
           </div>
           <div className="flex-1">
             <label className="form-label" htmlFor="checkoutTime">체크아웃 시간</label>
-            <input type="time" name="checkoutTime" id="checkoutTime" defaultValue={property.checkoutTime} className="form-input w-full" />
+            <input type="time" name="checkoutTime" id="checkoutTime" defaultValue={property.checkoutTime} className="form-input w-full" required /> 
           </div>
         </div>
         
-        {/* 평점 */}
         <div>
           <label className="form-label" htmlFor="ratingAvg">평균 평점 (0~5)</label>
           <input type="number" step="0.01" min={0} max={5} name="ratingAvg" id="ratingAvg" defaultValue={property.ratingAvg} className="form-input w-full" />
         </div>
         
-        {/* 💡 [수정] 버튼 위치 변경 */}
         <div className="flex justify-end space-x-2 pt-4">
-          <Link to={`/properties/${id}`} className="btn-secondary">취소</Link> 
-          <button type="submit" className="btn-primary bg-amber-600 hover:bg-amber-700">수정 저장</button>
+          {/* [수정] 취소 버튼: navigate 사용 */}
+          <button 
+            type="button"
+            onClick={() => navigate(`/partner/properties/${id}`)} // [수정] 경로 수정
+            className="btn-secondary-outline" // [수정]
+          >
+            취소
+          </button>
+          <button type="submit" className="btn-primary">수정 저장</button> 
         </div>
       </Form>
     </div>

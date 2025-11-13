@@ -46,7 +46,7 @@ const PropertyList = () => {
       {errMsg && <div style={{ color: "red", margin: "8px 0" }}>{errMsg}</div>}
 
       <div style={{ margin: "12px 0" }}>
-        <button onClick={() => navigate("/properties/create")}>+ 새 숙소</button>
+        <button onClick={() => navigate("/partner/properties/new")}>+ 새 숙소</button>
       </div>
 
       {items.length === 0 ? (
@@ -78,8 +78,8 @@ const PropertyList = () => {
                   {(p.checkinTime || "-")}{p.checkoutTime ? ` / ${p.checkoutTime}` : ""}
                 </td>
                 <td>
-                  <button onClick={() => navigate(`/properties/${p.propertyId}`)}>상세</button>{" "}
-                  <button onClick={() => navigate(`/properties/${p.propertyId}/edit`)}>수정</button>{" "}
+                  <button onClick={() => navigate(`/partner/properties/${p.propertyId}`)}>상세</button>{" "}
+                  <button onClick={() => navigate(`/partner/properties/${p.propertyId}/edit`)}>수정</button>{" "}
                   <button onClick={() => onDelete(p.propertyId)}>삭제</button>
                 </td>
               </tr>

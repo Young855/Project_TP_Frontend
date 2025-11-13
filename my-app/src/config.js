@@ -56,9 +56,8 @@ export const PROPERTIES_ENDPOINTS = {
     PROPERTIES: {
         // 모든 숙소 조회 (관리자용)
         LIST_ALL: `${API_BASE_URL}/properties`, 
-        LIST_BY_PARTNER: (partnerId) => `${API_BASE_URL}/properties/partner/${partnerId}`, 
+        LIST_BY_PARTNER: (partnerId) => `${API_BASE_URL}/partner/properties/${partnerId}`, 
         ADD: `${API_BASE_URL}/properties`, // POST /properties
-        // 특정 숙소 조회/수정/삭제
         GET: (id) => `${API_BASE_URL}/properties/${id}`,
         MODIFY: (id) => `${API_BASE_URL}/properties/${id}`,
         DELETE: (id) => `${API_BASE_URL}/properties/${id}`,
@@ -74,6 +73,13 @@ export const AMENITIES_ENDPOINTS ={
         DELETE : (id) => `${API_BASE_URL}/amenities/${id}`, // DELETE /amenities/{id}
     },
 }
+
+export const PROPERTY_AMENITY_ENDPOINTS = {
+    LIST_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/properties/${propertyId}/amenities`,
+    ADD: `${API_BASE_URL}/properties/amenities`, 
+    DELETE: (propertyId, amenityId) => `${API_BASE_URL}/properties/${propertyId}/amenities/${amenityId}`,
+    UPDATE_ALL_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/properties/${propertyId}/amenities`,
+};
 
 export const ITINERARY_ENDPOINTS = {
     ITINERARIES: {

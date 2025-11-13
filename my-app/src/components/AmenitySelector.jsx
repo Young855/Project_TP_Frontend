@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAllAmenities } from '../api/amenityAPI';
 
-
 const AmenitySelector = ({ selectedIds, onChange }) => {
   const [allAmenities, setAllAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,15 +10,28 @@ const AmenitySelector = ({ selectedIds, onChange }) => {
     const fetchAmenities = async () => {
       try {
         const data = await getAllAmenities();
-        setAllAmenities(data);
+        
+        if (data && Array.isArray(data.content)) {
+          setAllAmenities(data.content);
+        } 
+        else if (Array.isArray(data)) {
+          setAllAmenities(data);
+        } 
+        else {
+          console.warn("API가 예상과 다른 형식의 데이터를 반환했습니다:", data);
+          setAllAmenities([]); 
+          setError('데이터 형식이 올바르지 않습니다.');
+        }
+
       } catch (err) {
         setError('편의시설 목록을 불러오는데 실패했습니다.');
+        setAllAmenities([]); 
       } finally {
         setLoading(false);
       }
     };
     fetchAmenities();
-  }, []);
+  }, []); 
 
   if (loading) return <div className="text-gray-500">편의시설 목록 로딩 중...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -28,7 +40,7 @@ const AmenitySelector = ({ selectedIds, onChange }) => {
     <div>
       <label className="form-label">편의시설</label>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg">
-        {allAmenities.map((amenity) => (
+        {allAmenities.map((amenity) => ( 
           <label 
             key={amenity.amenityId} 
             className="flex items-center space-x-2 cursor-pointer"

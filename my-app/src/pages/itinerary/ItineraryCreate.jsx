@@ -53,7 +53,7 @@ export default function ItineraryCreate({ defaultUserId}){
           />
         </label>
         <label>
-          시작일
+          체크인
           <input
             type="date"
             name="startDate"
@@ -63,7 +63,7 @@ export default function ItineraryCreate({ defaultUserId}){
           />
         </label>
         <label>
-          종료일
+          체크아웃
           <input 
             type="date"
             name="endDate"

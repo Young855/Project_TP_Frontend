@@ -1,4 +1,3 @@
-// ItineraryAPI.js
 import axios from "axios";
 import { ITINERARY_ENDPOINTS, axiosConfig } from "../config";
 

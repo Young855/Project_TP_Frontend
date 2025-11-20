@@ -45,8 +45,8 @@ export default function ItineraryDetail() {
         <div><b>ID:</b>{data.itineraryId}</div>
         <div><b>사용자 ID:</b>{data.userId}</div>
         <div><b>제목:</b>{data.title}</div>
-        <div><b>시작일:</b>{data.startDate}</div>
-        <div><b>종료일:</b>{data.endDate}</div>
+        <div><b>체크인:</b>{data.startDate}</div>
+        <div><b>체크아웃:</b>{data.endDate}</div>
         <div><b>생성 방식:</b>{data.generatedFrom}</div>
         <div><b>생성일:</b>{data.createdAt}</div>
       </div>

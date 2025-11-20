@@ -1,44 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, RouterProvider, createBrowserRouter, useNavigate } from 'react-router-dom';
-import { mockItinerary } from './data/mockData';
+import { RouterProvider, createBrowserRouter, Outlet, useNavigate } from 'react-router-dom';
 import './index.css';
 
-// Layout & Global Components
-import Modal from './components/Modal';
 import Header from './components/Header';
+import Modal from './components/Modal';
+import SideDrawer from './components/SideDrawer';
+import PartnerLayout from './components/layout/PartnerLayout'; 
 
-// Page Components (파일 구조를 참조하여 경로 설정)
 import MainPage from './pages/MainPage';
+import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import AccommodationDetailPage from './pages/AccommodationDetailPage';
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
-import FindPasswordPage from './pages/user/FindPasswordPage';
-import ItineraryPage from './pages/itinerary/ItineraryPage';
 import WriteReviewPage from './pages/WriteReviewPage';
-import UserRouter from "./routers/UserRouter";
 import LoginSelectionPage from './pages/LoginSelection';
-import PartnerRouter from './routers/PartnerRouter';
-import SideDrawer from './components/SideDrawer';
+import ItineraryPage from './pages/itinerary/ItineraryPage';
+
+import PartnerDashboard from './pages/partner/PartnerDashboard';
+import RateCalendarPage from './pages/partner/RateCalendarPage';
+import UserRouter from "./routers/UserRouter";
 import PropertyRouter from './routers/PropertyRouter';
-import FavoritePage from './pages/favorite/FavoritePage';
 import FavoriteRouter from './routers/FavoriteRouter';
+import PartnerRouter from './routers/PartnerRouter';
+import RoomRouter from './routers/RoomRouter';
 
-// 필요한 다른 컴포넌트들도 추가해야 합니다.
+const Placeholder = ({ title }) => <div className="p-8 text-2xl font-bold text-gray-400">{title} 페이지 준비중</div>;
 
-// --- Main Layout Component (Header와 Modal을 포함하는 공통 레이아웃) ---
-// useNavigate를 사용하기 위해 App 함수 내부에 정의
-function MainLayout() {
-    const navigate = useNavigate(); // 페이지 이동을 react-router-dom의 navigate로 대체
-    
-    // R014: 로그인 상태 (Mock)
+function UserLayout() {
+    const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [searchParams, setSearchParams] = useState({});
     const [selectedAccommodation, setSelectedAccommodation] = useState(null);
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 드로어 상태 관리
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    // 모달 상태 (Modal 컴포넌트에 직접 연결)
     const [modal, setModal] = useState({
         isOpen: false,
         title: '',
@@ -46,7 +42,6 @@ function MainLayout() {
         onConfirm: null,
     });
 
-    // 기존 App.jsx의 showModal, closeModal 함수는 그대로 사용
     const closeModal = () => {
         setModal({ isOpen: false, title: '', content: '', onConfirm: null });
     };
@@ -63,7 +58,6 @@ function MainLayout() {
         });
     };
     
-    // R002 (Naver Map) 로직은 그대로 유지
     useEffect(() => {
         const naverMapClientId = 'YOUR_NAVER_MAP_CLIENT_ID';
         if (!document.getElementById('naver-maps-script')) {
@@ -77,11 +71,9 @@ function MainLayout() {
         }
     }, []);
 
-    // 로그인/로그아웃 핸들러는 그대로 유지하되, navigateTo 대신 navigate 사용
     const handleLogin = (user) => {
         setIsLoggedIn(true);
         setCurrentUser(user);
-        // 로그인 성공 후 메인 페이지 또는 이전 페이지로 이동
         const nextPath = localStorage.getItem('nextPath') || '/';
         localStorage.removeItem('nextPath');
         navigate(nextPath);
@@ -91,16 +83,15 @@ function MainLayout() {
         showModal('로그아웃', '정말 로그아웃 하시겠습니까?', () => {
             setIsLoggedIn(false);
             setCurrentUser(null);
-            navigate('/'); // 메인 페이지로 이동
+            navigate('/');
         });
     };
     
     const checkAuthAndNavigate = (path) => {
         const protectedPaths = ['/user/mypage', '/itinerary', '/booking', '/payment', '/write-review'];
-        
         if (protectedPaths.includes(path) && !isLoggedIn) {
             showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
-                localStorage.setItem('nextPath', path); // 로그인 후 이동할 페이지 저장
+                localStorage.setItem('nextPath', path);
                 navigate('/login');
             });
             return false;
@@ -108,52 +99,44 @@ function MainLayout() {
         return true;
     };
     
-    // context를 사용하여 isLoggedIn, currentUser, showModal 등을 자식 페이지에 전달
     const appProps = {
         isLoggedIn, 
         currentUser,
         showModal,
-        // ... 필요한 모든 상태 및 핸들러
         onLogin: handleLogin, 
         onLogout: handleLogout,
         setSearchParams,
         searchParams,
         setSelectedAccommodation,
         selectedAccommodation,
-        // navigate: navigate, // react-router-dom의 navigate 사용
         checkAuth: checkAuthAndNavigate,
     };
     
     return (
-        <div className="font-sans bg-gray-50 min-h-screen">
+        <div className="font-sans bg-gray-50 min-h-screen flex flex-col">
             <Header 
-        isLoggedIn={isLoggedIn} 
-        navigate={navigate} 
-        onOpenDrawer={() => setIsDrawerOpen(true)} // 드로어 열기 함수 전달
-      />
-      
-      <SideDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)} // 드로어 닫기 함수 전달
-        isLoggedIn={isLoggedIn}
-        onLogout={handleLogout}
-      />
+                isLoggedIn={isLoggedIn} 
+                navigate={navigate} 
+                onOpenDrawer={() => setIsDrawerOpen(true)} 
+            />
+            
+            <SideDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                isLoggedIn={isLoggedIn}
+                onLogout={handleLogout}
+            />
 
-            <main>
-                {/* 자식 라우트 컴포넌트가 렌더링될 위치 */}
+            <main className="flex-grow">
                 <Outlet context={appProps} />
             </main>
 
-            {/* --- [이 부분을 수정했습니다] --- */}
             <Modal
                 isOpen={modal.isOpen}
                 onClose={closeModal}
                 title={modal.title}
-                // 1. onConfirm 함수가 있으면 '확인' 텍스트를 전달
                 confirmText={modal.onConfirm ? '확인' : null}
                 onConfirm={modal.onConfirm}
-                // 2. onConfirm 함수가 있으면 '취소' 텍스트를 null로 만들어 숨김
-                //    (Modal.jsx가 cancelText="취소"를 기본값으로 가졌다고 가정)
                 cancelText={modal.onConfirm ? null : '취소'}
             >
                 <p>{modal.content}</p>
@@ -162,40 +145,37 @@ function MainLayout() {
     );
 }
 
-// --- 라우터 설정 ---
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <MainLayout />,
-        children: [ 
-            { 
-                index: true, // '/' 경로 (메인 페이지)
-                element: <MainPage />,
-            },
-            
+        element: <UserLayout />,
+        children: [
+            { index: true, element: <MainPage /> },
+            { path: "login-selection", element: <LoginSelectionPage /> },
             { path: "find-password", element: <FindPasswordPage /> },
-         
             { path: "search-results", element: <SearchResultsPage /> },
-            { path: "accommodation/:id", element: <AccommodationDetailPage /> }, // 상세 페이지는 보통 ID를 URL 파라미터로 받음
+            { path: "accommodation/:id", element: <AccommodationDetailPage /> },
             { path: "bookings", element: <BookingPage /> },
             { path: "payment", element: <PaymentPage /> },
-            { path: "loginSelection", element: <LoginSelectionPage/> },
-
-            { path: "itinerary", element: <ItineraryPage itinerary={mockItinerary} /> },
-
+            { path: "itinerary", element: <ItineraryPage /> },
             { path: "write-review", element: <WriteReviewPage /> },
-        
-            { path: "community", element: (
-                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">커뮤니티/후기 목록</h1></div>
-            )},
-            { path: "admin", element: (
-                <div className="container mx-auto p-8 text-center"><h1 className="text-3xl font-bold">어드민 페이지</h1></div>
-            )},
-            ...UserRouter,
             ...PartnerRouter,
-            ...PropertyRouter,
+            ...UserRouter,
             ...FavoriteRouter,
-        ] 
+        ]
+    },
+    {
+        path: "/partner",
+        element: <PartnerLayout />,
+        children: [
+            { index: true, element: <PartnerDashboard /> },
+            { path: "dashboard", element: <PartnerDashboard /> },
+            { path: "rates", element: <RateCalendarPage /> },
+            { path: "properties", element: <Placeholder title="숙소 관리" /> },
+            { path: "reservations", element: <Placeholder title="예약 관리" /> },
+            ...RoomRouter,
+            ...PropertyRouter, 
+        ]
     }
 ]);
 

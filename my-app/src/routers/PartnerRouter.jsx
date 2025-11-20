@@ -1,6 +1,7 @@
 import PartnerLoginPage from "../pages/partner/PartnerLoginPage";
-import PartnerSignupPage from "../pages/partner/partnerSignupPage";
 import BizVerificationPage from "../pages/partner/BizVerificationPage";
+import EmailVerificationPage from "../pages/user/EmailVarificationPage"; 
+import PartnerSignupPage from "../pages/partner/partnerSignupPage";
 
 const PartnerRouter = [
     {
@@ -22,7 +23,10 @@ const PartnerRouter = [
                 path : "bizverification",
                 element: <BizVerificationPage/>
             },
-
+            {
+                path : "email-verification", 
+                element: <EmailVerificationPage type="partner" />
+            },
         ],
     },
 ];

@@ -9,6 +9,10 @@ const api = axios.create(axiosConfig);
 export const checkEmailDuplication = async (email) => {
   try {
     const response = await api.post(USER_ENDPOINTS.USERS.CHECK_EMAIL, { email });
+    // [수정] 백엔드 응답이 true/false 불리언 값일 경우 객체로 래핑하여 반환
+    if (typeof response.data === 'boolean') {
+        return { isDuplicated: response.data };
+    }
     return response.data;
   } catch (error) {
     console.error("이메일 중복 확인 오류:", error);
@@ -39,6 +43,10 @@ export const sendVerificationEmail = async (email) => {
 export const verifyEmailCode = async (email, code) => {
   try {
     const response = await api.post(USER_ENDPOINTS.USERS.VERIFY_CODE, { email, code });
+    // [수정] 백엔드 응답이 true/false 불리언 값일 경우 객체로 래핑하여 반환
+    if (typeof response.data === 'boolean') {
+        return { verified: response.data };
+    }
     return response.data; 
   } catch (error) {
     console.error("인증코드 확인 오류:", error);

@@ -1,27 +1,28 @@
-import RoomList from "../room/RoomList";
-import RoomCreate from "../room/RoomCreate";
-import RoomDetail from "../room/RoomDetail";
-import RoomList from "../room/RoomList";
+import React from 'react';
+import RoomList from "../pages/room/RoomList";
+import RoomCreate from "../pages/room/RoomCreate";
+import RoomDetail from "../pages/room/RoomDetail";
+import RoomEdit from "../pages/room/RoomEdit"; 
 
 const RoomRouter = [
   {
-    path: "rooom",
+    path: "rooms", // "rooom" 오타 수정
     children: [
       {
         index: true,
-        element: <RoomList />
+        element: <RoomList /> // /partner/rooms
       },
       {
-        path: "create",
-        element: <RoomCreate />
+        path: "new", // create -> new (일관성)
+        element: <RoomCreate /> // /partner/rooms/new
       },
       {
         path: ":id",
-        element: <RoomDetail />
+        element: <RoomDetail /> // /partner/rooms/1
       },
       {
         path: ":id/edit",
-        element: <RoomEdit />,
+        element: <RoomEdit /> // /partner/rooms/1/edit
       },
     ],
   },

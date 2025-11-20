@@ -4,35 +4,25 @@ import {
   createUser, 
   checkEmailDuplication, 
   checkNicknameDuplication,
-  sendVerificationEmail,
-  verifyEmailCode
 } from '../../api/userAPI';
 import BirthDatePicker from '../../components/BirthDataPicker'; 
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const { showModal } = useOutletContext();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
-  
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
-
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
   const [nicknameError, setNicknameError] = useState('');
-
-  const [showAuthCodeInput, setShowAuthCodeInput] = useState(false);
-  const [authCode, setAuthCode] = useState('');
-  const [authCodeError, setAuthCodeError] = useState('');
-
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false); 
   const [isNicknameVerified, setIsNicknameVerified] = useState(false);
 
   const validateEmail = (currentEmail) => {
@@ -92,59 +82,31 @@ export default function SignupPage() {
   const handleEmailCheck = async () => {
     if (!validateEmail(email)) {
       setIsEmailVerified(false); 
-      setShowAuthCodeInput(false);
       return;
     }
 
     try {
-      const isDuplicated = await checkEmailDuplication(email);
+      const duplicationResponse = await checkEmailDuplication(email);
+      const isDuplicated = duplicationResponse.isDuplicated;
       
       if (isDuplicated) {
         setEmailError('이미 사용 중인 이메일입니다.');
         setIsEmailVerified(false);
-        setShowAuthCodeInput(false);
         showModal('이메일 중복 확인', '이미 사용 중인 이메일입니다.', () => {});
       } else {
+        // [수정] 중복이 아니면 인증번호 발송이나 페이지 이동 없이, 사용 가능 상태로 변경
         setEmailError(''); 
-        
-        await sendVerificationEmail(email);
-        setShowAuthCodeInput(true);
-        setIsEmailVerified(false);
-        setAuthCodeError('');
-        showModal('이메일 인증', '사용 가능한 이메일입니다. 인증번호를 발송했습니다.', () => {});
+        setIsEmailVerified(true); 
+        showModal('이메일 중복 확인', '사용 가능한 이메일입니다.', () => {});
       }
     } catch (error) {
       setEmailError('이메일 확인 중 오류가 발생했습니다.');
       setIsEmailVerified(false);
-      setShowAuthCodeInput(false);
       showModal('오류', '이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.', () => {});
     }
   };
 
-  const handleVerifyCode = async () => {
-    if (!authCode.trim()) {
-      setAuthCodeError('인증번호를 입력해주세요.');
-      return;
-    }
-    
-    try {
-      const isVerified = await verifyEmailCode(email, authCode);
-      
-      if (isVerified) {
-        setIsEmailVerified(true);
-        setAuthCodeError('');
-        setShowAuthCodeInput(false);
-        setEmailError('');
-        showModal('인증 성공', '이메일 인증이 완료되었습니다.', () => {});
-      } else {
-        setIsEmailVerified(false);
-        setAuthCodeError('인증번호가 올바르지 않습니다.');
-      }
-    } catch (error) {
-      setIsEmailVerified(false);
-      setAuthCodeError('인증번호 확인 중 오류가 발생했습니다.');
-    }
-  };
+  // ❌ handleVerifyCode 함수 제거
 
   const handleNicknameCheck = async () => {
     if (!validateNickname(nickname)) {
@@ -174,8 +136,6 @@ export default function SignupPage() {
   const onEmailChange = (e) => {
     setEmail(e.target.value);
     setIsEmailVerified(false);
-    setShowAuthCodeInput(false);
-    setAuthCode('');
     setEmailError('');
   };
   const onPasswordChange = (e) => {
@@ -207,15 +167,16 @@ export default function SignupPage() {
     const isNicknameInputValid = validateNickname(nickname);
 
     
-
+    // 1. 이메일 유효성 및 중복 확인 완료 여부
     if (!isEmailValid) {
       isValid = false;
       validationErrors['이메일 주소'] = emailError || '필수 입력';
     } else if (!isEmailVerified) {
       isValid = false;
-      requiredChecks.push('이메일 인증');
+      requiredChecks.push('이메일 중복 확인'); // 인증 대신 중복 확인 요구
     }
 
+    // 2. 비밀번호 확인
     if (!isPasswordValid) {
       isValid = false;
       validationErrors['비밀번호'] = passwordError || '필수 입력';
@@ -225,6 +186,7 @@ export default function SignupPage() {
       validationErrors['비밀번호 확인'] = passwordConfirmError || '필수 입력';
     }
 
+    // 3. 닉네임 확인
     if (!isNicknameInputValid) {
       isValid = false;
       validationErrors['닉네임'] = nicknameError || '필수 입력';
@@ -233,6 +195,7 @@ export default function SignupPage() {
       requiredChecks.push('닉네임 중복 확인');
     }
 
+    // 4. 생년월일 확인
     if (!birthYear || !birthMonth || !birthDay) {
        requiredChecks.push('생년월일');
     }
@@ -311,15 +274,15 @@ export default function SignupPage() {
                 className={`form-input flex-1 ${emailError ? 'border-red-500' : ''} ${isEmailVerified ? 'border-green-500' : ''}`}
                 placeholder="예: example@travel.com"
                 required
-                disabled={showAuthCodeInput || isEmailVerified}
+                disabled={isEmailVerified} 
               />
               <button 
                 type="button" 
                 onClick={handleEmailCheck} 
                 className="w-28 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={!checkEmailFormat(email) || showAuthCodeInput || isEmailVerified}
+                disabled={!checkEmailFormat(email) || isEmailVerified}
               >
-                {isEmailVerified ? "인증 완료" : "중복 확인"}
+                {isEmailVerified ? "확인 완료" : "중복 확인"}
               </button>
             </div>
             {emailError && (
@@ -327,36 +290,14 @@ export default function SignupPage() {
                 {emailError}
               </p>
             )}
+            {isEmailVerified && !emailError && (
+                <p className="text-sm mt-1 text-green-500">
+                  사용 가능한 이메일입니다.
+                </p>
+            )}
           </div>
 
-          {showAuthCodeInput && (
-            <div>
-              <label htmlFor="authCode" className="form-label">인증번호</label>
-              <div className="flex space-x-2">
-                <input
-                  id="authCode"
-                  type="text"
-                  value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
-                  className={`form-input flex-1 ${authCodeError ? 'border-red-500' : ''}`}
-                  placeholder="이메일로 전송된 6자리 숫자"
-                  maxLength={6}
-                />
-                <button 
-                  type="button" 
-                  onClick={handleVerifyCode} 
-                  className="w-28 bg-blue-500 text-black hover:bg-blue-600 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out"
-                >
-                  번호 확인
-                </button>
-              </div>
-              {authCodeError && (
-                <p className="text-sm mt-1 text-red-500">
-                  {authCodeError}
-                </p>
-              )}
-            </div>
-          )}
+          {/* ❌ 인증번호 입력 필드 제거 */}
 
           <div>
             <label htmlFor="password" className="form-label">비밀번호</label>
@@ -397,7 +338,7 @@ export default function SignupPage() {
                 value={nickname}
                 onChange={onNicknameChange}
                 onBlur={handleNicknameCheck} 
-                className={`form-input flex-1 ${!isNicknameVerified && nicknameError ? 'border-red-500' : ''} ${isEmailVerified ? 'border-green-500' : ''}`}
+                className={`form-input flex-1 ${!isNicknameVerified && nicknameError ? 'border-red-500' : ''} ${isNicknameVerified ? 'border-green-500' : ''}`}
                 placeholder="다른 사용자와 구분되는 별명"
                 required
                 disabled={isNicknameVerified}

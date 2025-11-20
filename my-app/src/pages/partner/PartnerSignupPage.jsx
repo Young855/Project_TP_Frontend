@@ -1,13 +1,9 @@
-// PartnerSignupPage.jsx (Step 2)
-
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 import { 
     createPartner, 
     checkPartnerEmailDuplication, 
-    sendPartnerVerificationEmail, 
-    verifyPartnerEmailCode        
 } from '../../api/partnerAPI'; 
 
 export default function PartnerSignupPage() {
@@ -20,9 +16,10 @@ export default function PartnerSignupPage() {
   const ceoName = verifiedBizData.ceoName || '';
   const openingDate = verifiedBizData.openingDate || '';
   const isBizInfoVerified = verifiedBizData.isBizInfoVerified || false; 
+  const initialVerifiedEmail = verifiedBizData.contactEmail || ''; 
 
   const [bizName, setBizName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
+  const [contactEmail, setContactEmail] = useState(initialVerifiedEmail); 
   const [password, setPassword] = useState(''); 
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -32,14 +29,16 @@ export default function PartnerSignupPage() {
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
   const [bizNameError, setBizNameError] = useState('');
   const [bizVerificationError, setBizVerificationError] = useState(''); 
-  
-  const [showAuthCodeInput, setShowAuthCodeInput] = useState(false);
-  const [authCode, setAuthCode] = useState('');
-  const [authCodeError, setAuthCodeError] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false); 
+  const [isEmailVerified, setIsEmailVerified] = useState(!!initialVerifiedEmail); 
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
   useEffect(() => {
+    // 💡 [수정] 이메일이 외부에서 인증되어 넘어왔다면, 초기에는 확인 완료로 표시
+    if (!!initialVerifiedEmail) {
+        setIsEmailVerified(true);
+    }
+    
+    // 필수 정보 확인 방어 로직 (BizVerificationPage에서 정보를 받았는지 확인)
     if (!isBizInfoVerified) {
       console.warn('사업자 정보 진위 확인이 필요합니다. Step 1로 이동합니다.');
       navigate('/partner/bizverification', { replace: true }); 
@@ -47,10 +46,10 @@ export default function PartnerSignupPage() {
     if (isBizInfoVerified) {
         setBizVerificationError('사업자 정보 진위 확인이 완료되었습니다.');
     }
-  }, [isBizInfoVerified, navigate]);
+  }, [isBizInfoVerified, navigate, initialVerifiedEmail]);
 
 
-  /* --- 유효성 검사 함수 (Step 2에서 사용되는 필드만 유지) --- */
+  /* --- 유효성 검사 함수 --- */
   const validatePassword = (currentPassword) => {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
     if (!currentPassword) {
@@ -87,63 +86,42 @@ export default function PartnerSignupPage() {
     }
   };
   
+  // [수정] 이메일 중복 확인만 수행하고 종료
   const handleEmailCheck = async () => {
     if (!validateEmail(contactEmail)) {
         setIsEmailVerified(false); 
-        setShowAuthCodeInput(false);
+        return;
+    }
+    if (isEmailVerified) {
+        window.alert('이미 확인이 완료된 이메일입니다.');
         return;
     }
 
     try {
         setIsSubmitting(true); 
-        const isDuplicated = await checkPartnerEmailDuplication(contactEmail); 
+        const duplicationResponse = await checkPartnerEmailDuplication(contactEmail);
+        const isDuplicated = duplicationResponse.isDuplicated; 
         
         if (isDuplicated) { 
             setEmailError('이미 등록된 사업자 이메일입니다.'); 
             setIsEmailVerified(false);
-            setShowAuthCodeInput(false);
         } else {
-            await sendPartnerVerificationEmail(contactEmail);
-            setEmailError('사용 가능한 이메일입니다. 인증번호를 발송했습니다.');
-            setShowAuthCodeInput(true);
-            setIsEmailVerified(false); // 코드를 확인해야만 true가 됨
-            setAuthCodeError('');
+            // [수정] 중복 확인 완료 후 인증번호 발송 없이 종료
+            setEmailError('사용 가능한 이메일입니다.');
+            setIsEmailVerified(true); 
+            window.alert('사용 가능한 이메일입니다.');
         }
     } catch (error) {
         const errorMsg = error.response?.data?.message || '이메일 확인 중 오류가 발생했습니다.';
         console.error('이메일 확인 중 예기치 않은 오류 발생:', error);
         setEmailError(errorMsg);
         setIsEmailVerified(false);
-        setShowAuthCodeInput(false);
+        window.alert(`이메일 확인 실패: ${errorMsg}`);
     } finally {
         setIsSubmitting(false); 
     }
   };
-  const handleVerifyCode = async () => {
-    if (!authCode.trim()) {
-      setAuthCodeError('인증번호를 입력해주세요.');
-      return;
-    }
-    
-    try {
-      const isVerified = await verifyPartnerEmailCode(contactEmail, authCode);
-      
-      if (isVerified) {
-        setIsEmailVerified(true);
-        setAuthCodeError('');
-        setShowAuthCodeInput(false);
-        setEmailError('이메일 인증이 완료되었습니다.');
-        window.alert('이메일 인증이 완료되었습니다.');
-      } else {
-        setIsEmailVerified(false);
-        setAuthCodeError('인증번호가 올바르지 않습니다.');
-      }
-    } catch (error) {
-      setIsEmailVerified(false);
-      setAuthCodeError('인증번호 확인 중 오류가 발생했습니다.');
-    }
-  };
-  
+
   // 비밀번호 입력 핸들러
   const handlePasswordChange = (e) => {
     const newPassword = e.target.value;
@@ -159,7 +137,6 @@ export default function PartnerSignupPage() {
     if (newPasswordConfirm.length > 0 && passwordConfirmError) { setPasswordConfirmError(''); }
   };
 
-  /* --- 최종 제출 핸들러 --- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting || !isBizInfoVerified) return;
@@ -173,14 +150,14 @@ export default function PartnerSignupPage() {
     if (!validatePassword(password)) { isValid = false; if(passwordError) errorMessages.push(`비밀번호: ${passwordError}`); }
     if (!validatePasswordConfirm(passwordConfirm)) { isValid = false; if(passwordConfirmError) errorMessages.push(`비밀번호 확인: ${passwordConfirmError}`); }
     
-    // 2. 이메일 중복 확인 여부
+    // 2. 이메일 중복 확인 여부 체크 (최종 방어 로직)
     if (validateEmail(contactEmail) && !isEmailVerified) {
-        setEmailError('이메일 중복 확인이 필요합니다.');
+        setEmailError('이메일 중복 확인이 완료되지 않았습니다.');
         isValid = false;
         errorMessages.push('이메일 중복 확인이 완료되지 않았습니다.');
     }
     
-    // 3. Step 1 확인 여부 (방어 로직)
+    // 3. Step 1 확인 여부 (최종 방어 로직)
     if (!isBizInfoVerified) {
         setBizVerificationError('사업자등록정보 진위 확인이 필요합니다.');
         isValid = false;
@@ -188,31 +165,25 @@ export default function PartnerSignupPage() {
     }
     
     if (!isValid) {
-        const uniqueErrors = [...new Set(errorMessages)].filter(msg => msg.includes('입력되지 않았') || msg.includes('필요') || msg.includes(':')); 
+        const uniqueErrors = [...new Set(errorMessages)].filter(msg => msg.includes('입력되지 않았') || msg.includes('필수') || msg.includes(':')); 
         window.alert("파트너 등록을 완료하려면 아래 항목을 확인해주세요:\n\n" + uniqueErrors.join('\n'));
         return; 
     }
 
-    // 유효성 검사 통과 시
     if (isValid) {
         setIsSubmitting(true);
         
-        // [수정] partnerData 객체를 Partner.java Entity 필드명과 100% 일치시킵니다.
         const partnerData = {
-            // 'email'과 'name' 필드는 Partner.java에 없으므로 제거합니다.
-            
-            // Partner Entity 필드
             bizName,
             contactEmail,
             contactPhone: contactPhone.trim() || null, 
             bizRegNumber,
             ceoName,
             openingDate,
-            passwordHash: password // React의 'password' state 값을 'passwordHash' key로 보냅니다.
+            passwordHash: password 
         };
 
         try {
-            // 💡 [수정] import한 API 함수를 호출합니다.
             const createdPartner = await createPartner(partnerData); 
 
             console.log('파트너 등록 성공:', createdPartner);
@@ -220,7 +191,6 @@ export default function PartnerSignupPage() {
             
             navigate('/partner/login'); 
         } catch (error) {
-            // partnerAPI.js에서 throw한 에러를 처리합니다.
             const errorMessage = error.response?.data?.message || error.message || '파트너 등록 중 알 수 없는 오류가 발생했습니다.';
             console.error('파트너 등록 중 예기치 않은 오류 발생:', error);
             window.alert(`등록 실패: ${errorMessage}`);
@@ -272,6 +242,7 @@ export default function PartnerSignupPage() {
               {bizNameError && <p className="text-red-500 text-sm mt-1">{bizNameError}</p>}
           </div>
           
+          {/* 비즈니스 이메일 (중복 확인 필드) */}
           <div>
             <label htmlFor="contactEmail" className="form-label">비즈네스 이메일 (아이디)</label>
             <div className="flex space-x-2 items-center">
@@ -284,64 +255,36 @@ export default function PartnerSignupPage() {
                     setContactEmail(e.target.value);
                     setIsEmailVerified(false); 
                     setEmailError('');
-                    setShowAuthCodeInput(false);
-                    setAuthCode('');
-                    setAuthCodeError('');
                 }}
                 onBlur={() => validateEmail(contactEmail)}
                 className={`form-input flex-1 ${emailError && !isEmailVerified ? 'border-red-500' : ''} ${isEmailVerified ? 'border-green-500' : ''}`} 
                 placeholder="파트너 연락용 이메일"
                 required
-                disabled={isSubmitting || showAuthCodeInput || isEmailVerified} // [수정] 인증 중/완료 시 비활성화
+                disabled={isSubmitting || isEmailVerified}
               />
               <button
                 type="button"
                 onClick={handleEmailCheck}
-                disabled={!contactEmail || !!emailError || isSubmitting || isEmailVerified || showAuthCodeInput} // [수정]
+                disabled={!contactEmail || !!emailError || isSubmitting || isEmailVerified} 
                 className="bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors duration-200 
                            rounded-lg font-medium text-sm flex-shrink-0 whitespace-nowrap flex items-center justify-center 
-                           w-28 py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed" // [수정] disabled 스타일 변경
+                           w-28 py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed" 
               >
-                {isEmailVerified ? "인증 완료" : (isSubmitting && emailError === '' ? '확인 중...' : '중복 확인')}
+                {isEmailVerified ? "확인 완료" : (isSubmitting ? '확인 중...' : '중복 확인')}
               </button>
             </div>
             {emailError && (
-                <p className={`text-sm mt-1 ${isEmailVerified ? 'text-green-500' : (emailError === '사용 가능한 이메일입니다. 인증번호를 발송했습니다.' ? 'text-blue-500' : 'text-red-500')}`}>
+                <p className={`text-sm mt-1 ${isEmailVerified ? 'text-green-500' : 'text-red-500'}`}>
                     {emailError}
+                </p>
+            )}
+            {isEmailVerified && !emailError && (
+                <p className="text-sm mt-1 text-green-500">
+                    사용 가능한 이메일입니다.
                 </p>
             )}
           </div>
 
-          {showAuthCodeInput && (
-            <div>
-              <label htmlFor="authCode" className="form-label">인증번호</label>
-              <div className="flex space-x-2">
-                <input
-                  id="authCode"
-                  type="text"
-                  value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
-                  className={`form-input flex-1 ${authCodeError ? 'border-red-500' : ''}`}
-                  placeholder="이메일로 전송된 6자리 숫자"
-                  maxLength={6}
-                />
-                <button 
-                  type="button" 
-                  onClick={handleVerifyCode} 
-                  className="w-28 bg-blue-500 text-white hover:bg-blue-600 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out"
-                >
-                  번호 확인
-                </button>
-              </div>
-              {authCodeError && (
-                <p className="text-sm mt-1 text-red-500">
-                  {authCodeError}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* 비밀번호 */}
           <div>
             <label htmlFor="password" className="form-label">비밀번호</label>
             <input
@@ -358,8 +301,6 @@ export default function PartnerSignupPage() {
             />
             {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
           </div>
-
-          {/* 비밀번호 확인 */}
           <div>
             <label htmlFor="passwordConfirm" className="form-label">비밀번호 확인</label>
             <input
@@ -375,8 +316,6 @@ export default function PartnerSignupPage() {
             />
             {passwordConfirmError && <p className="text-red-500 text-sm mt-1">{passwordConfirmError}</p>}
           </div>
-          
-          {/* 대표 연락처 (contactPhone) */}
           <div>
             <label htmlFor="contactPhone" className="form-label">대표 연락처 (선택)</label>
             <input
@@ -391,12 +330,11 @@ export default function PartnerSignupPage() {
             />
           </div>
 
-          {/* 등록 버튼 */}
           <button
             type="submit"
             className="btn-primary w-full"
             disabled={
-                !isBizInfoVerified || isSubmitting // Step 1 확인 및 제출 상태 체크
+                !isBizInfoVerified || !isEmailVerified || isSubmitting
             }
           >
             {isSubmitting ? '등록 중...' : '파트너 등록 및 회원가입'}

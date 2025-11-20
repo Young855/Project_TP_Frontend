@@ -140,7 +140,7 @@ const PartnerLoginPage = () => {
           </button>
           <span className="text-gray-300">|</span>
           <button 
-            onClick={() => navigate('/partner/signup')} 
+            onClick={() => navigate('/partner/email-verification')} 
             className="hover:text-blue-600 transition-colors font-medium"
           >
             파트너 등록

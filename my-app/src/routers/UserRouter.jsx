@@ -1,14 +1,11 @@
-// UserRouter.jsx
-
-import React from "react";
 import { redirect } from "react-router-dom"; 
-
-// import UserList from "../pages/user/UserList";       
+      
 import UserEdit from "../pages/user/UserEdit";       
 import SignupPage from "../pages/user/SignupPage";   
 import LoginPage from "../pages/user/LoginPage";     
 import MyPage from "../pages/user/MyPage";           
 import FindPasswordPage from "../pages/user/FindPasswordPage"; 
+
 
 import { 
     getUser, 
@@ -17,14 +14,11 @@ import {
     deleteUser,
     getAllUsers 
 } from "../api/userAPI"; 
-
-/* ------------------------------
-    Router Loaders and Actions
---------------------------------*/
+import EmailVerificationPage from "../pages/user/EmailVarificationPage";
 
 const userListLoader = async () => {
     try {
-        const users = await getAllUsers(); 
+        const users = await getAllUsers();
         return { users }; 
     } catch (error) {
         console.error("사용자 목록 로드 실패:", error);
@@ -34,7 +28,7 @@ const userListLoader = async () => {
 
 const userLoader = async ({ params }) => {
     try {
-        const user = await getUser(params.id); 
+        const user = await getUser(params.id);
         return { user };
     } catch (error) {
         console.error(`사용자 ${params.id} 로드 실패:`, error);
@@ -53,7 +47,7 @@ const userSignupAction = async ({ request }) => {
     };
 
     try {
-        await createUser(userData); 
+        await createUser(userData);
         return redirect('/user/login'); 
     } catch (error) {
         console.error("사용자 가입 실패:", error);
@@ -82,7 +76,7 @@ const userEditAction = async ({ params, request }) => {
 
 const userDeleteAction = async ({ params }) => {
     try {
-        await deleteUser(params.id); 
+        await deleteUser(params.id);
         return redirect('/user'); 
     } catch (error) {
         console.error("사용자 삭제 실패:", error);
@@ -97,6 +91,11 @@ export const userRoutes = [
                 path: "signup", 
                 element: <SignupPage />, 
                 action: userSignupAction, 
+            },
+            { 
+                // [수정] type props 전달
+                path: "email-verification", 
+                element: <EmailVerificationPage type="signup" />,
             },
             {
                 path: "login", 

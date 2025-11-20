@@ -1,7 +1,8 @@
+// src/pages/property/PropertyCreate.jsx
 import axios from "axios"; 
 import React, { useState } from "react";
 import { useNavigate, Form, Link, useSearchParams } from "react-router-dom"; 
-import AmenitySelector from "../../components/AmenitySelector"; // [추가]
+import AmenitySelector from "../../components/AmenitySelector"; 
 
 const PROPERTY_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; 
 
@@ -16,20 +17,17 @@ const PropertyCreatePage = () => {
     
     const [errMsg, setErrMsg] = useState("");
 
-    // [추가] 편의시설 선택 상태
-    const [selectedAmenityIds, setSelectedAmenityIds] = useState(new Set());
+    const [selectedAmenityNames, setSelectedAmenityNames] = useState(new Set());
     
     const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
     const handleAddressSearch = async () => {
-        
         if (!KAKAO_API_KEY) {
             setErrMsg("Kakao API 키가 설정되지 않았습니다. .env 파일을 확인하세요.");
             return;
         }
         
-        // 입력값이 비어있는지 확인
         if (addressFull.trim() === '') {
-            setErrMsg('주소를 입력한 후 검색 버튼을 눌러주세요.');
+            setErrMsg('주소를 입력한 후 검색 버튼을 눌러주세요.');   
             return;
         }
 
@@ -38,7 +36,7 @@ const PropertyCreatePage = () => {
                 'https://dapi.kakao.com/v2/local/search/address.json',
                 {
                     params: { 
-                        query: addressFull // state에 저장된 addressFull 값을 query로 사용
+                        query: addressFull 
                     },
                     headers: { 
                         Authorization: `KakaoAK ${KAKAO_API_KEY}` 
@@ -57,17 +55,16 @@ const PropertyCreatePage = () => {
                                ? firstResult.road_address.region_2depth_name 
                                : firstResult.address.region_2depth_name;
 
-                setAddressFull(fullAddr); // 표준화된 전체 주소로 업데이트
-                setCity(cityAddr || "");  // 시/군/구 정보로 업데이트
-                setLatitude(firstResult.y);   // 위도
-                setLongitude(firstResult.x);  // 경도
+                setAddressFull(fullAddr); 
+                setCity(cityAddr || "");  
+                setLatitude(firstResult.y);   
+                setLongitude(firstResult.x);  
                 
-                setErrMsg(""); // 성공 시 에러 메시지 초기화
+                setErrMsg(""); 
 
             } else {
-                // 검색 결과가 없을 경우
                 setErrMsg('검색 결과가 없습니다. 주소를 확인해주세요.');
-                setLatitude(""); // 기존 좌표 초기화
+                setLatitude(""); 
                 setLongitude("");
                 setCity("");
             }
@@ -82,14 +79,14 @@ const PropertyCreatePage = () => {
         navigate("/partner/properties");
     }
 
-    // [추가] 편의시설 체크박스 핸들러
-    const handleAmenityChange = (amenityId) => {
-        setSelectedAmenityIds((prevSet) => {
+    // [수정] amenityId (숫자) -> amenityName (문자열)을 받도록 변경
+    const handleAmenityChange = (amenityName) => {
+        setSelectedAmenityNames((prevSet) => {
             const newSet = new Set(prevSet);
-            if (newSet.has(amenityId)) {
-                newSet.delete(amenityId);
+            if (newSet.has(amenityName)) {
+                newSet.delete(amenityName);
             } else {
-                newSet.add(amenityId);
+                newSet.add(amenityName);
             }
             return newSet;
         });
@@ -97,7 +94,7 @@ const PropertyCreatePage = () => {
 
     return (
         <div className="container mx-auto p-4 md:p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">새 숙소 등록</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-6">새 숙박 시설 등록</h1>
             <Form 
                 method="post" 
                 action="/partner/properties/new"
@@ -106,7 +103,7 @@ const PropertyCreatePage = () => {
                 <input type="hidden" name="partnerId" defaultValue={partnerId} />
                 
                 <div>
-                    <label className="form-label" htmlFor="name">숙소명</label>
+                    <label className="form-label" htmlFor="name">숙박 시설명</label>
                     <input 
                         type="text"
                         name="name"
@@ -119,14 +116,14 @@ const PropertyCreatePage = () => {
                 </div>
 
                 <div>
-                    <label className="form-label" htmlFor="propertyType">숙소 유형</label>
+                    <label className="form-label" htmlFor="propertyType">숙박 시설 유형</label>
                     <select 
                         name="propertyType" 
                         id="propertyType"
-                        className="form-input w-full" // [수정] form-select -> form-input
+                        className="form-input w-full" 
                         required
                     >
-                        <option value="">-- 숙소 유형 선택 --</option>
+                        <option value="">-- 숙박 시설 유형 선택 --</option>
                         {PROPERTY_TYPES.map((t) => (
                             <option key={t} value={t}>{t}</option>
                         ))}
@@ -149,7 +146,7 @@ const PropertyCreatePage = () => {
                         <button
                             type="button"
                             onClick={handleAddressSearch}
-                            className="btn-secondary-outline" // [수정] btn-secondary... -> btn-secondary-outline
+                            className="btn-secondary-outline" 
                         >
                             주소 검색
                         </button>
@@ -178,7 +175,7 @@ const PropertyCreatePage = () => {
                 <input type="hidden" name="longitude" value={longitude} />
 
                 <div>
-                    <label className="form-label" htmlFor="description">숙소 설명</label>
+                    <label className="form-label" htmlFor="description">숙박 시설 설명</label>
                     <textarea 
                         name="description" 
                         id="description"
@@ -188,19 +185,16 @@ const PropertyCreatePage = () => {
                     />
                 </div>
 
-                {/* --- [추가] AmenitySelector --- */}
                 <AmenitySelector 
-                    selectedIds={selectedAmenityIds}
+                    selectedNames={selectedAmenityNames}
                     onChange={handleAmenityChange}
                 />
                 
-                {/* [추가] 선택된 ID를 콤마(,)로 구분된 문자열로 폼에 포함 */}
                 <input 
                     type="hidden" 
-                    name="amenityIds" 
-                    value={Array.from(selectedAmenityIds).join(',')} 
+                    name="amenityNames" 
+                    value={Array.from(selectedAmenityNames).join(',')} 
                 />
-                {/* ----------------------------- */}
 
                 <div className="flex space-x-4">
                     <div className="flex-1">
@@ -220,7 +214,7 @@ const PropertyCreatePage = () => {
                     <button 
                         type="button" 
                         onClick={handleCancel} 
-                        className="btn-secondary-outline" // [수정] btn-secondary... -> btn-secondary-outline
+                        className="btn-secondary-outline" 
                     >
                         취소
                     </button>

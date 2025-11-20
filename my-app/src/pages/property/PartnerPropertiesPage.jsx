@@ -1,85 +1,124 @@
-// 파일: src/pages/property/PartnerPropertiesPage.jsx (최종 확인 및 코드 유지)
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getPropertiesByPartnerId, deleteProperty } from '../../api/propertyAPI';
+import { usePartner } from '../../context/PartnerContext'; 
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
-import { getPropertiesByPartnerId, deleteProperty } from '../../api/propertyAPI'; 
-import RoomManagementModal from '../../components/RoomManagementModal'; 
-
-export default function PartnerPropertiesPage({ partnerUser, showModal }) {
+export default function PartnerPropertiesPage({ showModal }) {
   const navigate = useNavigate();
+  
+  // [수정] Context에서 refreshPartnerData 가져오기
+  const { partnerInfo, switchProperty, refreshPartnerData } = usePartner(); 
+  
   const [properties, setProperties] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(0);       
+  const [hasMore, setHasMore] = useState(true); 
+  
+  const observerTarget = useRef(null); 
+  
+  const partnerId = partnerInfo?.partnerId || 1; 
+  const pageSize = 10; 
 
-  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState(null);
-  
-  const partnerId = partnerUser?.partnerId || 1; 
-  
-  const loadProperties = async () => {
+  const loadProperties = async (pageNumber) => {
+    if (pageNumber > 0 && (!hasMore || isLoading)) return;
+
     setIsLoading(true);
     try {
-      const partnerData = await getPropertiesByPartnerId(partnerId); 
+      const response = await getPropertiesByPartnerId(partnerId, pageNumber, pageSize);
       
-      setProperties(Array.isArray(partnerData) ? partnerData : []);
+      const newProperties = response?.content || response || [];
+      const isLast = response?.last ?? (newProperties.length < pageSize);
+
+      setProperties(prev => {
+        return pageNumber === 0 ? newProperties : [...prev, ...newProperties];
+      });
       
+      setHasMore(!isLast); 
+
     } catch (e) {
-      console.error("숙소 목록 불러오기 오류:", e);
-      showModal('데이터 오류', '숙소 목록을 불러오는 데 실패했습니다.', null);
-      setProperties([]);
+      console.error("숙박 시설 목록 불러오기 오류:", e);
+      if (showModal) showModal('데이터 오류', '목록을 불러오는데 실패했습니다.', null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (!partnerId) return;
+    setPage(0);
+    setHasMore(true);
+    setProperties([]); 
+    loadProperties(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerId]);
 
   useEffect(() => {
-    loadProperties();
-  }, [partnerId]); 
+    if (page > 0) {
+      loadProperties(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-  const handleEditProperty = (propertyId) => {
-    navigate(`/properties/${propertyId}/edit`); 
-  };
-  
-  const handleDeleteProperty = (propertyId) => {
-    showModal('숙소 삭제', '정말 이 숙소를 삭제하시겠습니까? 객실 정보도 모두 삭제됩니다.', async () => {
-      try {
-        await deleteProperty(propertyId);
-        loadProperties(); 
-      } catch (e) {
-        console.error("숙소 삭제 오류:", e);
-        showModal('삭제 실패', e.response?.data?.message || '숙소 삭제에 실패했습니다.');
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setPage((prevPage) => prevPage + 1); 
+        }
+      },
+      { threshold: 1.0 } 
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
       }
-    });
+    };
+  }, [hasMore, isLoading]);
+
+  const handleEditProperty = (property) => {
+    switchProperty(property); 
+    navigate(`/partner/properties/${property.propertyId}/edit`);
   };
   
-  const handleOpenRoomModal = (property) => {
-    setSelectedProperty(property);
-    setIsRoomModalOpen(true);
+  const handleManageProperty = (property) => {
+      switchProperty(property);
+      navigate(`/partner/properties/${property.propertyId}`);
   };
 
-  const handleCloseModals = () => {
-    setIsRoomModalOpen(false);
-    setSelectedProperty(null);
-  };
-  
-  const onRoomsUpdated = (updatedProperty) => {
-     setProperties(properties.map(p => p.propertyId === updatedProperty.propertyId ? updatedProperty : p));
-  };
+  // [핵심 수정] 삭제 로직
+  const handleDeleteProperty = async (propertyId) => {
+    if (window.confirm('정말 이 숙소를 삭제하시겠습니까?')) {
+        try {
+            await deleteProperty(propertyId);
+            
+            // 1. 전역 컨텍스트(헤더, 사이드바) 갱신
+            // 숙소가 0개가 되면 currentProperty가 null로 변합니다.
+            await refreshPartnerData(); 
 
-
-  if (isLoading) {
-    return <div className="container mx-auto p-8 text-center">로딩 중...</div>;
-  }
+            // 2. 현재 보고 있는 로컬 리스트에서도 제거
+            setProperties(prev => prev.filter(p => p.propertyId !== propertyId));
+            
+        } catch (e) {
+            console.error("삭제 오류:", e);
+            alert("삭제에 실패했습니다.");
+        }
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">내 숙소 관리</h1>
+        <h1 className="text-3xl font-bold text-gray-800">내 숙박 시설 관리</h1>
         <button
-          onClick={() => navigate(`/partner/properties/new?partnerId=${partnerId}`)} 
+          onClick={() => navigate(`/partner/properties/new?partnerId=${partnerId}`)}
           className="btn-primary"
         >
-          + 새 숙소 추가
+          + 숙박 시설 추가
         </button>
       </div>
 
@@ -87,48 +126,48 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
         <table className="min-w-full table-auto divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">숙소명</th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">숙박 시설명</th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">타입</th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">주소</th>
-              <th className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">객실 수</th>
               <th className="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">관리</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {properties.length === 0 ? (
+            {properties.length === 0 && !isLoading ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                  등록된 숙소가 없습니다.
+                <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                  등록된 숙박 시설이 없습니다.
                 </td>
               </tr>
             ) : (
-             /* ... (숙소 목록 표시) ... */
-             properties.map((prop) => (
-                <tr key={prop.propertyId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+              properties.map((prop) => (
+                <tr key={prop.propertyId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleManageProperty(prop)}>
                     <div className="text-sm font-semibold text-gray-900">{prop.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="filter-chip text-xs">{prop.propertyType}</span>
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                        {prop.propertyType}
+                    </span>
                   </td>
-                  <td className-="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{prop.address}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">{prop.rooms?.length || 0}개</td> 
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{prop.address}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    <button 
-                      onClick={() => handleOpenRoomModal(prop)}
-                      className="btn-primary-outline text-xs px-3 py-1"
+                    <button
+                      onClick={() => handleManageProperty(prop)}
+                      className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
                     >
-                      객실 관리
+                      상세
                     </button>
-                    <button 
-                      onClick={() => handleEditProperty(prop.propertyId)}
-                      className="btn-secondary-outline text-xs px-3 py-1 text-blue-600 border-blue-600 hover:bg-blue-50"
+
+                    <button
+                      onClick={() => handleEditProperty(prop)}
+                      className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
                     >
                       수정
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDeleteProperty(prop.propertyId)}
-                      className="btn-secondary-outline text-xs px-3 py-1 text-red-600 border-red-600 hover:bg-red-50"
+                      className="px-3 py-1 text-xs font-medium text-red-600 border border-red-600 rounded hover:bg-red-50"
                     >
                       삭제
                     </button>
@@ -138,17 +177,11 @@ export default function PartnerPropertiesPage({ partnerUser, showModal }) {
             )}
           </tbody>
         </table>
+            
+        <div ref={observerTarget} className="h-10 flex justify-center items-center w-full">
+           {isLoading && <span className="text-gray-500 text-sm">데이터를 불러오는 중...</span>}
+        </div>
       </div>
-      
-      {selectedProperty && (
-         <RoomManagementModal
-            isOpen={isRoomModalOpen}
-            onClose={handleCloseModals}
-            property={selectedProperty}
-            showGlobalModal={showModal} 
-            onRoomsUpdated={onRoomsUpdated}
-         />
-      )}
     </div>
   );
 }

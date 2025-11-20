@@ -1,6 +1,5 @@
 import { redirect } from "react-router-dom"; 
 
-import { updatePropertyAmenities } from "../api/propertyamenityAPI";
 import PartnerPropertiesPage from "../pages/property/PartnerPropertiesPage";
 import PropertyCreate from "../pages/property/PropertyCreate";
 import PropertyDetail from "../pages/property/PropertyDetail";
@@ -12,7 +11,6 @@ import {
     deleteProperty 
 } from "../api/propertyAPI";
 
-// --- Loader ---
 const propertyLoader = async ({ params }) => {
     const property = await getProperty(params.id);
     return { property };
@@ -20,23 +18,23 @@ const propertyLoader = async ({ params }) => {
 
 const propertyCreateAction = async ({ request }) => {
     const formData = await request.formData();
-    const amenityIdsString = formData.get('amenityIds');
-    formData.delete('amenityIds');
+    
+    const amenityNamesString = formData.get('amenityNames');
+    formData.delete('amenityNames');
+    
     const data = Object.fromEntries(formData);
-    console.log('1. 폼에서 받은 원본 데이터:', data);
+    
+    // Amenity 처리 로직
+    if (amenityNamesString) {
+        data.amenityNames = amenityNamesString.split(',').filter(Boolean);
+    } else {
+        data.amenityNames = []; 
+    }
     
     try {
+        // [수정] createProperty 호출 시 partnerId 등 필수 데이터가 폼에 포함되어 있어야 함
         const newProperty = await createProperty(data);
-        if (amenityIdsString) {
-            const amenityIds = amenityIdsString.split(',')
-                                .filter(Boolean)
-                                .map(Number);
-            
-            if (amenityIds.length > 0) {
-                await updatePropertyAmenities(newProperty.propertyId, amenityIds);
-            }
-        }
-        
+        // 생성 후 상세 페이지로 리다이렉트 (경로는 절대 경로 유지)
         return redirect(`/partner/properties/${newProperty.propertyId}`);
     } catch (error) {
         console.error("숙소 등록 실패:", error);
@@ -46,18 +44,18 @@ const propertyCreateAction = async ({ request }) => {
 
 const propertyEditAction = async ({ params, request }) => {
     const formData = await request.formData();
-    const amenityIdsString = formData.get('amenityIds');
-    formData.delete('amenityIds'); // 숙소 수정 데이터에는 포함되지 않도록 제거
+    const amenityNamesString = formData.get('amenityNames');
+    formData.delete('amenityNames'); 
 
     const data = Object.fromEntries(formData);
+    if (amenityNamesString) {
+        data.amenityNames = amenityNamesString.split(',').filter(Boolean);
+    } else {
+        data.amenityNames = [];
+    }
     
     try {
         await updateProperty(params.id, data);
-        const amenityIds = amenityIdsString 
-            ? amenityIdsString.split(',').filter(Boolean).map(Number)
-            : [];
-        await updatePropertyAmenities(params.id, amenityIds);
-
         return redirect(`/partner/properties/${params.id}`);
     } catch (error) {
         console.error("숙소 수정 실패:", error);
@@ -68,43 +66,43 @@ const propertyEditAction = async ({ params, request }) => {
 const propertyDeleteAction = async ({ params }) => {
     try {
         await deleteProperty(params.id);
-        return redirect('/partner/properties');
+        return redirect('/partner/properties'); // 삭제 후 목록으로 이동
     } catch (error) {
         console.error("숙소 삭제 실패:", error);
         return { error: '숙소 삭제에 실패했습니다.' };
     }
 };
+
 export const propertyRoutes = [
     {
-        path: "partner/properties",
+        path: "properties", 
         children: [
             {
                 index: true, 
-                element: <PartnerPropertiesPage />,
+                element: <PartnerPropertiesPage />, // 목록 페이지 (/partner/properties)
             },
             {
                 path: "new", 
-                element: <PropertyCreate />, 
-                action: propertyCreateAction, // 수정된 action 연결
+                element: <PropertyCreate />, // 생성 페이지 (/partner/properties/new)
+                action: propertyCreateAction, 
             },
             {
                 path: ":id", 
-                element: <PropertyDetail />, 
-                loader: propertyLoader, // loader 연결
+                element: <PropertyDetail />, // 상세 페이지 (/partner/properties/1)
+                loader: propertyLoader, 
             },
             {
                 path: ":id/edit", 
-                element: <PropertyEdit />, 
-                loader: propertyLoader, // loader 연결
-                action: propertyEditAction, // 수정된 action 연결
+                element: <PropertyEdit />, // 수정 페이지 (/partner/properties/1/edit)
+                loader: propertyLoader, 
+                action: propertyEditAction, 
             },
              {
                 path: ":id/delete",
-                action: propertyDeleteAction, // action 연결
+                action: propertyDeleteAction, // 삭제 액션
             },
         ],
     },
-    
 ];
 
 export default propertyRoutes;

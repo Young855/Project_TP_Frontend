@@ -47,7 +47,9 @@ export const ROOM_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/rooms/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/rooms/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/rooms/${id}`, 
-        GET_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/rooms/property/${propertyId}`, 
+        GET_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/rooms/property/${propertyId}`,
+        CALENDAR: `${API_BASE_URL}/rooms/calendar`,
+        POLICY: `${API_BASE_URL}/rooms/policy`,
     },
 }
 

@@ -93,7 +93,7 @@ const LoginPage = () => {
           </button>
           <span className="text-gray-300">|</span>
           <button 
-            onClick={() => navigate('/user/signup')} 
+            onClick={() => navigate('/user/email-verification')} 
             className="hover:text-blue-600 transition-colors font-medium"
           >
             회원가입

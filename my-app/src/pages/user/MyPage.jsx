@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom'; // ★ 추가: Outlet context로 currentUser 받기
 import { UserCheck, ShoppingBag, Map, Star, Settings } from 'lucide-react';
 
-// mock 데이터 (named export 가정). default export라면 import 문을 바꿔주세요.
-import { mockBookings } from '../../data/mockData';
 
 /** 내 정보 섹션 */
 const MyInfo = ({ user }) => {

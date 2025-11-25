@@ -1,6 +1,5 @@
-import { Routes, Route, useNavigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import BookingList from "./BookingList";
-import BookingCreate from "./BookingCreate";
 import BookingDetail from "./BookingDetail";
 
 export default function BookingPage() {
@@ -30,7 +29,7 @@ export default function BookingPage() {
           {/* 기본: 내 예약 내역(목록) */}
           <Route index element={<BookingList userId={userId} />} />
           {/* 예약하기 화면 */}
-          <Route path="new" element={<BookingCreate />} />
+          <Route path="new" element={<Navigate to="/?focus=search" replace />} /> 
           {/* 예약 상세 */}
           <Route path=":id" element={<BookingDetail userId={userId} />} />
         </Routes>

@@ -152,7 +152,7 @@ const MainPage = ({ onSearch }) => {
               onClick={() => setIsGuestPickerOpen(!isGuestPickerOpen)}
               className="form-input w-full flex items-center justify-start px-3 py-2"
             >
-              {/* ✅ ‘총 n명’ 오른쪽에 화살표 아이콘 */}
+              {/* ✅ 총 n명' 오른쪽에 화살표 아이콘 */}
               <div className="flex items-center gap-2 text-gray-800">
                 <span>총 {totalGuests}명</span>
                 {isGuestPickerOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}

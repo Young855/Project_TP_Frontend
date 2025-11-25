@@ -25,5 +25,5 @@ const BookingRoomRouter = [
         element: <BookingRoomEdit />
       }
     ]
-  }
-]
+  },
+];

@@ -1,239 +1,168 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { getItineraries, deleteItinerary } from "../../api/itineraryAPI";
+// src/pages/itinerary/ItineraryList.jsx
 
-export default function ItineraryList() {
-  const [items, setItems] = useState([]);
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAllBookings } from "../../api/bookingAPI";
+
+export default function ItineraryList({ userId }) {
+  const [items, setItems] = useState([]);   // 예약 목록 = 내 일정
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const [filters, setFilters] = useState({
-    userId: "",
-    from: "",
-    to: "",
-  });
-
-  //달력 열기용 ref
-  const fromRef = useRef(null);
-  const toRef = useRef(null);
-
-  const fetchList = async () => {
+  const load = async () => {
     setErr("");
     setLoading(true);
     try {
-      const params = {};
-      if (filters.userId.trim() !== "") {
-        params.userId = Number(filters.userId);
-      }
-      if (filters.from) params.from = filters.from;
-      if (filters.to) params.to = filters.to;
+      // 내 예약만 가져오도록 userId 기준 + 체크인날짜 오름차순
+      const params = {
+        userId: Number(userId),
+        sort: "checkIn,asc",
+      };
 
-      const data = await getItineraries(params);
-      setItems(data);
-    } catch (error) {
-      console.error(error);
-      const msg = error.response?.data?.message || error.message;
-      setErr(msg);
+      const res = await getAllBookings(params);
+      const list = res?.content ?? res ?? [];
+      setItems(list);
+    } catch (e) {
+      console.error(e);
+      setErr(e.response?.data?.message || e.message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    load();
+    // userId 바뀌면 다시 로드
+  }, [userId]);
 
-  const onChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+  // 오늘 기준으로 다가오는 / 지난 일정 나누기
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const parseDate = (v) => {
+    if (!v) return null;
+    // checkIn / checkInDate / checkinDate 중 있는 거 사용
+    return new Date(v);
   };
 
-  const onSearch = (e) => {
-    e.preventDefault();
+  const upcoming = [];
+  const past = [];
 
-    if (filters.from && filters.to) {
-      const fromDate = new Date(filters.from);
-      const toDate = new Date(filters.to);
-      if (toDate <= fromDate) {
-        alert("종료일은 시작일 다음 날 이후여야 합니다.");
-        return;
-      }
-    }
-    fetchList();
-  };
+  items.forEach((b) => {
+    const checkOutRaw =
+      b.checkOut ?? b.checkOutDate ?? b.checkoutDate ?? b.checkOutUtc;
+    const d = checkOutRaw ? new Date(checkOutRaw) : null;
 
-  const onDelete = async (id) => {
-    if (!window.confirm("삭제하시겠습니까?")) return;
-    try {
-      await deleteItinerary(id);
-      fetchList();
-    } catch (error) {
-      const msg = error.response?.data?.message || error.message;
-      alert(msg);
+    if (d && d.toISOString().slice(0, 10) < todayStr) {
+      past.push(b);
+    } else {
+      upcoming.push(b);
     }
+  });
+
+  if (loading) return <div>일정을 불러오는 중...</div>;
+
+  if (err) {
+    // 여기서 예전처럼 "전체 목록 확인 불가" 떠도 화면에만 띄우고 끝
+    return <div style={{ color: "red" }}>{err}</div>;
+  }
+
+  if (!loading && items.length === 0) {
+    return <div>아직 예약된 일정이 없습니다.</div>;
+  }
+
+  const renderCard = (b) => {
+    const checkIn =
+      b.checkIn ?? b.checkInDate ?? b.checkinDate ?? b.checkInUtc ?? "";
+    const checkOut =
+      b.checkOut ?? b.checkOutDate ?? b.checkoutDate ?? b.checkOutUtc ?? "";
+    const title = b.propertyName ?? `숙소 #${b.propertyId}`;
+
+    return (
+      <div
+        key={b.id}
+        style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 12,
+          padding: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <div>
+          {/* 숙소 이름 */}
+          <div
+            style={{
+              fontWeight: 700,
+              marginBottom: 4,
+              fontSize: 16,
+            }}
+          >
+            {title}
+          </div>
+
+          {/* 날짜 */}
+          <div style={{ fontSize: 14, color: "#4b5563" }}>
+            {checkIn} ~ {checkOut}
+          </div>
+
+          {/* 상태 */}
+          <div
+            style={{
+              fontSize: 13,
+              color: "#6b7280",
+              marginTop: 4,
+            }}
+          >
+            상태: {b.status}
+          </div>
+        </div>
+
+        {/* 예약 상세로 이동 */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link
+            to={`/bookings/${b.id}`}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#ffffff",
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            예약 상세
+          </Link>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto" }}>
-      {/* 제목과 필터 간격 */}
-      <h2 style={{ marginBottom: 20 }}>일정 목록</h2>
+      {/* 다가오는 일정 */}
+      {upcoming.length > 0 && (
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
+            다가오는 일정
+          </h2>
+          <div style={{ display: "grid", gap: 12 }}>
+            {upcoming.map(renderCard)}
+          </div>
+        </section>
+      )}
 
-      <form
-        onSubmit={onSearch}
-        style={{
-          display: "flex",
-          gap: 16,
-          flexWrap: "wrap",
-          marginBottom: 16,
-          alignItems: "flex-end",
-        }}
-      >
-        {/* 사용자 ID */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <label style={{ marginBottom: 4 }}>사용자 ID</label>
-          <input
-            type="text"
-            name="userId"
-            value={filters.userId}
-            onChange={onChange}
-            placeholder="ID를 입력"
-            style={{ width: 200 }}
-          />
-        </div>
-
-        {/* 1. 시작일 */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            cursor: "pointer",
-          }}
-          onClick={() => {
-            // 전체 영역 클릭 시 달력 열기
-            if (fromRef.current && fromRef.current.showPicker) {
-              fromRef.current.showPicker();
-            } else if (fromRef.current) {
-              fromRef.current.focus();
-            }
-          }}
-        >
-          <label style={{ marginBottom: 4 }}>체크인</label>
-          <input
-            ref={fromRef}
-            type="date"
-            name="from"
-            value={filters.from}
-            onChange={onChange}
-            // input 자체 클릭은 기본 동작 유지
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-
-        {/* 2. 종료일  */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            cursor: "pointer",
-          }}
-          onClick={() => {
-            if (toRef.current && toRef.current.showPicker) {
-              toRef.current.showPicker();
-            } else if (toRef.current) {
-              toRef.current.focus();
-            }
-          }}
-        >
-          <label style={{ marginBottom: 4 }}>체크아웃</label>
-          <input
-            ref={toRef}
-            type="date"
-            name="to"
-            value={filters.to}
-            onChange={onChange}
-            min={filters.from || undefined}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-
-        {/* 3. 검색 버튼 */}
-        <button
-          type="submit"
-          style={{
-            height: 38,
-            padding: "0 20px",
-            fontWeight: 600,
-            borderRadius: 8,
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#111827",
-            color: "#ffffff",
-            whiteSpace: "nowrap",
-          }}
-        >
-          검색
-        </button>
-
-        <Link
-          to="/itineraries/new"
-          style={{
-            height: 38,
-            display: "inline-flex",
-            alignItems: "center",
-            fontWeight: 600,
-          }}
-        >
-          새 일정
-        </Link>
-      </form>
-
-      {loading && <div>불러오는 중...</div>}
-      {err && <div style={{ color: "red" }}>{err}</div>}
-
-      {!loading && !err && items.length === 0 && <div>데이터 없음</div>}
-
-      {!loading && !err && items.length > 0 && (
-        <table
-          width="100%"
-          cellPadding="8"
-          style={{ borderCollapse: "collapse" }}
-        >
-          <thead>
-            <tr style={{ borderBottom: "1px solid #ddd" }}>
-              <th align="left">ID</th>
-              <th align="left">User</th>
-              <th align="left">제목</th>
-              <th align="left">시작일</th>
-              <th align="left">종료일</th>
-              <th align="left">생성방식</th>
-              <th align="left">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr
-                key={it.itineraryId}
-                style={{ borderBottom: "1px solid #f1f1f1" }}
-              >
-                <td>{it.itineraryId}</td>
-                <td>{it.userId}</td>
-                <td>
-                  <Link to={`/itineraries/${it.itineraryId}`}>
-                    {it.title}
-                  </Link>
-                </td>
-                <td>{it.startDate}</td>
-                <td>{it.endDate}</td>
-                <td>{it.generatedFrom}</td>
-                <td style={{ display: "flex", gap: 6 }}>
-                  <Link to={`/itineraries/${it.itineraryId}/edit`}>수정</Link>
-                  <button type="button" onClick={() => onDelete(it.itineraryId)}>
-                    삭제
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 지난 일정 */}
+      {past.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
+            지난 일정
+          </h2>
+          <div style={{ display: "grid", gap: 12 }}>
+            {past.map(renderCard)}
+          </div>
+        </section>
       )}
     </div>
   );

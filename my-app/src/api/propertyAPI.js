@@ -6,16 +6,19 @@ const api = axios.create(axiosConfig);
 // 모든 숙소 조회 (GET /properties)
 export const getAllProperties = async () => {
   try {
-    const response = await api.get(PROPERTIES_ENDPOINTS.PROPERTIES.LIST);
+    const response = await api.get(PROPERTIES_ENDPOINTS.PROPERTIES.LIST_ALL);
     return response.data;
   } catch (error) {
     console.error("숙소 리스트 조회 오류:", error);
     throw error;
   }
 };
+
 export const getPropertiesByPartnerId = async (partnerId) => {
   try {
-    const response = await api.get(PROPERTIES_ENDPOINTS.PROPERTIES.LIST_BY_PARTNER(partnerId));
+    const response = await api.get(
+      PROPERTIES_ENDPOINTS.PROPERTIES.LIST_BY_PARTNER(partnerId)
+    );
     return response.data;
   } catch (error) {
     console.error(`파트너 ${partnerId}의 숙소 목록 조회 오류:`, error);
@@ -37,7 +40,10 @@ export const getProperty = async (id) => {
 // 숙소 생성 (POST /properties)
 export const createProperty = async (propertyData) => {
   try {
-    const response = await api.post(PROPERTIES_ENDPOINTS.PROPERTIES.ADD, propertyData);
+    const response = await api.post(
+      PROPERTIES_ENDPOINTS.PROPERTIES.ADD, 
+      propertyData
+    );
     return response.data;
   } catch (error) {
     console.error("숙소 생성 오류:", error);
@@ -48,7 +54,9 @@ export const createProperty = async (propertyData) => {
 // 숙소 수정 (PUT /properties/{id})
 export const updateProperty = async (id, propertyData) => {
   try {
-    const response = await api.put(PROPERTIES_ENDPOINTS.PROPERTIES.MODIFY(id), propertyData);
+    const response = await api.put(
+      PROPERTIES_ENDPOINTS.PROPERTIES.MODIFY(id), 
+      propertyData);
     return response.data;
   } catch (error) {
     console.error(`숙소 ${id} 수정 오류:`, error);
@@ -59,7 +67,9 @@ export const updateProperty = async (id, propertyData) => {
 // 숙소 삭제 (DELETE /properties/{id})
 export const deleteProperty = async (id) => {
   try {
-    const response = await api.delete(PROPERTIES_ENDPOINTS.PROPERTIES.DELETE(id));
+    const response = await api.delete(
+      PROPERTIES_ENDPOINTS.PROPERTIES.DELETE(id)
+    );
     return response.data;
   } catch (error) {
     console.error(`숙소 ${id} 삭제 오류:`, error);

@@ -1,14 +1,14 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080", // 백엔드 주소에 맞게 조정
+  baseURL: "http://localhost:8080", // 백엔드 주소
   withCredentials: true,
 });
 
-// 1 내 즐겨찾기 목록 조회
+// 1. 내 즐겨찾기 목록 조회  -> GET /favorites/list
 export const getFavorites = async (userId) => {
   try {
-    const res = await api.get("/favorites", {
+    const res = await api.get("/favorites/list", {
       params: { userId },
     });
     return res.data;
@@ -18,10 +18,10 @@ export const getFavorites = async (userId) => {
   }
 };
 
-// 2 즐겨찾기 생성 (찜 추가)
+// 2. 즐겨찾기 생성 (찜 추가) -> POST /favorites/create
 export const addFavorite = async (userId, data) => {
   try {
-    const res = await api.post("/favorites", data, {
+    const res = await api.post("/favorites/create", data, {
       params: { userId },
     });
     return res.data;
@@ -31,10 +31,10 @@ export const addFavorite = async (userId, data) => {
   }
 };
 
-// 3 즐겨찾기 삭제 (찜 해제)
+// 3. 즐겨찾기 삭제 (찜 해제) -> DELETE /favorites/delete
 export const removeFavorite = async (userId, targetType, targetId) => {
   try {
-    const res = await api.delete("/favorites", {
+    const res = await api.delete("/favorites/delete", {
       params: { userId, targetType, targetId },
     });
     return res.data;
@@ -44,10 +44,10 @@ export const removeFavorite = async (userId, targetType, targetId) => {
   }
 };
 
-// 4 즐겨찾기 여부 확인
+// 4. 즐겨찾기 여부 확인 -> GET /favorites/detail (컨트롤러 이름이 detail임)
 export const checkFavorite = async (userId, targetType, targetId) => {
   try {
-    const res = await api.get("/favorites/check", {
+    const res = await api.get("/favorites/detail", {
       params: { userId, targetType, targetId },
     });
     return res.data; // true or false

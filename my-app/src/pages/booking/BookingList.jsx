@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { cancelBooking, getAllBookings } from "../../api/bookingAPI";
 
+let allListErrorShown = false;
+
 export default function BookingList() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [errorShown, setErrorShown] = useState(false); // 이름 통일
 
   const load = async () => {
     setLoading(true);
@@ -13,8 +14,9 @@ export default function BookingList() {
       // createdAt 기준 내림차순 정렬이라고 가정
       const res = await getAllBookings({ sort: "createdAt,desc" });
       setRows(res?.content ?? res ?? []);
+
     } catch (err) {
-      if (!errorShown) {
+      if (!!allListErrorShown) {
         alert(err.message || "예약 목록을 불러오는 중 오류가 발생했습니다.");
         setErrorShown(true);
       }

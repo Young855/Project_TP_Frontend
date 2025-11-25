@@ -58,7 +58,8 @@ export const ROOM_ENDPOINTS = {
 export const PROPERTIES_ENDPOINTS = {
     PROPERTIES: {
         LIST_ALL: `${API_BASE_URL}/properties`, 
-        LIST_BY_PARTNER: (partnerId) => `${API_BASE_URL}/partner/properties/by-partner/${partnerId}`, 
+        LIST_BY_PARTNER: (partnerId) =>
+             `${API_BASE_URL}/partner/properties/by-partner/${partnerId}`, 
         ADD: `${API_BASE_URL}/partner/properties`, 
         GET: (id) => `${API_BASE_URL}/partner/properties/${id}`,
         MODIFY: (id) => `${API_BASE_URL}/partner/properties/${id}`,

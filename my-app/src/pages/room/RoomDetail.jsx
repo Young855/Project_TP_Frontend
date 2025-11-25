@@ -55,7 +55,7 @@ const RoomDetail = () => {
       <div style={{ margin: "8px 0" }}><b>Name:</b> {item.name}</div>
       <div style={{ margin: "8px 0" }}><b>Capacity:</b> {item.capacity}</div>
       <div style={{ margin: "8px 0" }}><b>Stock:</b> {item.stock}</div>
-      <div style={{ margin: "8px 0" }}><b>Price/Night:</b> {item.pricePerNight}</div>
+      {/* Price/Night 필드 제거됨 */}
       <div style={{ margin: "8px 0" }}><b>Refundable:</b> {String(item.refundable)}</div>
       <div style={{ margin: "8px 0" }}><b>Created:</b> {item.createdAt ?? "-"}</div>
 

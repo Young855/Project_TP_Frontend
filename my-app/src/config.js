@@ -48,7 +48,9 @@ export const ROOM_ENDPOINTS = {
         MODIFY : (id) => `${API_BASE_URL}/rooms/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/rooms/${id}`, 
         GET_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/rooms/property/${propertyId}`,
-        CALENDAR: `${API_BASE_URL}/rooms/calendar`,
+        // 백엔드 컨트롤러 구조(@GetMapping("/{id}/calendar"))에 맞춰 함수형으로 변경
+        GET_CALENDAR: (roomId) => `${API_BASE_URL}/rooms/${roomId}/calendar`,
+        // 정책 수정 엔드포인트 (RoomController에는 없었으나 Service에는 존재, POST/PUT 예상)
         POLICY: `${API_BASE_URL}/rooms/policy`,
     },
 }

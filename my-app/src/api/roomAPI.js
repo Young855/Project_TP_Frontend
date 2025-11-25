@@ -21,7 +21,7 @@ export const createRoom = async (roomData) => {
 export const getRoomsByProperty = async (propertyId) => {
   try {
     const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET_BY_PROPERTY(propertyId));
-    return response.data;
+    return response.data; // List<RoomDTO>
   } catch (error) {
     console.error("객실 목록 조회 오류:", error);
     throw error;
@@ -61,26 +61,66 @@ export const deleteRoom = async (roomId) => {
   }
 };
 
-// 6. 캘린더용 데이터 조회 (GET /rooms/calendar)
-export const getRoomCalendarData = async (propertyId, startDate, endDate) => {
+/**
+ * 6. [중요] 숙소 내 모든 객실의 캘린더 데이터 조회 (Logic Aggregation)
+ * 백엔드는 단일 객실(/{id}/calendar)만 지원하므로,
+ * 프론트에서 방 목록을 가져온 뒤 병렬로 각 방의 캘린더를 호출하여 합친다.
+ */
+export const getFullCalendarData = async (propertyId, startDate, endDate) => {
   try {
-    const response = await api.get(ROOM_ENDPOINTS.ROOMS.CALENDAR, {
-      params: { propertyId, startDate, endDate }
+    // Step 1: 해당 숙소의 모든 객실 리스트 조회
+    const rooms = await getRoomsByProperty(propertyId);
+    
+    if (!rooms || rooms.length === 0) return [];
+
+    // Step 2: 각 객실별로 캘린더 데이터 병렬 호출
+    const calendarPromises = rooms.map(async (room) => {
+        try {
+            const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET_CALENDAR(room.roomId), {
+                params: { startDate, endDate }
+            });
+            // Room 정보와 해당 Room의 정책(dailyPolicies)을 결합하여 반환
+            return {
+                ...room,
+                dailyPolicies: response.data // List<DailyStockDTO>
+            };
+        } catch (err) {
+            console.error(`Room ${room.roomId} calendar fetch failed`, err);
+            // 에러가 나더라도 다른 방 데이터는 보여주기 위해 빈 배열 반환
+            return { ...room, dailyPolicies: [] };
+        }
     });
-    return response.data;
+
+    // Step 3: 데이터 통합 반환
+    const fullData = await Promise.all(calendarPromises);
+    return fullData;
+
   } catch (error) {
-    console.error("캘린더 데이터 조회 오류:", error);
+    console.error("통합 캘린더 데이터 조회 오류:", error);
     throw error;
   }
 };
 
 // 7. 일별 정책 개별 수정 (PUT /rooms/policy)
+// RoomService.updateDailyPolicy 로직에 맞춰 데이터 전송
 export const updateDailyPolicy = async (policyData) => {
   try {
+    // policyData는 { roomId, date, price, stock, isActive } 형태여야 함
     const response = await api.put(ROOM_ENDPOINTS.ROOMS.POLICY, policyData);
     return response.data;
   } catch (error) {
     console.error("정책 수정 오류:", error);
+    throw error;
+  } 
+};
+
+export const updateBulkPolicy = async (bulkData) => {
+  try {
+    // bulkData: { roomId, startDate, endDate, price, stock, isActive }
+    const response = await api.put(`${ROOM_ENDPOINTS.ROOMS.POLICY}/bulk`, bulkData);
+    return response.data;
+  } catch (error) {
+    console.error("일괄 수정 오류:", error);
     throw error;
   }
 };

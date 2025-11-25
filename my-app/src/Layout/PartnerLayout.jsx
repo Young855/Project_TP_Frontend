@@ -4,7 +4,7 @@ import {
     LayoutDashboard, Calendar, List, LogOut, User, 
     Building, ChevronDown, PlusCircle, Settings, MapPin 
 } from 'lucide-react';
-import { PartnerProvider, usePartner } from '../../context/PartnerContext';
+import { PartnerProvider, usePartner } from '../context/PartnerContext';
 
 const PartnerLayoutContent = () => {
   const location = useLocation();
@@ -60,9 +60,9 @@ const PartnerLayoutContent = () => {
           </Link>
           
           {/* 3. 요금/재고 관리 */}
-          <Link to="/partner/rates" className={getLinkClass('/partner/rates')}>
+          <Link to="/partner/rooms" className={getLinkClass('/partner/rooms')}>
             <Calendar size={20} />
-            <span>요금/재고 관리</span>
+            <span>객실 관리</span>
           </Link>
 
           {/* 4. 예약 목록 */}

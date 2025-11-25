@@ -1,5 +1,5 @@
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Home, Bed, Calendar, MessageSquare, ListPlus, Edit } from 'lucide-react';
+import { Home, Calendar, MessageSquare, ListPlus, Edit } from 'lucide-react';
 
 export default function PartnerDashboardPage() {
   const navigate = useNavigate();
@@ -73,8 +73,6 @@ export default function PartnerDashboardPage() {
             );
           })}
         </div>
-
-        {/*  */}
         
         <div className="mt-10 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-lg font-semibold text-blue-800 mb-2">파트너 가이드</h3>

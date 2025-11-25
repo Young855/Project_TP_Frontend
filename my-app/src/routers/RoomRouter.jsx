@@ -1,16 +1,15 @@
-import React from 'react';
-import RoomList from "../pages/room/RoomList";
+import RateCalendarPage from "../pages/room/RateCalendarPage";
 import RoomCreate from "../pages/room/RoomCreate";
 import RoomDetail from "../pages/room/RoomDetail";
 import RoomEdit from "../pages/room/RoomEdit"; 
 
 const RoomRouter = [
   {
-    path: "rooms", // "rooom" 오타 수정
+    path: "rooms", 
     children: [
       {
         index: true,
-        element: <RoomList /> // /partner/rooms
+        element: <RateCalendarPage /> // /partner/rooms
       },
       {
         path: "new", // create -> new (일관성)

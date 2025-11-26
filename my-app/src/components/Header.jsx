@@ -37,7 +37,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer }) => {
   // 로그인/회원가입 버튼 클릭 처리
   // /loginSelection 페이지로 이동시킨다
   const handleAuthClick = () => {
-    navigate('/loginSelection');
+    navigate('/login-selection');
   };
 
   // bg-white : 배경 흰색

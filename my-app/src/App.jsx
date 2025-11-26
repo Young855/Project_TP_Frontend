@@ -5,7 +5,7 @@ import './index.css';
 import Header from './components/Header';
 import Modal from './components/Modal';
 import SideDrawer from './components/SideDrawer';
-import PartnerLayout from './components/layout/PartnerLayout';
+import PartnerLayout from './Layout/PartnerLayout';
 
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
@@ -226,7 +226,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <PartnerDashboard /> },
       { path: 'dashboard', element: <PartnerDashboard /> },
-      { path: 'rates', element: <RateCalendarPage /> },
       { path: 'properties', element: <Placeholder title="숙소 관리" /> },
       { path: 'reservations', element: <Placeholder title="예약 관리" /> },
       ...RoomRouter,

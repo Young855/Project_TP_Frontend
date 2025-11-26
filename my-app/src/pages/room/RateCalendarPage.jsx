@@ -25,22 +25,28 @@ const RateCalendarPage = () => {
   // [상태 1] 단일 수정 모달
   const [editingPolicy, setEditingPolicy] = useState(null);
   
-  // [상태 2] 일괄 수정 모달 (NEW)
-  // 🌟 일괄 수정 관련 상태 및 폼 제거 (Daily Insert에 초점)
-  /*
+  // 🌟 [상태 2] 일괄 수정 모달
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkForm, setBulkForm] = useState({
-      // ... (일괄 수정 폼 필드 제거됨)
+      roomId: null,
+      startDate: formatDate(new Date()),
+      endDate: formatDate(new Date()),
+      price: null,
+      stock: null, 
+      isActive: true,
+      days: [],
   });
-  */
-
+  const dayOptions = [
+      { id: 1, name: '월' }, { id: 2, name: '화' }, { id: 3, name: '수' }, 
+      { id: 4, name: '목' }, { id: 5, name: '금' }, { id: 6, name: '토' }, { id: 7, name: '일' }
+  ];
+  
   // 캘린더 날짜 배열 생성 (14일)
-  const dates = [];
-  for (let i = 0; i < 14; i++) {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
-      dates.push(formatDate(d));
-  }
+  const dates = Array.from({ length: 14 }).map((_, i) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    return formatDate(date);
+  });
 
   const loadData = async () => {
     if (!currentProperty) return;
@@ -49,19 +55,23 @@ const RateCalendarPage = () => {
         const startStr = dates[0];
         const endStr = dates[dates.length - 1];
         
-        // 🌟 roomAPI에서 DailyRoomPolicyDTO에 stock 필드가 있으므로, 
-        // 캘린더 데이터는 DailyRoomPolicyDTO 구조를 사용합니다.
         const data = await getFullCalendarData(currentProperty.propertyId, startStr, endStr);
+        
+        // 🌟 로그: 백엔드에서 가져온 전체 데이터 구조 확인
+        console.log("🔥 API Response (Room Data):", data);
+
         setRoomData(data);
         
-        // 🌟 일괄 수정 관련 초기 설정 제거
-        /*
         if (data.length > 0 && !bulkForm.roomId) {
-            setBulkForm(prev => ({ ...prev, roomId: data[0].roomId }));
+            setBulkForm(prev => ({ 
+                ...prev, 
+                roomId: data[0].roomId,
+                startDate: startStr,
+                endDate: endStr,
+            }));
         }
-        */
     } catch (error) {
-        console.error(error);
+        console.error("API 로드 실패:", error);
     } finally {
         setLoading(false);
     }
@@ -77,6 +87,9 @@ const RateCalendarPage = () => {
 
   // --- 단일 수정/생성 핸들러 ---
   const handleCellClick = (roomId, policy, dateStr) => {
+      // 🌟 로그: 셀 클릭 시 현재 정책 상태 확인
+      console.log(`[CLICK] Room: ${roomId}, Date: ${dateStr}, Policy Status:`, policy);
+      
       if (policy) {
           // 정책이 있는 경우: 수정 모드로 정책 데이터 로드
           setEditingPolicy({ 
@@ -85,12 +98,12 @@ const RateCalendarPage = () => {
               targetDate: policy.targetDate ?? dateStr 
           }); 
       } else {
-          // 정책이 없는 경우: 신규 생성 모드로 초기화 (재고와 가격은 null 또는 0으로 시작)
+          // 정책이 없는 경우: 신규 생성 모드로 초기화
           setEditingPolicy({ 
               roomId: roomId, 
               targetDate: dateStr, 
               price: null, 
-              stock: null, 
+              stock: null,
               isActive: true 
           }); 
       }
@@ -98,19 +111,25 @@ const RateCalendarPage = () => {
 
   const handleSavePolicy = async (e) => {
       e.preventDefault();
+
+      if (editingPolicy.price === null || editingPolicy.price === '' || editingPolicy.stock === null || editingPolicy.stock === '') {
+          alert("요금과 재고는 필수 입력 항목입니다.");
+          return;
+      }
+      
       try {
-          // 🌟 백엔드 DTO에 맞게 targetDate, price, stock, isActive 필드를 사용합니다.
-          // 백엔드 Service는 정책이 없으면 생성(Create)합니다.
           const payload = {
               roomId: editingPolicy.roomId,
               targetDate: editingPolicy.targetDate,
-              price: editingPolicy.price !== null ? Number(editingPolicy.price) : null,
-              stock: editingPolicy.stock !== null ? Number(editingPolicy.stock) : null,
+              price: Number(editingPolicy.price),
+              stock: Number(editingPolicy.stock), 
               isActive: editingPolicy.isActive,
-              // source 필드는 백엔드에서 결정합니다.
           };
+          
+          // 🌟 로그: 단일 정책 저장 페이로드 확인
+          console.log("💾 Saving Daily Policy Payload:", payload);
 
-          await updateDailyPolicy(payload); // PUT/POST 통합 API 호출
+          await updateDailyPolicy(payload);
           setEditingPolicy(null);
           loadData();
       } catch (error) {
@@ -118,21 +137,68 @@ const RateCalendarPage = () => {
       }
   };
 
-  // --- 일괄 수정 핸들러 (제거됨) ---
-  /*
+  // --- 🌟 일괄 수정 핸들러 ---
   const openBulkModal = () => {
-      // ... (제거됨)
+      setIsBulkModalOpen(true);
   };
+
+  const handleBulkFormChange = (e) => {
+      const { name, value, type, checked } = e.target;
+      setBulkForm(prev => ({
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+      }));
+  };
+
+  const handleDaySelect = (dayId) => {
+      setBulkForm(prev => ({
+          ...prev,
+          days: prev.days.includes(dayId)
+              ? prev.days.filter(id => id !== dayId)
+              : [...prev.days, dayId]
+      }));
+  };
+
   const handleBulkSubmit = async (e) => {
-      // ... (제거됨)
+      e.preventDefault();
+      
+      if (!bulkForm.roomId || !bulkForm.startDate || !bulkForm.endDate || 
+          bulkForm.price === null || bulkForm.price === '' || 
+          bulkForm.stock === null || bulkForm.stock === '') {
+          alert("객실, 기간, 요금, 재고는 필수 입력 항목입니다.");
+          return;
+      }
+
+      const payload = {
+          roomId: Number(bulkForm.roomId),
+          startDate: bulkForm.startDate,
+          endDate: bulkForm.endDate,
+          price: Number(bulkForm.price),
+          isActive: bulkForm.isActive,
+          days: bulkForm.days.length > 0 ? bulkForm.days : null, 
+          stock: Number(bulkForm.stock),
+      };
+      
+      // 🌟 로그: 일괄 정책 저장 페이로드 확인
+      console.log(" bulk Saving Bulk Policy Payload:", payload);
+
+      try {
+          await updateBulkPolicy(payload);
+          setIsBulkModalOpen(false);
+          loadData();
+          alert("일괄 정책 수정이 완료되었습니다.");
+      } catch (error) {
+          console.error("일괄 수정 오류:", error);
+          alert("일괄 정책 수정에 실패했습니다.");
+      }
   };
-  */
+
 
   if (!currentProperty) return <div className="p-8 text-center text-gray-500">상단에서 숙소를 먼저 선택해주세요.</div>;
 
   return (
     <div className="p-4 md:p-8 h-full flex flex-col">
-      {/* 상단 컨트롤러 */}
+      {/* 상단 컨트롤러 (생략) */}
       <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold text-gray-800">객실 요금 캘린더</h2>
@@ -143,8 +209,13 @@ const RateCalendarPage = () => {
             </div>
         </div>
         <div className="flex gap-2">
-            {/* 🌟 일괄 설정 버튼 제거됨 */}
-            {/* <button onClick={openBulkModal} ... /> */}
+            <button 
+                onClick={openBulkModal} 
+                className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition font-medium text-sm"
+            >
+                <CalendarRange size={18}/>
+                일괄 설정
+            </button>
 
             <Link 
                 to={`/partner/rooms/new?propertyId=${currentProperty.propertyId}`}
@@ -157,99 +228,108 @@ const RateCalendarPage = () => {
       </div>
 
       {/* 캘린더 그리드 */}
-      <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-        <div className="overflow-auto custom-scrollbar flex-1">
-            {loading ? (
-                <div className="p-10 text-center text-gray-500">데이터 로딩 중...</div>
-            ) : roomData.length === 0 ? (
-                <div className="p-10 text-center text-gray-500">등록된 객실이 없습니다.</div>
-            ) : (
-                <table className="w-full border-collapse min-w-max">
-                    <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
-                        <tr>
-                            <th className="border-b border-r border-gray-200 p-3 min-w-[220px] sticky left-0 bg-gray-50 z-20 text-left text-sm font-bold text-gray-700">
-                                객실 타입
+      <div className="flex-grow overflow-auto">
+        {loading ? (
+            <div className="text-center py-20">데이터를 불러오는 중입니다...</div>
+        ) : (
+            <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 border-r border-gray-200">객실 이름</th>
+                        {dates.map((dateStr) => (
+                            <th key={dateStr} className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-24 border-r last:border-r-0 ${getDayName(dateStr) === '토' ? 'text-blue-600' : getDayName(dateStr) === '일' ? 'text-red-600' : 'text-gray-500'}`}>
+                                <div>{dateStr.substring(5)}</div>
+                                <div className="font-bold text-sm mt-1">{getDayName(dateStr)}</div>
                             </th>
-                            {dates.map(dateStr => {
-                                const dayName = getDayName(dateStr);
-                                const isWeekend = dayName === '토' || dayName === '일';
+                        ))}
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                    {roomData.map((room) => (
+                        <tr key={room.roomId} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 bg-white sticky left-0 z-5">
+                                {room.name}
+                                <Link to={`/partner/rooms/${room.roomId}/edit`} className="ml-2 text-blue-500 hover:text-blue-700">
+                                    <Edit size={14} className="inline"/>
+                                </Link>
+                            </td>
+                            {dates.map((dateStr) => {
+                                const policy = room.dailyPolicies?.find(p => p.targetDate === dateStr);
+                                
+                                // 🌟 로그: 캘린더 셀 렌더링 시 policy 상태 확인
+                                // policy가 null/undefined이 아니지만 isActive가 false인 경우를 디버깅합니다.
+                                if (policy && !policy.isActive) {
+                                    console.log(`⚠️ Policy Found but Inactive/Null Active: Room ${room.roomId}, Date ${dateStr}, Policy:`, policy);
+                                }
+                                
+                                const isPolicyMissingData = !policy || (policy && (policy.price === null || policy.stock === null || policy.stock === 0));
+
+                                let cellClass = "cursor-pointer transition duration-150";
+                                let priceText = ''; 
+                                let stockText = ''; 
+                                let statusClass = 'text-gray-400';
+
+                                if (policy && !isPolicyMissingData) { 
+                                    cellClass += " hover:bg-yellow-100";
+
+                                    if (policy.isActive === true) { 
+                                        cellClass += " bg-green-50/50";
+                                        priceText = policy.price?.toLocaleString() || '0';
+                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                        statusClass = 'text-green-700 font-bold';
+                                    } else if (policy.isActive === false) { 
+                                        cellClass += " bg-red-50/50";
+                                        priceText = '판매중단';
+                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                        statusClass = 'text-red-500';
+                                    } else {
+                                         cellClass += " bg-yellow-50/50";
+                                         priceText = '등록/수정 필요';
+                                         stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                         statusClass = 'text-yellow-700';
+                                    }
+                                } else {
+                                    cellClass += " bg-gray-50 hover:bg-blue-100";
+                                }
+
                                 return (
-                                    <th key={dateStr} className={`border-b border-gray-200 p-2 min-w-[100px] text-center ${isWeekend ? 'bg-red-50/70 text-red-600' : ''}`}>
-                                        <div className="text-xs text-gray-500">{dateStr.substring(5)}</div>
-                                        <div className="text-sm font-bold">{dayName}</div>
-                                    </th>
+                                    <td 
+                                        key={dateStr} 
+                                        className={`px-2 py-2 text-center text-sm border-r last:border-r-0 ${cellClass}`}
+                                        onClick={() => handleCellClick(room.roomId, policy, dateStr)}
+                                    >
+                                        {!isPolicyMissingData ? (
+                                            <>
+                                                <div className={statusClass}>{priceText}</div>
+                                                <div className="text-xs text-gray-500 mt-1">{stockText}</div>
+                                            </>
+                                        ) : (
+                                            <div className="h-10 flex items-center justify-center">
+                                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow font-medium hover:bg-blue-600 transition">
+                                                    등록
+                                                </span>
+                                            </div>
+                                        )}
+                                    </td>
                                 );
                             })}
                         </tr>
-                    </thead>
-                    <tbody>
-                        {roomData.map(room => (
-                            <tr key={room.roomId} className="hover:bg-gray-50">
-                                <td className="border-b border-r border-gray-200 p-4 bg-white sticky left-0 z-10">
-                                    <div className="flex items-center justify-between">
-                                        <div className="font-bold text-gray-800">{room.name}</div>
-                                        {/* 🌟 수정 버튼 추가 */}
-                                        <Link to={`/partner/rooms/${room.roomId}/edit`} className="text-gray-500 hover:text-blue-600 transition">
-                                            <Edit size={16} />
-                                        </Link>
-                                    </div>
-                                    <div className="text-xs text-gray-400 mt-1">ID: {room.roomId}</div>
-                                </td>
-                                {dates.map(dateStr => {
-                                    // 백엔드는 targetDate 필드를 사용하므로 이를 기준으로 검색해야 함
-                                    const policy = room.dailyPolicies?.find(p => p.targetDate === dateStr);
-                                    
-                                    const isSoldOut = policy && policy.stock <= 0;
-                                    const isClosed = policy && !policy.isActive;
-                                    const isManual = policy && policy.source === 'MANUAL';
-                                    
-                                    // 정책이 존재하지만 가격이 null/0인 경우 (미설정 상태)
-                                    const isPriceNotSet = policy && (policy.price === null || policy.price === 0);
-
-                                    return (
-                                        <td 
-                                            key={`${room.roomId}-${dateStr}`} 
-                                            onClick={() => handleCellClick(room.roomId, policy, dateStr)}
-                                            className={`border-b border-gray-200 p-0 cursor-pointer transition-colors border-r border-dashed relative group
-                                                ${!policy || isPriceNotSet ? 'bg-red-50/50' : ''} /* 정책이 없거나 가격이 없으면 눈에 띄게 표시 */
-                                                ${isClosed ? 'bg-gray-200' : ''}
-                                            `}
-                                        >
-                                            {policy ? (
-                                                <div className="h-16 flex flex-col justify-center items-center text-sm p-1">
-                                                    {isClosed ? <span className="text-[10px] font-bold text-gray-500 bg-white px-1 rounded mb-1 border">OFF</span> 
-                                                    : isSoldOut ? <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1 rounded mb-1">매진</span>
-                                                    : <span className={`text-[10px] font-bold px-1 rounded mb-1 ${isManual ? 'text-purple-600 bg-purple-100' : 'text-green-600 bg-green-100'}`}>{isManual ? '설정' : '기본'}</span>}
-                                                    
-                                                    {/* 가격 필드가 null 또는 0 일 때 처리 */}
-                                                    <div className="font-bold text-gray-800">
-                                                        {isPriceNotSet ? <span className="text-xs text-red-600">미설정</span> : `₩ ${policy.price.toLocaleString()}`}
-                                                    </div>
-                                                    
-                                                    <div className={`text-xs ${policy.stock === 0 ? 'text-red-500' : 'text-blue-600'}`}>재고: {policy.stock ?? '-'}</div>
-                                                    <div className="absolute inset-0 bg-blue-600/10 hidden group-hover:flex items-center justify-center border-2 border-blue-600">
-                                                        <span className="bg-white text-blue-600 text-xs px-2 py-1 rounded shadow font-bold">수정/등록</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="h-16 text-xs text-gray-400 text-center flex items-center justify-center">
-                                                    <span className="bg-white text-blue-600 text-xs px-2 py-1 rounded shadow font-bold hidden group-hover:block">등록</span>
-                                                    <span className="block group-hover:hidden">-</span>
-                                                </div>
-                                            )}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
+                    ))}
+                    {roomData.length === 0 && (
+                        <tr>
+                            <td colSpan={15} className="py-10 text-center text-gray-500">
+                                등록된 객실이 없습니다. <Link to={`/partner/rooms/new?propertyId=${currentProperty.propertyId}`} className="text-blue-500 font-medium hover:underline">객실을 먼저 등록해주세요.</Link>
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        )}
       </div>
 
-      {/* --- 단일 수정/생성 모달 --- */}
+      {/* --- 단일 수정/생성 모달 (생략) --- */}
       {editingPolicy && (
+          // ... (모달 내용 생략)
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
                   <h3 className="text-lg font-bold mb-4 border-b pb-2">
@@ -258,13 +338,12 @@ const RateCalendarPage = () => {
                   <form onSubmit={handleSavePolicy} className="space-y-4">
                       <input type="hidden" value={editingPolicy.roomId} />
                       <div>
-                          <label className="form-label">1박 요금</label>
-                          {/* null일 때 0으로 표시하여 입력 편의성 제공 */}
-                          <input type="number" className="form-input w-full" value={editingPolicy.price ?? ''} onChange={(e) => setEditingPolicy({...editingPolicy, price: Number(e.target.value)})} />
+                          <label className="form-label">1박 요금 *</label>
+                          <input type="number" className="form-input w-full" value={editingPolicy.price ?? ''} onChange={(e) => setEditingPolicy({...editingPolicy, price: e.target.value !== '' ? Number(e.target.value) : null})} />
                       </div>
                       <div>
-                          <label className="form-label">재고</label>
-                          <input type="number" className="form-input w-full" value={editingPolicy.stock ?? ''} onChange={(e) => setEditingPolicy({...editingPolicy, stock: Number(e.target.value)})} />
+                          <label className="form-label">재고 *</label>
+                          <input type="number" className="form-input w-full" value={editingPolicy.stock ?? ''} onChange={(e) => setEditingPolicy({...editingPolicy, stock: e.target.value !== '' ? Number(e.target.value) : null})} />
                       </div>
                       <div className="flex items-center gap-2">
                           <input type="checkbox" checked={editingPolicy.isActive} onChange={(e) => setEditingPolicy({...editingPolicy, isActive: e.target.checked})} />
@@ -281,7 +360,80 @@ const RateCalendarPage = () => {
           </div>
       )}
 
-      {/* --- 일괄 수정 모달 제거됨 --- */}
+      {/* --- 🌟 일괄 수정 모달 (생략) --- */}
+      {isBulkModalOpen && (
+          // ... (모달 내용 생략)
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                  <h3 className="text-lg font-bold mb-4 border-b pb-2">기간 정책 일괄 설정</h3>
+                  <form onSubmit={handleBulkSubmit} className="space-y-4">
+                      
+                      <div>
+                          <label className="form-label">객실 선택 *</label>
+                          <select 
+                              name="roomId" 
+                              value={bulkForm.roomId ?? ''} 
+                              onChange={handleBulkFormChange} 
+                              className="form-input w-full"
+                              required
+                          >
+                              <option value="">객실을 선택하세요</option>
+                              {roomData.map(room => (
+                                  <option key={room.roomId} value={room.roomId}>{room.name} (ID: {room.roomId})</option>
+                              ))}
+                          </select>
+                      </div>
+
+                      <div className="flex gap-4">
+                          <div className="flex-1">
+                              <label className="form-label">시작일 *</label>
+                              <input type="date" name="startDate" value={bulkForm.startDate} onChange={handleBulkFormChange} className="form-input w-full" required />
+                          </div>
+                          <div className="flex-1">
+                              <label className="form-label">종료일 *</label>
+                              <input type="date" name="endDate" value={bulkForm.endDate} onChange={handleBulkFormChange} className="form-input w-full" required />
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="form-label">요일 선택 (선택 안함: 전체 요일 적용)</label>
+                          <div className="flex gap-2 mt-1">
+                              {dayOptions.map(day => (
+                                  <button
+                                      key={day.id}
+                                      type="button"
+                                      onClick={() => handleDaySelect(day.id)}
+                                      className={`px-3 py-1 rounded-full text-xs font-medium transition
+                                          ${bulkForm.days.includes(day.id) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}
+                                      `}
+                                  >
+                                      {day.name}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="form-label">1박 요금 *</label>
+                          <input type="number" name="price" placeholder="가격" value={bulkForm.price ?? ''} onChange={handleBulkFormChange} className="form-input w-full mb-3" />
+                          
+                          <label className="form-label">재고 *</label>
+                          <input type="number" name="stock" placeholder="재고" value={bulkForm.stock ?? ''} onChange={handleBulkFormChange} className="form-input w-full" />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2">
+                          <input type="checkbox" id="bulkIsActive" name="isActive" checked={bulkForm.isActive} onChange={handleBulkFormChange} />
+                          <label htmlFor="bulkIsActive">판매 활성화</label>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-4">
+                          <button type="button" onClick={() => setIsBulkModalOpen(false)} className="btn-secondary-outline w-full">취소</button>
+                          <button type="submit" className="btn-primary w-full">일괄 정책 적용</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

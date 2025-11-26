@@ -1,6 +1,7 @@
 import axios from "axios";
 import { 
     ROOM_ENDPOINTS, 
+    DAILY_POLICY_ENDPOINTS,
     axiosConfig
 } from "../config";
 
@@ -63,8 +64,7 @@ export const deleteRoom = async (roomId) => {
 
 /**
  * 6. [중요] 숙소 내 모든 객실의 캘린더 데이터 조회 (Logic Aggregation)
- * 백엔드는 단일 객실(/{id}/calendar)만 지원하므로,
- * 프론트에서 방 목록을 가져온 뒤 병렬로 각 방의 캘린더를 호출하여 합친다.
+ * 변경: 단일 객실 캘린더 조회 엔드포인트를 /daily-policies/calendar로 변경
  */
 export const getFullCalendarData = async (propertyId, startDate, endDate) => {
   try {
@@ -76,13 +76,18 @@ export const getFullCalendarData = async (propertyId, startDate, endDate) => {
     // Step 2: 각 객실별로 캘린더 데이터 병렬 호출
     const calendarPromises = rooms.map(async (room) => {
         try {
-            const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET_CALENDAR(room.roomId), {
-                params: { startDate, endDate }
+            // 🌟 변경된 엔드포인트 사용: GET /daily-policies/calendar?roomId={id}&...
+            const response = await api.get(DAILY_POLICY_ENDPOINTS.CALENDAR, {
+                params: { 
+                    roomId: room.roomId, // Query Parameter로 roomId 전달
+                    startDate, 
+                    endDate 
+                }
             });
             // Room 정보와 해당 Room의 정책(dailyPolicies)을 결합하여 반환
             return {
                 ...room,
-                dailyPolicies: response.data // List<DailyStockDTO>
+                dailyPolicies: response.data // List<DailyRoomPolicyDTO>
             };
         } catch (err) {
             console.error(`Room ${room.roomId} calendar fetch failed`, err);
@@ -100,24 +105,29 @@ export const getFullCalendarData = async (propertyId, startDate, endDate) => {
     throw error;
   }
 };
-
-// 7. 일별 정책 개별 수정 (PUT /rooms/policy)
-// RoomService.updateDailyPolicy 로직에 맞춰 데이터 전송
+/**
+ * 7. 일별 정책 개별 수정/생성 (POST/PUT /daily-policies)
+ * DailyRoomPolicyController.java의 POST/PUT /daily-policies에 매핑됨.
+ * 정책이 없으면 Service에서 생성, 있으면 수정합니다.
+ */
 export const updateDailyPolicy = async (policyData) => {
   try {
-    // policyData는 { roomId, date, price, stock, isActive } 형태여야 함
-    const response = await api.put(ROOM_ENDPOINTS.ROOMS.POLICY, policyData);
+    // RateCalendarPage.jsx에 맞춰 POST를 호출하도록 구현 (Service에서 생성/수정 통합)
+    const response = await api.post(DAILY_POLICY_ENDPOINTS.POLICY, policyData);
     return response.data;
   } catch (error) {
-    console.error("정책 수정 오류:", error);
+    console.error("정책 저장/수정 오류:", error);
     throw error;
   } 
 };
 
+/**
+ * 8. 기간 정책 일괄 수정 (PUT /daily-policies/bulk)
+ * DailyRoomPolicyController.java의 PUT /daily-policies/bulk에 매핑됨.
+ */
 export const updateBulkPolicy = async (bulkData) => {
   try {
-    // bulkData: { roomId, startDate, endDate, price, stock, isActive }
-    const response = await api.put(`${ROOM_ENDPOINTS.ROOMS.POLICY}/bulk`, bulkData);
+    const response = await api.put(DAILY_POLICY_ENDPOINTS.BULK, bulkData);
     return response.data;
   } catch (error) {
     console.error("일괄 수정 오류:", error);

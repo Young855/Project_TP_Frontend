@@ -55,6 +55,12 @@ export const ROOM_ENDPOINTS = {
     },
 }
 
+export const DAILY_POLICY_ENDPOINTS = {
+    CALENDAR: `${API_BASE_URL}/daily-policies/calendar`, 
+    POLICY: `${API_BASE_URL}/daily-policies`,
+    BULK: `${API_BASE_URL}/daily-policies/bulk`,
+};
+
 export const PROPERTIES_ENDPOINTS = {
     PROPERTIES: {
         LIST_ALL: `${API_BASE_URL}/properties`, 
@@ -155,4 +161,5 @@ export default{
     HASHTAG_ENDPOINTS,
     FAVORITE_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
+    DAILY_POLICY_ENDPOINTS,
 }

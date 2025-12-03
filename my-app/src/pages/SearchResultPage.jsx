@@ -22,12 +22,7 @@ const SORT_OPTIONS = [
 ];
 
 // #취향 / 공용시설 / 객실 내 시설 / 기타 시설 버튼에 쓰이는 문자열들
-const HASHTAG_OPTIONS = [
-  "#가족여행숙소",
-  "#스파",
-  "#파티룸",
-  "#OTT",
-];
+const HASHTAG_OPTIONS = ["#가족여행숙소", "#스파", "#파티룸", "#OTT"];
 
 const COMMON_FACILITY_OPTIONS = [
   "사우나",
@@ -37,6 +32,11 @@ const COMMON_FACILITY_OPTIONS = [
   "피트니스",
   "공용주방",
   "매점",
+  "조식제공",
+  "무료주차",
+  "반려견동반",
+  "객실내취사",
+  "캠프파이어", // etc 지웠으니 ETC_FACILITY_OPTIONS 관련 없애기
 ];
 
 const ROOM_FACILITY_OPTIONS = [
@@ -47,14 +47,6 @@ const ROOM_FACILITY_OPTIONS = [
   "에어컨",
   "욕실용품",
   "개인금고",
-];
-
-const ETC_FACILITY_OPTIONS = [
-  "조식제공",
-  "무료주차",
-  "반려견동반",
-  "객실내취사",
-  "캠프파이어",
 ];
 
 // 가격 슬라이더 전체 구간 : 0 ~ 50만
@@ -94,49 +86,78 @@ function PriceRangeSlider({ min, max, step, minValue, maxValue, onChange }) {
   // 트랙의 왼쪽 기준으로 얼마나 이동했는지 비율(ratio) 계산 -> 0 ~ 1 사이로 clamp
   // 그 비율을 가격값으로 환산하고 (min ~ max 사이), 스텝(1만) 단위로 반올림
   useEffect(() => {
-    if (!dragging) return;
+    if (!dragging) return; 
+    // dragging이 "min" 또는 "max"인 동안만 실행된다. 
+    // 즉 슬라이더를 드래그 하는 동작에만 동작
+    // 손 떼거나 마우스 떼면 dragging = null, useEffect 멈춤 
 
-    const handleMove = (e) => {
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const rect = trackRef.current?.getBoundingClientRect();
+    
+    const handleMove = (e) => {                               // trackRef = 슬라이더 막대 DOM 요소를 가리키는 변수
+                                                              // rect = 그 요소의 화면 위치(left, top) + 크기(width,height)를 담은 객체
+      const clientX = e.clientX;                              // clientX: 마우스가 현재 있는 x좌표 
+      const rect = trackRef.current?.getBoundingClientRect(); // 슬라이더 막대(track)의 위치 정보 가져오기
+                                                              // 예)
+                                                              // 막대(left) = 100px
+                                                              // 막대(width) = 300px   왜 width 인가 right가 아니고 -> "전체 길이(width)"가 필요하다
+                                                              // 사용자가 클릭한 X(clientX) = 160px
+                                                              // -> 막대 기준 : 160-100 = 60px
       if (!rect) return;
 
-      let ratio = (clientX - rect.left) / rect.width;
-      ratio = Math.max(0, Math.min(1, ratio));
+      let ratio = (clientX - rect.left) / rect.width;                     
+      ratio = Math.max(0, Math.min(1, ratio)); // 0~1 사이로 제한     // 슬라이더 내에서 몇% 지점인지 계산
+                                                                    // ratio = 60px / 300px = 0.2
+                                                                    // 즉 슬라이더는 20%지점을 의미한다.
+                                                                    // 0 ~ 1을 벗어나지 않게 clamp 해놓음
+                                                                    //  그럼 clamp가 뭐고 어디 해놨는지 ?
 
-      let value = min + (max - min) * ratio;
-      value = Math.round(value / step) * step;
+      let value = min + (max - min) * ratio;           // 비율(ratio)을 실제 가격 값으로 변환
+      value = Math.round(value / step) * step;         // min = 0원
+                                                       // max = 500000원
+                                                       // ratio = 0.2
+                                                       // step = 10000원
+
+                                                       // 그러면 실제 값 = 0 + 500000 * 0.2 = 100000원
+                                                       // step 단위로 반올림 -> 100000 그대로 유지
+
+                                                       //즉, 슬라이더 위치 -> 가격 값으로 변환
+
+                                                       // 마우스 위치를 0~1 비율로 만든 뒤
+                                                       // 그 비율을 가격 범위에 맞게 숫자로 변환하고
+                                                       // 마지막 1만원 단위로 맞춰서 떨어지게 만드는 과정
 
       if (dragging === "min") {
-        value = Math.max(min, value);
-        value = Math.min(value, maxValue);
-        value = Math.min(value, LEFT_HANDLE_MAX);
+        value = Math.max(min, value);                  // 전체 최소값보다 작아지면 안된다. 
+        value = Math.min(value, maxValue);             // 오른쪽 핸들보다 커질 수 없다
+        value = Math.min(value, LEFT_HANDLE_MAX);      // 40만원 이상 못 올라가게 제한
         onChange(value, maxValue);
       } else if (dragging === "max") {
-        value = Math.min(value, max);
-        value = Math.max(value, minValue);
-        value = Math.max(value, RIGHT_HANDLE_MIN);
+        value = Math.min(value, max);                  // 전체 최댓값보다 커지면 안된다
+        value = Math.max(value, minValue);             // 왼쪽 핸들보다 작아지면 안된다
+        value = Math.max(value, RIGHT_HANDLE_MIN);     // 최소 3만원 이하로 내려갈 수 없다
         onChange(minValue, value);
       }
     };
 
     const stopDrag = () => setDragging(null);
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", stopDrag);
-    window.addEventListener("touchmove", handleMove);
-    window.addEventListener("touchend", stopDrag);
-    window.addEventListener("touchcancel", stopDrag);
-
+    window.addEventListener("mousemove", handleMove);     // 드래그 중 -> 마우스가 움직일 때 계속 handleMove 호출
+    window.addEventListener("mouseup", stopDrag);         // 드래그 끌 -> stopDrag 실행해서 dragging 종료
+                                                          // 그리고 useEffect clean-up으로 제거
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", stopDrag);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", stopDrag);
-      window.removeEventListener("touchcancel", stopDrag);
-    };
-  }, [dragging, min, max, step, minValue, maxValue, onChange]);
+      // 밑에 두 줄은 드래그가 끝났거나, useEffect가 다시 실행될 때 제거되는 코드
+      window.removeEventListener("mousemove", handleMove); // 더 이상 마우스 움직임에 반응하지 마라
+                                                           // 언제 실행되나 ? 
+                                                           // 1. dragging이 끝났을 때 (draggig = null)
+                                                           // 2. useEffect가 다시 실행되기 전
 
+      window.removeEventListener("mouseup", stopDrag);     // 더 이상 마우스 떼는 이벤트에 반응하지 마라
+                                                           // 언제 실행되나
+                                                           // 1. dragging이 끝났을 때
+                                                           // 2. useEffect가 다시 실행되기 전에
+    };
+  }, [dragging, min, max, step, minValue, maxValue, onChange]); 
+
+  // 슬라이더 위치 % 계산
   const minPercent = toPercent(minValue);
   const maxPercent = toPercent(maxValue);
 
@@ -209,7 +230,7 @@ export default function SearchResultPage() {
   const originalResults = state?.results || [];
   const criteria = state?.criteria || {};
 
-  // 🔹 필터 상태
+  // 필터 상태
   const [excludeSoldOut, setExcludeSoldOut] = useState(false);
   const [selectedType, setSelectedType] = useState("ALL");
   const [minPrice, setMinPrice] = useState(MIN_PRICE);
@@ -222,12 +243,13 @@ export default function SearchResultPage() {
   const [selectedRoomFacilities, setSelectedRoomFacilities] = useState(
     new Set()
   );
-  const [selectedEtcFacilities, setSelectedEtcFacilities] = useState(
-    new Set()
-  );
+  const [selectedEtcFacilities, setSelectedEtcFacilities] = useState(new Set());
 
   // 정렬 옵션 상태
   const [sortOption, setSortOption] = useState("RECOMMENDED");
+
+  // 찜 상태 (추가된 부분): propertyId -> true/false
+  const [favoriteMap, setFavoriteMap] = useState({});
 
   // 토글용 헬퍼
   const toggleInSet = (setFn, value) => {
@@ -368,6 +390,18 @@ export default function SearchResultPage() {
     navigate("/", { state: { criteria } });
   };
 
+  // 찜 토글 핸들러 (추가된 부분)
+  const toggleFavorite = (e, id) => {
+    e.stopPropagation(); // 카드 클릭으로 상세 이동 막기
+
+    setFavoriteMap((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+
+    // TODO: 실제 API 연동 시 여기에서 add/remove 호출
+  };
+
   if (!state) {
     return (
       <div className="p-8 text-center text-gray-500">
@@ -499,9 +533,7 @@ export default function SearchResultPage() {
                   <button
                     key={f}
                     type="button"
-                    onClick={() =>
-                      toggleInSet(setSelectedRoomFacilities, f)
-                    }
+                    onClick={() => toggleInSet(setSelectedRoomFacilities, f)}
                     className={`px-2 py-1 rounded-full text-xs border ${
                       selectedRoomFacilities.has(f)
                         ? "bg-blue-50 text-blue-600 border-blue-600"
@@ -541,13 +573,10 @@ export default function SearchResultPage() {
           {/* 상단: 제목 + 검색 요약 버튼 */}
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold">{titleText}</h1>
-
-           
           </div>
 
           {/* 두 번째 줄: 총 개수 + 정렬 드롭다운 */}
           <div className="flex items-center justify-end -mt-11 mb-4">
-
             <div className="relative inline-block text-sm">
               <select
                 value={sortOption}
@@ -560,7 +589,6 @@ export default function SearchResultPage() {
                   </option>
                 ))}
               </select>
-
             </div>
           </div>
 
@@ -573,9 +601,46 @@ export default function SearchResultPage() {
               {displayResults.map((p) => (
                 <div
                   key={p.propertyId}
-                  className="bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition cursor-pointer"
+                  className="relative bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition cursor-pointer"
                   onClick={() => handleGoDetail(p.propertyId)}
                 >
+                  {/* ⭐ 오른쪽 상단 하트 버튼 (추가된 부분) */}
+                  <button
+                    onClick={(e) => toggleFavorite(e, p.propertyId)}
+                    className="absolute top-3 right-3"
+                  >
+                    {favoriteMap[p.propertyId] ? (
+                      // 빨간 하트 (찜 ON)
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="#ff4d4d"
+                        viewBox="0 0 24 24"
+                        width="28"
+                        height="28"
+                      >
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
+          4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
+          14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
+          6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                    ) : (
+                      // 회색 하트 (찜 OFF)
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="#7d7d7d"
+                        strokeWidth="1.8"
+                        viewBox="0 0 24 24"
+                        width="28"
+                        height="28"
+                      >
+                        <path d="M12.1 8.64a3.5 3.5 0 0 0-5.2 0 
+          3.86 3.86 0 0 0 0 5.32L12 19l5.1-5.04a3.86 3.86 0 
+          0 0 0-5.32 3.5 3.5 0 0 0-5.2 0z" />
+                      </svg>
+                    )}
+                  </button>
+
                   {/* 썸네일 자리 (이미지 없으면 회색 박스) */}
                   <div className="w-full md:w-40 h-32 bg-gray-200 rounded-lg flex-shrink-0" />
 

@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { RouterProvider, createBrowserRouter, Outlet, useNavigate } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import './index.css';
 
 import Header from './components/Header';
 import Modal from './components/Modal';
 import SideDrawer from './components/SideDrawer';
-import PartnerLayout from './components/layout/PartnerLayout';
+import PartnerLayout from './Layout/PartnerLayout';
 
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-import AccommodationDetailPage from './pages/AccommodationDetailPage';
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import LoginSelectionPage from './pages/LoginSelection';
 import ItineraryPage from './pages/itinerary/ItineraryPage';
+
 
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import UserRouter from "./routers/UserRouter";
@@ -26,6 +26,7 @@ import RoomRouter from './routers/RoomRouter';
 
 import { getAllProperties } from "./api/propertyAPI";
 import FilterRouter from './routers/FilterRouter';
+import { searchResultRouter } from './routers/SearchResultRouter';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -114,6 +115,40 @@ function UserLayout() {
     return true;
   };
 
+  // 메인/헤더에서 공통으로 사용하는 검색 함수 / 메인 페이지든 헤더든 전부 이 handleSearch만 호출
+  const handleSearch = async ({ destination, checkIn, checkOut, guests }) => {
+    try {
+      const all = await getAllProperties(); // 전체 숙소 조회
+      const list = Array.isArray(all) ? all : all?.content || [];
+      const keyword = (destination || "").toLowerCase();
+
+      // 기본 검색: 숙소 이름 / 주소 / 도시
+      const filtered = keyword
+        ? list.filter((p) => {
+            const name = (p.name || "").toLowerCase();
+            const address = (p.address || "").toLowerCase();
+            const city = (p.city || "").toLowerCase();
+            return (
+              name.includes(keyword) ||
+              address.includes(keyword) ||
+              city.includes(keyword)
+            );
+          })
+        : list;
+
+      // 검색 결과 페이지로 이동
+      navigate('/search-results', {
+        state: {
+          results: filtered,
+          criteria: { destination, checkIn, checkOut, guests },
+        },
+      });
+    } catch (e) {
+      console.error('숙소 검색 오류:', e);
+      alert('숙소 검색 중 오류가 발생했습니다.');
+    }
+  };
+
   const appProps = {
     isLoggedIn,
     currentUser,
@@ -125,6 +160,7 @@ function UserLayout() {
     setSelectedAccommodation,
     selectedAccommodation,
     checkAuth: checkAuthAndNavigate,
+    onSearch: handleSearch,
   };
 
   return (
@@ -133,6 +169,7 @@ function UserLayout() {
         isLoggedIn={isLoggedIn}
         navigate={navigate}
         onOpenDrawer={() => setIsDrawerOpen(true)}
+        onSubmitSearch={handleSearch} // 헤더 검색 패널에서 검색 누르면 handleSearch로 연결
       />
 
       <SideDrawer
@@ -160,44 +197,10 @@ function UserLayout() {
   );
 }
 
-// 🔹 메인 페이지 + 검색 로직
+// 🔹 메인 페이지 + 검색 로직 (UserLayout의 onSearch를 사용)
 function MainPageWithSearch() {
-  const navigate = useNavigate();
-
-  const handleSearch = async ({ destination, checkIn, checkOut, guests }) => {
-    try {
-      const all = await getAllProperties(); // 전체 숙소 조회
-      const list = Array.isArray(all) ? all : all?.content || [];
-      const keyword = (destination || "").toLowerCase();
-
-      // 기본 검색: 숙소 이름 / 주소 / 도시
-      const filtered = keyword
-        ? list.filter((p) => {
-            const name = (p.name || "").toLowerCase();
-            const address = (p.address || "").toLowerCase();
-            const city = (p.city || "").toLowerCase();
-            return ( 
-                name.includes(keyword) ||
-                address.includes(keyword) ||
-                city.includes(keyword)
-            );
-          })
-        : list;
-
-      // 검색 결과 페이지로 이동
-      navigate('/search', {
-        state: {
-          results: filtered,
-          criteria: { destination, checkIn, checkOut, guests },
-        },
-      });
-    } catch (e) {
-      console.error('숙소 검색 오류:', e);
-      alert('숙소 검색 중 오류가 발생했습니다.');
-    }
-  };
-
-  return <MainPage onSearch={handleSearch} />;
+  const { onSearch } = useOutletContext();
+  return <MainPage onSearch={onSearch} />;
 }
 
 const router = createBrowserRouter([
@@ -209,7 +212,6 @@ const router = createBrowserRouter([
       { path: 'login-selection', element: <LoginSelectionPage /> },
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },
-      { path: 'accommodation/:id', element: <AccommodationDetailPage /> },
       { path: 'bookings/*', element: <BookingPage /> },
       { path: 'payment', element: <PaymentPage /> },
       { path: 'itinerary', element: <ItineraryPage /> },
@@ -220,13 +222,13 @@ const router = createBrowserRouter([
       ...FavoriteRouter,
     ],
   },
+
   {
     path: '/partner',
     element: <PartnerLayout />,
     children: [
       { index: true, element: <PartnerDashboard /> },
       { path: 'dashboard', element: <PartnerDashboard /> },
-      { path: 'rates', element: <RateCalendarPage /> },
       { path: 'properties', element: <Placeholder title="숙소 관리" /> },
       { path: 'reservations', element: <Placeholder title="예약 관리" /> },
       ...RoomRouter,

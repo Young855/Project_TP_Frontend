@@ -1,98 +1,126 @@
 import { Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-/**
- * 헤더 컴포넌트 (Side Drawer 트리거 역할)
- * @param {object} props
- * @param {boolean} props.isLoggedIn - 로그인 여부
- * @param {function} props.navigate - useNavigate() 훅으로 전달된 페이지 이동 함수
- * @param {function} props.onOpenDrawer - 드로어를 여는 함수
- */
-const Header = ({ isLoggedIn, navigate, onOpenDrawer }) => {
-  const location = useLocation(); // 현재 페이지의 path, state등을 담고 있는 객체
+const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
+  const location = useLocation();
 
-  // SearchResultPage에서 navigate("/search", { state: { results, criteria } }) 이렇게 보넀다고 가정
-  // 그 중에서 criteria만 꺼낸다.
-  // location.state?.criteria -> location,state가 있을 때만 .criteria에 접근
-  // criteria 안에는 destination, checkIn, checkOut, guests같은 검색 조건들이 들어 있을 것
-  const criteria = location.state?.criteria;
+  /** 검색 기준(criteria) – SearchResultPage에서 navigate 상태로 넘어온 값 */
+  const criteria = location.state?.criteria || null;
 
-
-  // 검색 수정 버튼 클릭 시: 메인으로 보내면서 기존 criteria 넘겨줌
-  // 헤더 가운데 pill(검색 조건 요약 버튼)을 눌렀을 때 실행되는 함수
-  // criteria가 없으면(안 넘어온 경우) 아무것도 못한다. 
-  // 있으면 navigate('/', { state: { criteria } })
-  // -> 메인페이지 / 로 이동
-  // -> 이때 state로 criteria를 다시 넘김 -> 메인에서 기존 검색 조건을 폼에 미리 채워줄 때 쓸 수 있다.  state로 criteria를 다시 넘긴다는게 뭔소리고
-  const handleModifySearch = () => {
-    if (!criteria) return;
-    navigate('/', { state: { criteria } });
-  };
-
-  // 검색 결과 페이지일 때만 pill 노출
-  // 현재 URL 경로가 /search로 시작하는지 체크
-  // 검색 결과 페이지일 때만 헤더 가운데에 pill(검색 조건 버튼)을 보여주려고 이 변수 사용
+  /** 현재 페이지가 /search 인지 여부 */
   const isSearchPage = location.pathname.startsWith('/search');
 
-  // 로그인/회원가입 버튼 클릭 처리
-  // /loginSelection 페이지로 이동시킨다
-  const handleAuthClick = () => {
-    navigate('/loginSelection');
+  /** 검색 패널 열림 상태 */
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  /** 검색 패널 내부 폼 상태 */
+  const [searchForm, setSearchForm] = useState({
+    destination: criteria?.destination || '',
+    checkIn: criteria?.checkIn || '',
+    checkOut: criteria?.checkOut || '',
+    guests: criteria?.guests || 2,
+  });
+
+  // 페이지 이동 시 자동 닫기 
+  useEffect(() => {
+    if (!isSearchPage) {
+      setIsPanelOpen(false);
+    }
+  }, [isSearchPage]);
+
+  // criteria가 바뀌면 검색폼도 항상 맞춤
+  useEffect(() => {
+    setSearchForm({
+      destination: criteria?.destination || '',
+      checkIn: criteria?.checkIn || '',
+      checkOut: criteria?.checkOut || '',
+      guests: criteria?.guests || 2,
+    });
+  }, [criteria]);
+
+  // onChange 핸들러 (input 공용)
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+
+    setSearchForm((prev) => {
+      // 체크인 날짜가 바뀔 때 체크카웃보다 늦으면 체크아웃도 같이 맞춰주기
+      if (field === 'checkIn') {
+        const updated = {
+          ...prev,
+          checkIn: value,
+        };
+
+        // checkOut이 설정되어있고, 기존 checkOut이 새 checkIn보다 이전이면 덮어쓰기
+        if (prev.checkOut && prev.checkOut < value) {
+          updated.checkOut = value;
+        }
+        return updated;
+      }
+      return {
+        ...prev,
+        [field]: field === 'guests' ? Number(value) : value,
+      };
+    });
   };
 
-  // bg-white : 배경 흰색
-  // shadow-sm : 아래에 약한 그림자 -> 헤더와 내용 영역 구분
-  // sticky top-0 : 스크롤을 내려도 화면 맨 위(top 0)에 붙어있는 sticky 헤더
-  // z-40 : 다른 요소들보다 위에 올라오도록 z-index 설정
-  // container mx-auto : 가운데 정렬된 고정 폭 컨테이너
-  // px-4 sm:px-6 lg:px-8 : 좌우 패딩(반응형 사이즈로 변경)
+  /** 🔥 pill 클릭 시 패널 열기/닫기 */
+  const handleTogglePanel = () => {
+    if (!criteria) return;
+    // 열 때 현재 criteria 기준으로 초기화
+    if (!isPanelOpen) {
+      setSearchForm({
+        destination: criteria.destination,
+        checkIn: criteria.checkIn,
+        checkOut: criteria.checkOut,
+        guests: criteria.guests,
+      });
+    }
+    setIsPanelOpen((prev) => !prev);
+  };
+
+  // 검색 버튼 눌렀을 때
+  const handleSearchClick = () => {
+    if (!onSubmitSearch) return;
+    onSubmitSearch(searchForm);
+    setIsPanelOpen(false);
+  };
+
+  /** 로그인/회원가입 */
+  const handleAuthClick = () => {
+    navigate('/login-selection');
+  };
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 헤더 3분할 레이아웃 */}
-        {/*
-            flex : 가로방향 flexbox  
-            item-center : 세로 방향 가운데 정렬
-            h-16 : 높이 : 4rem(64px)
-            w-full : 너비 100%
-        */}
         <div className="flex items-center h-16 w-full">
-          {/* 1) 왼쪽: TP 로고 */}
-          {/*  
-              w-1/3 : 전체 가로 폭의 1/3을 로고 영역으로 사용
-              to="/" : 클릭 시 메인 페이지로 이동
-              text-2xl font-bold text-blue-600
-          */}
 
+          {/* 왼쪽 로고 */}
           <div className="flex items-center w-1/3">
-            <Link
-              to="/"
-              className="text-2xl font-bold text-blue-600 cursor-pointer leading-none"
-            >
+            <Link to="/" className="text-2xl font-bold text-blue-600 cursor-pointer">
               TP
             </Link>
           </div>
 
-          {/* 2) 가운데 : 검색조건 pill */}
+          {/* 가운데 pill — 검색 페이지일 때만 표시 */}
           <div className="hidden md:flex justify-center items-center w-1/3 mt-4">
             {isSearchPage && criteria && (
               <button
                 type="button"
-                onClick={handleModifySearch}
+                onClick={handleTogglePanel}
                 className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-[20px] text-gray-700"
               >
                 <span>{criteria.destination}</span>
                 <span className="w-px h-3 bg-gray-300" />
-                <span>
-                  {criteria.checkIn} ~ {criteria.checkOut}
-                </span>
+                <span>{criteria.checkIn} ~ {criteria.checkOut}</span>
                 <span className="w-px h-3 bg-gray-300" />
                 <span>{criteria.guests}명</span>
               </button>
             )}
           </div>
 
-          {/* 3) 오른쪽: 로그인/회원가입 + 햄버거 메뉴 */}
+          {/* 오른쪽 메뉴 */}
           <div className="flex items-center gap-2 w-1/3 justify-end">
             {!isLoggedIn && (
               <button
@@ -109,6 +137,78 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer }) => {
           </div>
         </div>
       </nav>
+
+      {/* 검색 패널 — 검색페이지 + 열림일 때만 표시 */}
+      {isSearchPage && isPanelOpen && (
+        <div className="border-t border-gray-200 bg-white shadow-sm">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+
+              {/* 여행지 */}
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">여행지</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={searchForm.destination}
+                  onChange={handleChange('destination')}
+                  placeholder="여행지나 숙소를 검색해보세요."
+                />
+              </div>
+
+              {/* 체크인 */}
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">체크인</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    value={searchForm.checkIn}
+                    onChange={handleChange('checkIn')}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+
+                {/* 체크아웃 */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">체크아웃</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    value={searchForm.checkOut}
+                    onChange={handleChange('checkOut')}
+                    min={searchForm.checkIn || new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              {/* 인원 */}
+              <div className="w-full md:w-40">
+                <label className="block text-xs text-gray-500 mb-1">인원</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={searchForm.guests}
+                  onChange={handleChange('guests')}
+                />
+              </div>
+
+              {/* 검색 버튼 */}
+              <div className="w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSearchClick}
+                  className="w-full md:w-auto px-5 py-4 rounded-md text-xs border bg-blue-50 text-blue-600 border-blue-600"
+                >
+                  검색
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

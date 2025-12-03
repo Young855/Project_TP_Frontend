@@ -10,7 +10,7 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-import AccommodationDetailPage from './pages/AccommodationDetailPage';
+import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';
@@ -19,12 +19,13 @@ import ItineraryPage from './pages/itinerary/ItineraryPage';
 
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import UserRouter from "./routers/UserRouter";
-import PropertyRouter from './routers/PropertyRouter';
+import partnerAccommodationRoutes from './routers/PartnerAccomodationRouter';
 import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
 
-import { getAllProperties } from "./api/propertyAPI";
+// [수정] API 함수명 변경
+import { getAllAccommodations } from "./api/accommodationAPI"; 
 import FilterRouter from './routers/FilterRouter';
 
 const Placeholder = ({ title }) => (
@@ -166,16 +167,17 @@ function MainPageWithSearch() {
 
   const handleSearch = async ({ destination, checkIn, checkOut, guests }) => {
     try {
-      const all = await getAllProperties(); // 전체 숙소 조회
+      // [수정] getAllProperties -> getAllAccommodations
+      const all = await getAllAccommodations(); 
       const list = Array.isArray(all) ? all : all?.content || [];
       const keyword = (destination || "").toLowerCase();
 
       // 기본 검색: 숙소 이름 / 주소 / 도시
       const filtered = keyword
-        ? list.filter((p) => {
-            const name = (p.name || "").toLowerCase();
-            const address = (p.address || "").toLowerCase();
-            const city = (p.city || "").toLowerCase();
+        ? list.filter((acc) => {
+            const name = (acc.name || "").toLowerCase();
+            const address = (acc.address || "").toLowerCase();
+            const city = (acc.city || "").toLowerCase();
             return ( 
                 name.includes(keyword) ||
                 address.includes(keyword) ||
@@ -225,11 +227,11 @@ const router = createBrowserRouter([
     element: <PartnerLayout />,
     children: [
       { index: true, element: <PartnerDashboard /> },
-      { path: 'dashboard', element: <PartnerDashboard /> },
-      { path: 'properties', element: <Placeholder title="숙소 관리" /> },
+      {path : 'dashboard', element: <PartnerDashboard/>},
+      { path: 'accommodations', element: <Placeholder title="숙소 관리" /> }, 
       { path: 'reservations', element: <Placeholder title="예약 관리" /> },
       ...RoomRouter,
-      ...PropertyRouter,
+      ...partnerAccommodationRoutes, 
     ],
   },
 ]);

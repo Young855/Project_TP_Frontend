@@ -1,4 +1,4 @@
-// com/example/tp/view/RoomCreate.jsx (최종 수정 - 정책 섹션 사이즈 최적화)
+// com/example/tp/view/RoomCreate.jsx
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -8,9 +8,8 @@ const PRESET_BED_TYPES = ['킹사이즈 침대', '퀸사이즈 침대', '더블 
 const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3인 조식', '4인 조식'];
 const PRESET_POLICIES = ['예약 후 취소 불가', '예약 변경 불가', '환불 불가 규정 적용'];
 
-// 🌟 수량 조절 컴포넌트 (Quantity Input Component) - 변경 없음
 const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
-    
+    // ... (QuantityInput 코드는 변경 없음, 생략)
     const handleValueChange = useCallback((changeName, changeValue) => {
         onChange({ target: { name: changeName, value: changeValue } });
     }, [onChange]);
@@ -37,29 +36,25 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
     };
     
     return (
-        <div className="flex-1 min-w-[100px]"> {/* 전체 컴포넌트의 최소 너비 조정 */}
+        <div className="flex-1 min-w-[100px]">
             <label className="block text-sm font-medium text-gray-700 leading-none">{label}</label>
-            <div className="flex items-end mt-0 !mt-0 "> {/* overflow-hidden 제거 */}
-                
-                {/* 디크리먼트 버튼 */}
+            <div className="flex items-end mt-0 !mt-0 ">
                 <button
                     type="button"
                     onClick={handleDecrement}
                     disabled={value <= min}
                     className="
-                        h-12 w-9 {/* 버튼 높이와 너비 조정 */}
+                        h-12 w-9
                         bg-gray-200 hover:bg-gray-300 
-                        text-base font-bold text-gray-800 {/* 폰트 크기 조정 */}
+                        text-base font-bold text-gray-800
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed
                         flex items-center justify-center 
-                        rounded-l-lg border-r border-gray-300 {/* 왼쪽 라운드 및 오른쪽 테두리 */}
+                        rounded-l-lg border-r border-gray-300
                     "
                 >
                     -
                 </button>
-
-                {/* 숫자 표시/입력 인풋 필드 */}
                 <input
                     type="number"
                     name={name}
@@ -69,28 +64,26 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
                     max={max}
                     className="
                         flex-grow text-center 
-                        text-lg font-semibold text-gray-900 {/* 폰트 크기 조정 */}
+                        text-lg font-semibold text-gray-900
                         bg-white 
-                        h-9 {/* 인풋 필드 높이 조정 */}
+                        h-9
                         focus:outline-none 
                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none 
                     "
                     aria-label={`${label} 수`}
                 />
-
-                {/* 인크리먼트 버튼 */}
                 <button
                     type="button"
                     onClick={handleIncrement}
                     disabled={value >= max}
                     className="
-                        h-12 w-9 {/* 버튼 높이와 너비 조정 */}
+                        h-12 w-9
                         bg-gray-200 hover:bg-gray-300 
-                        text-base font-bold text-gray-800 {/* 폰트 크기 조정 */}
+                        text-base font-bold text-gray-800
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed
                         flex items-center justify-center 
-                        rounded-r-lg border-l border-gray-300 {/* 오른쪽 라운드 및 왼쪽 테두리 */}
+                        rounded-r-lg border-l border-gray-300
                     "
                 >
                     +
@@ -99,13 +92,13 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
         </div>
     );
 };
-// 🌟 수량 조절 컴포넌트 끝
 
 const RoomCreate = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     
-    const propertyId = searchParams.get('propertyId');
+    // [변경] propertyId -> accommodationId
+    const accommodationId = searchParams.get('accommodationId');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -125,11 +118,11 @@ const RoomCreate = () => {
         policies: [], 
         
         newPolicyItem: '',
+        totalStock: 1, 
 
         refundable: true
     });
-    
-    // ... (핸들러 함수들 생략 - 변경 없음)
+
     const handleBedTypeChange = (type) => {
         setFormData(prev => {
             const current = prev.bedTypes;
@@ -141,6 +134,7 @@ const RoomCreate = () => {
         });
     };
     
+    // ... (이벤트 핸들러들 동일, 생략)
     const handlePackagePresetChange = (preset) => {
         setFormData(prev => ({ 
             ...prev, 
@@ -182,8 +176,7 @@ const RoomCreate = () => {
     
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
-        const finalValue = ['standardCapacity', 'maxCapacity', 'roomCount', 'bathroomCount', 'livingRoomCount', 'areaSquareMeter'].includes(name) 
+        const finalValue = ['standardCapacity', 'maxCapacity', 'roomCount', 'bathroomCount', 'livingRoomCount', 'areaSquareMeter', 'totalStock'].includes(name) 
                             ? Number(value) : (type === 'checkbox' ? checked : value);
         
         setFormData(prev => ({
@@ -195,13 +188,13 @@ const RoomCreate = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!propertyId) {
+        // [변경] accommodationId 체크
+        if (!accommodationId) {
             alert("숙소 정보가 없습니다.");
             return;
         }
 
         try {
-            // 1. 침대 정보 최종 구성 (생략)
             const finalBedTypes = [...formData.bedTypes];
             if (formData.customBedType.trim()) {
                 formData.customBedType.split(',').forEach(type => {
@@ -209,7 +202,6 @@ const RoomCreate = () => {
                 });
             }
             
-            // 2. 패키지 정보 최종 구성 (생략)
             let finalPackageDescription = formData.packageDescription;
             if (finalPackageDescription === '기타: [입력란]' && formData.customPackageInput.trim()) {
                 finalPackageDescription = `기타: ${formData.customPackageInput.trim()}`;
@@ -219,7 +211,8 @@ const RoomCreate = () => {
 
             // 3. DTO 구성
             const body = {
-                propertyId: Number(propertyId),
+                // [변경] propertyId -> accommodationId
+                accommodationId: Number(accommodationId),
                 name: formData.name,
                 standardCapacity: Number(formData.standardCapacity),
                 maxCapacity: Number(formData.maxCapacity),
@@ -235,6 +228,7 @@ const RoomCreate = () => {
                 policies: formData.policies.length > 0 ? formData.policies : [], 
                 
                 refundable: Boolean(formData.refundable),
+                totalStock: Number(formData.totalStock),
             };
 
             await createRoom(body);
@@ -248,17 +242,17 @@ const RoomCreate = () => {
     };
 
     return (
+        // ... (JSX 내부는 변수명이 쓰이지 않아 동일하나, 생략된 부분은 위와 같음)
         <div className="container mx-auto p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">새 객실 타입 추가</h1>
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-6">
-                
-                {/* ... (기본 정보, 객실 정보, 침대 정보, 추가 패키지 섹션 생략) */}
                 <h2 className="text-lg font-semibold border-b pb-2">기본 정보</h2>
                 <div>
                     <label className="form-label">객실 이름 (Type)</label>
                     <input type="text" name="name" className="form-input w-full" placeholder="예: 스탠다드 더블, 디럭스 오션뷰" required onChange={handleChange}/>
                 </div>
 
+                {/* 나머지 폼 필드들 (변경사항 없음) */}
                 <h2 className="text-lg font-semibold border-b pb-2">객실 정보 (필수)</h2>
                 <div className="grid grid-cols-4 gap-4">
                     <div>
@@ -269,20 +263,19 @@ const RoomCreate = () => {
                         <label className="form-label">최대 인원</label>
                         <input type="number" name="maxCapacity" className="form-input w-full" required min={1} value={formData.maxCapacity} onChange={handleChange}/>
                     </div>
-                    
-                   
-                    
                     <div>
                         <label className="form-label">평수 (m²)</label>
                         <input type="number" step="0.1" name="areaSquareMeter" className="form-input w-full" required min={1} value={formData.areaSquareMeter} onChange={handleChange}/>
                     </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4"> 
+                <div className="grid grid-cols-4 gap-4"> 
                     <QuantityInput label="객실 수" name="roomCount" value={formData.roomCount} onChange={handleChange} min={0} />
                     <QuantityInput label="욕실 수" name="bathroomCount" value={formData.bathroomCount} onChange={handleChange} min={0} />
                     <QuantityInput label="거실 수" name="livingRoomCount" value={formData.livingRoomCount} onChange={handleChange} min={0} />
+                    <QuantityInput label="총 재고량 (Stock)" name="totalStock" value={formData.totalStock} onChange={handleChange} min={1} max={999} />
                 </div>
 
+                {/* ... (침대, 패키지, 정책, 환불 여부 등 UI 코드 동일) ... */}
                 <h2 className="text-lg font-semibold border-b pb-2">침대 정보 (복수 선택 및 사용자 정의)</h2>
                 <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
                     <div className="flex flex-wrap gap-2">
@@ -345,12 +338,8 @@ const RoomCreate = () => {
                         ? (formData.customPackageInput.trim() ? `기타: ${formData.customPackageInput.trim()}` : '기타: 내용 없음') 
                         : formData.packageDescription}`}
                 />
-
-                {/* 🌟 취소 및 추가 정보 (정책) 섹션 - 디자인 개선 */}
-                <h2 className="text-lg font-semibold border-b pb-2">취소 및 추가 정보 (정책)</h2>
+                <h2 className="text-lg font-semibold border-b pb-2">취소 및 추가 정보</h2>
                 <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
-                    
-                    {/* 1. 프리셋 체크박스 (2열 배치) */}
                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 pb-3">
                         {PRESET_POLICIES.map(policyName => (
                             <div key={policyName} className="flex items-center gap-2">
@@ -368,7 +357,6 @@ const RoomCreate = () => {
                         ))}
                     </div>
 
-                    {/* 2. 사용자 정의 정책 항목 추가 (이미지 레이아웃) */}
                     <div className="space-y-3">
                         <label className="form-label block font-semibold text-sm">사용자 정의 정책 항목 추가</label>
                         <div className="flex gap-2">
@@ -386,7 +374,6 @@ const RoomCreate = () => {
                             </button>
                         </div>
                         
-                        {/* 3. 현재 선택된/추가된 항목 리스트 (태그 디자인 - 사이즈 최적화 적용) */}
                         <div className="mt-3 flex flex-wrap gap-2 text-xs">
                             {formData.policies
                                 .filter(policy => !PRESET_POLICIES.includes(policy)) 
@@ -396,7 +383,7 @@ const RoomCreate = () => {
                                     <button 
                                         type="button" 
                                         onClick={() => handleRemovePolicyItem(policy)} 
-                                        className="text-xs font-bold -my-1 -mr-1 ml-0.5 hover:text-black leading-none" // 🌟 사이즈 최적화
+                                        className="text-xs font-bold -my-1 -mr-1 ml-0.5 hover:text-black leading-none"
                                     >
                                         &times;
                                     </button>
@@ -405,7 +392,6 @@ const RoomCreate = () => {
                         </div>
                     </div>
                 </div>
-                {/* ---------------------------------------------------- */}
 
                 <div className="flex items-center gap-2 bg-gray-50 p-3 rounded border">
                     <input 

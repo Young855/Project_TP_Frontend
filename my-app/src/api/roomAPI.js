@@ -18,10 +18,11 @@ export const createRoom = async (roomData) => {
   }
 };
 
-// 2. 특정 숙소의 모든 객실 조회 (GET /rooms/property/{propertyId})
-export const getRoomsByProperty = async (propertyId) => {
+// 2. 특정 숙소의 모든 객실 조회 (GET /rooms/accommodation/{accommodationId})
+export const getRoomsByAccommodation = async (accommodationId) => {
   try {
-    const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET_BY_PROPERTY(propertyId));
+    // [수정] config.js에 GET_BY_ACCOMMODATION으로 변경되어 있어야 합니다.
+    const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET_BY_ACCOMMODATION(accommodationId));
     return response.data; // List<RoomDTO>
   } catch (error) {
     console.error("객실 목록 조회 오류:", error);
@@ -63,23 +64,21 @@ export const deleteRoom = async (roomId) => {
 };
 
 /**
- * 6. [중요] 숙소 내 모든 객실의 캘린더 데이터 조회 (Logic Aggregation)
- * 변경: 단일 객실 캘린더 조회 엔드포인트를 /daily-policies/calendar로 변경
+ * 6. [중요] 숙소 내 모든 객실의 캘린더 데이터 조회
  */
-export const getFullCalendarData = async (propertyId, startDate, endDate) => {
+export const getFullCalendarData = async (accommodationId, startDate, endDate) => {
   try {
     // Step 1: 해당 숙소의 모든 객실 리스트 조회
-    const rooms = await getRoomsByProperty(propertyId);
+    const rooms = await getRoomsByAccommodation(accommodationId);
     
     if (!rooms || rooms.length === 0) return [];
 
     // Step 2: 각 객실별로 캘린더 데이터 병렬 호출
     const calendarPromises = rooms.map(async (room) => {
         try {
-            // 🌟 변경된 엔드포인트 사용: GET /daily-policies/calendar?roomId={id}&...
             const response = await api.get(DAILY_POLICY_ENDPOINTS.CALENDAR, {
                 params: { 
-                    roomId: room.roomId, // Query Parameter로 roomId 전달
+                    roomId: room.roomId, 
                     startDate, 
                     endDate 
                 }
@@ -91,7 +90,6 @@ export const getFullCalendarData = async (propertyId, startDate, endDate) => {
             };
         } catch (err) {
             console.error(`Room ${room.roomId} calendar fetch failed`, err);
-            // 에러가 나더라도 다른 방 데이터는 보여주기 위해 빈 배열 반환
             return { ...room, dailyPolicies: [] };
         }
     });
@@ -105,14 +103,12 @@ export const getFullCalendarData = async (propertyId, startDate, endDate) => {
     throw error;
   }
 };
+
 /**
- * 7. 일별 정책 개별 수정/생성 (POST/PUT /daily-policies)
- * DailyRoomPolicyController.java의 POST/PUT /daily-policies에 매핑됨.
- * 정책이 없으면 Service에서 생성, 있으면 수정합니다.
+ * 7. 일별 정책 개별 수정/생성
  */
 export const updateDailyPolicy = async (policyData) => {
   try {
-    // RateCalendarPage.jsx에 맞춰 POST를 호출하도록 구현 (Service에서 생성/수정 통합)
     const response = await api.post(DAILY_POLICY_ENDPOINTS.POLICY, policyData);
     return response.data;
   } catch (error) {
@@ -122,8 +118,7 @@ export const updateDailyPolicy = async (policyData) => {
 };
 
 /**
- * 8. 기간 정책 일괄 수정 (PUT /daily-policies/bulk)
- * DailyRoomPolicyController.java의 PUT /daily-policies/bulk에 매핑됨.
+ * 8. 기간 정책 일괄 수정
  */
 export const updateBulkPolicy = async (bulkData) => {
   try {

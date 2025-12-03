@@ -9,12 +9,13 @@ import { PartnerProvider, usePartner } from '../context/PartnerContext';
 const PartnerLayoutContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  // [수정] Context 변수명 변경
   const { 
-      properties, 
-      currentProperty, 
-      switchProperty, 
+      accommodations, // properties -> accommodations
+      currentAccommodation, // currentProperty -> currentAccommodation
+      switchAccommodation, // switchProperty -> switchAccommodation
       partnerInfo, 
-      isLoading 
+      isLoading, 
   } = usePartner();
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -37,12 +38,11 @@ const PartnerLayoutContent = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      {/* ================= [사이드바] ================= */}
+      {/*[사이드바]*/}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-10">
         <div className="p-6 border-b border-gray-100">
             <Link to="/partner/dashboard" className="block">
-                <h1 className="text-2xl font-bold text-blue-600">Partner Center</h1>
-                <p className="text-xs text-gray-400 mt-1">호텔 관리 시스템</p>
+                <h1 className="text-2xl font-bold text-blue-600">숙박시설 <br/>관리 시스템</h1>
             </Link>
         </div>
 
@@ -53,8 +53,8 @@ const PartnerLayoutContent = () => {
             <span>대시보드</span>
           </Link>
           
-          {/* [추가됨] 2. 숙박 시설 관리 (전체 목록) */}
-          <Link to="/partner/properties" className={getLinkClass('/partner/properties')}>
+          {/* 2. 숙박 시설 관리 (경로 변경) */}
+          <Link to="/partner/accommodations" className={getLinkClass('/partner/accommodations')}>
             <Building size={20} />
             <span>숙박 시설 관리</span>
           </Link>
@@ -73,11 +73,12 @@ const PartnerLayoutContent = () => {
 
           {/* 현재 숙소 수정 바로가기 */}
           <div className="pt-6 mt-2">
-             <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Property</p>
-             {currentProperty ? (
+             <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Accommodation</p>
+             {currentAccommodation ? (
                  <Link 
-                    to={`/partner/properties/${currentProperty.propertyId}`} 
-                    className={getLinkClass(`/partner/properties/${currentProperty.propertyId}`)}
+                    // [수정] 경로 및 변수 변경
+                    to={`/partner/accommodations/${currentAccommodation.accommodationId}`} 
+                    className={getLinkClass(`/partner/accommodations/${currentAccommodation.accommodationId}`)}
                  >
                     <Settings size={20} />
                     <span>현재 숙소 정보 수정</span>
@@ -123,38 +124,38 @@ const PartnerLayoutContent = () => {
                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
                         <Building size={20} />
                     </div>
-                    <span>{currentProperty ? currentProperty.name : "숙소를 선택해주세요"}</span>
+                    <span>{currentAccommodation ? currentAccommodation.name : "숙소를 선택해주세요"}</span>
                     <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isDropdownOpen && (
                     <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
                         <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50 mb-1">
-                            내 숙소 목록 ({properties.length})
+                            내 숙소 목록 ({accommodations.length})
                         </div>
                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {properties.length > 0 ? (
-                                properties.map((prop) => (
+                            {accommodations.length > 0 ? (
+                                accommodations.map((acc) => (
                                     <button
-                                        key={prop.propertyId}
+                                        key={acc.accommodationId}
                                         onClick={() => {
-                                            switchProperty(prop);
+                                            switchAccommodation(acc);
                                             setIsDropdownOpen(false);
                                             navigate('/partner/dashboard');
                                         }}
                                         className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-l-4 ${
-                                            currentProperty?.propertyId === prop.propertyId 
+                                            currentAccommodation?.accommodationId === acc.accommodationId 
                                             ? 'border-blue-600 bg-blue-50/50' 
                                             : 'border-transparent'
                                         }`}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-semibold truncate ${currentProperty?.propertyId === prop.propertyId ? 'text-blue-700' : 'text-gray-700'}`}>
-                                                {prop.name}
+                                            <p className={`text-sm font-semibold truncate ${currentAccommodation?.accommodationId === acc.accommodationId ? 'text-blue-700' : 'text-gray-700'}`}>
+                                                {acc.name}
                                             </p>
-                                            <p className="text-xs text-gray-400 truncate">{prop.address || "주소 미입력"}</p>
+                                            <p className="text-xs text-gray-400 truncate">{acc.address || "주소 미입력"}</p>
                                         </div>
-                                        {currentProperty?.propertyId === prop.propertyId && (
+                                        {currentAccommodation?.accommodationId === acc.accommodationId && (
                                             <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
                                         )}
                                     </button>
@@ -165,7 +166,7 @@ const PartnerLayoutContent = () => {
                         </div>
                         <div className="p-2 border-t border-gray-100 mt-1">
                             <Link 
-                                to={`/partner/properties/new?partnerId=${partnerInfo.partnerId}`} 
+                                to={`/partner/accommodations/new?partnerId=${partnerInfo.partnerId}`} 
                                 onClick={() => setIsDropdownOpen(false)}
                                 className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"
                             >
@@ -178,9 +179,9 @@ const PartnerLayoutContent = () => {
             </div>
 
             <div className="flex gap-3">
-                {currentProperty && (
+                {currentAccommodation && (
                     <Link 
-                        to={`/partner/properties/${currentProperty.propertyId}`}
+                        to={`/partner/accommodations/${currentAccommodation.accommodationId}`}
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
                     >
                         <MapPin size={16} />
@@ -190,16 +191,15 @@ const PartnerLayoutContent = () => {
             </div>
         </header>
 
-        {/* 콘텐츠 영역 (Router Outlet) */}
+        {/* 콘텐츠 영역 */}
         <div className="flex-1 overflow-auto p-6 md:p-8">
             
-            {/* [요청하신 기능] 숙소가 하나도 없을 때 안내 메시지 */}
-            {!isLoading && properties.length === 0 && location.pathname === '/partner/dashboard' && (
+            {!isLoading && accommodations.length === 0 && location.pathname === '/partner/dashboard' && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center mb-6 animate-in fade-in slide-in-from-bottom-4">
                     <h2 className="text-xl font-bold text-blue-800 mb-2">환영합니다, {partnerInfo.ceoName || '파트너'} 님!</h2>
                     <p className="text-blue-600 mb-6">아직 등록된 숙소가 없습니다. 첫 번째 숙소를 등록하고 예약을 받아보세요.</p>
                     <Link 
-                        to={`/partner/properties/new?partnerId=${partnerInfo.partnerId}`}
+                        to={`/partner/accommodations/new?partnerId=${partnerInfo.partnerId}`}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition shadow-md"
                     >
                         <PlusCircle size={20} />

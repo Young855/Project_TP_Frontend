@@ -1,5 +1,3 @@
-// com/example/tp/view/RateCalendarPage.jsx
-
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, PlusCircle, CalendarRange, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -17,15 +15,12 @@ const getDayName = (dateStr) => {
 };
 
 const RateCalendarPage = () => {
-  const { currentProperty } = usePartner();
+  // [변경] currentProperty -> currentAccommodation
+  const { currentAccommodation } = usePartner();
   const [startDate, setStartDate] = useState(new Date());
   const [roomData, setRoomData] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // [상태 1] 단일 수정 모달
   const [editingPolicy, setEditingPolicy] = useState(null);
-  
-  // 🌟 [상태 2] 일괄 수정 모달
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkForm, setBulkForm] = useState({
       roomId: null,
@@ -49,16 +44,17 @@ const RateCalendarPage = () => {
   });
 
   const loadData = async () => {
-    if (!currentProperty) return;
+    // [변경] currentAccommodation 체크
+    if (!currentAccommodation) return;
     setLoading(true);
     try {
         const startStr = dates[0];
         const endStr = dates[dates.length - 1];
         
-        const data = await getFullCalendarData(currentProperty.propertyId, startStr, endStr);
+        // [변경] propertyId -> accommodationId (함수 파라미터는 API 정의에 따라 다름)
+        const data = await getFullCalendarData(currentAccommodation.accommodationId, startStr, endStr);
         
-        // 🌟 로그: 백엔드에서 가져온 전체 데이터 구조 확인
-        console.log("🔥 API Response (Room Data):", data);
+        console.log("API Response (Room Data):", data);
 
         setRoomData(data);
         
@@ -77,7 +73,8 @@ const RateCalendarPage = () => {
     }
   };
 
-  useEffect(() => { loadData(); }, [startDate, currentProperty]);
+  // [변경] 의존성 배열 수정
+  useEffect(() => { loadData(); }, [startDate, currentAccommodation]);
 
   const moveDate = (days) => {
       const newDate = new Date(startDate);
@@ -85,20 +82,17 @@ const RateCalendarPage = () => {
       setStartDate(newDate);
   };
 
-  // --- 단일 수정/생성 핸들러 ---
+  // ... (handleCellClick, handleSavePolicy 등 핸들러 로직은 변수명 영향이 없어 동일, 생략)
   const handleCellClick = (roomId, policy, dateStr) => {
-      // 🌟 로그: 셀 클릭 시 현재 정책 상태 확인
       console.log(`[CLICK] Room: ${roomId}, Date: ${dateStr}, Policy Status:`, policy);
       
       if (policy) {
-          // 정책이 있는 경우: 수정 모드로 정책 데이터 로드
           setEditingPolicy({ 
               ...policy, 
               roomId: roomId, 
               targetDate: policy.targetDate ?? dateStr 
           }); 
       } else {
-          // 정책이 없는 경우: 신규 생성 모드로 초기화
           setEditingPolicy({ 
               roomId: roomId, 
               targetDate: dateStr, 
@@ -117,6 +111,19 @@ const RateCalendarPage = () => {
           return;
       }
       
+      const stockValue = Number(editingPolicy.stock);
+      
+      if (stockValue < 0) {
+          alert("재고는 마이너스 값을 입력할 수 없습니다.");
+          return;
+      }
+      
+      const targetRoom = roomData.find(room => room.roomId === editingPolicy.roomId);
+      if (targetRoom && stockValue > targetRoom.totalStock) {
+          alert(`재고는 객실의 최대 재고(${targetRoom.totalStock}개)를 초과할 수 없습니다.`);
+          return; 
+      }
+      
       try {
           const payload = {
               roomId: editingPolicy.roomId,
@@ -126,8 +133,7 @@ const RateCalendarPage = () => {
               isActive: editingPolicy.isActive,
           };
           
-          // 🌟 로그: 단일 정책 저장 페이로드 확인
-          console.log("💾 Saving Daily Policy Payload:", payload);
+          console.log("Saving Daily Policy Payload:", payload);
 
           await updateDailyPolicy(payload);
           setEditingPolicy(null);
@@ -137,7 +143,6 @@ const RateCalendarPage = () => {
       }
   };
 
-  // --- 🌟 일괄 수정 핸들러 ---
   const openBulkModal = () => {
       setIsBulkModalOpen(true);
   };
@@ -179,7 +184,6 @@ const RateCalendarPage = () => {
           stock: Number(bulkForm.stock),
       };
       
-      // 🌟 로그: 일괄 정책 저장 페이로드 확인
       console.log(" bulk Saving Bulk Policy Payload:", payload);
 
       try {
@@ -194,11 +198,11 @@ const RateCalendarPage = () => {
   };
 
 
-  if (!currentProperty) return <div className="p-8 text-center text-gray-500">상단에서 숙소를 먼저 선택해주세요.</div>;
+  // [변경] currentAccommodation 체크
+  if (!currentAccommodation) return <div className="p-8 text-center text-gray-500">상단에서 숙소를 먼저 선택해주세요.</div>;
 
   return (
     <div className="p-4 md:p-8 h-full flex flex-col">
-      {/* 상단 컨트롤러 (생략) */}
       <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold text-gray-800">객실 요금 캘린더</h2>
@@ -217,8 +221,9 @@ const RateCalendarPage = () => {
                 일괄 설정
             </button>
 
+            {/* [변경] 파라미터 propertyId -> accommodationId */}
             <Link 
-                to={`/partner/rooms/new?propertyId=${currentProperty.propertyId}`}
+                to={`/partner/rooms/new?accommodationId=${currentAccommodation.accommodationId}`}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
             >
                 <PlusCircle size={18}/>
@@ -256,10 +261,8 @@ const RateCalendarPage = () => {
                             {dates.map((dateStr) => {
                                 const policy = room.dailyPolicies?.find(p => p.targetDate === dateStr);
                                 
-                                // 🌟 로그: 캘린더 셀 렌더링 시 policy 상태 확인
-                                // policy가 null/undefined이 아니지만 isActive가 false인 경우를 디버깅합니다.
                                 if (policy && !policy.isActive) {
-                                    console.log(`⚠️ Policy Found but Inactive/Null Active: Room ${room.roomId}, Date ${dateStr}, Policy:`, policy);
+                                    console.log(`Policy Found but Inactive/Null Active: Room ${room.roomId}, Date ${dateStr}, Policy:`, policy);
                                 }
                                 
                                 const isPolicyMissingData = !policy || (policy && (policy.price === null || policy.stock === null || policy.stock === 0));
@@ -275,17 +278,17 @@ const RateCalendarPage = () => {
                                     if (policy.isActive === true) { 
                                         cellClass += " bg-green-50/50";
                                         priceText = policy.price?.toLocaleString() || '0';
-                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'} / ${room.totalStock}`; 
                                         statusClass = 'text-green-700 font-bold';
                                     } else if (policy.isActive === false) { 
                                         cellClass += " bg-red-50/50";
                                         priceText = '판매중단';
-                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                        stockText = `재고: ${policy.stock?.toLocaleString() || '-'} / ${room.totalStock}`; 
                                         statusClass = 'text-red-500';
-                                    } else {
+                                    } else { 
                                          cellClass += " bg-yellow-50/50";
                                          priceText = '등록/수정 필요';
-                                         stockText = `재고: ${policy.stock?.toLocaleString() || '-'}`;
+                                         stockText = `재고: ${policy.stock?.toLocaleString() || '-'} / ${room.totalStock}`; 
                                          statusClass = 'text-yellow-700';
                                     }
                                 } else {
@@ -318,7 +321,8 @@ const RateCalendarPage = () => {
                     {roomData.length === 0 && (
                         <tr>
                             <td colSpan={15} className="py-10 text-center text-gray-500">
-                                등록된 객실이 없습니다. <Link to={`/partner/rooms/new?propertyId=${currentProperty.propertyId}`} className="text-blue-500 font-medium hover:underline">객실을 먼저 등록해주세요.</Link>
+                                {/* [변경] 링크 내 파라미터 변경 */}
+                                등록된 객실이 없습니다. <Link to={`/partner/rooms/new?accommodationId=${currentAccommodation.accommodationId}`} className="text-blue-500 font-medium hover:underline">객실을 먼저 등록해주세요.</Link>
                             </td>
                         </tr>
                     )}
@@ -327,9 +331,8 @@ const RateCalendarPage = () => {
         )}
       </div>
 
-      {/* --- 단일 수정/생성 모달 (생략) --- */}
+      {/* --- 단일 수정/생성 모달 (생략된 부분 동일) --- */}
       {editingPolicy && (
-          // ... (모달 내용 생략)
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
                   <h3 className="text-lg font-bold mb-4 border-b pb-2">
@@ -360,9 +363,8 @@ const RateCalendarPage = () => {
           </div>
       )}
 
-      {/* --- 🌟 일괄 수정 모달 (생략) --- */}
+      {/* --- 🌟 일괄 수정 모달 (생략된 부분 동일) --- */}
       {isBulkModalOpen && (
-          // ... (모달 내용 생략)
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                   <h3 className="text-lg font-bold mb-4 border-b pb-2">기간 정책 일괄 설정</h3>

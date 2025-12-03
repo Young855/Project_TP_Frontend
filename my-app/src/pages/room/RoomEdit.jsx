@@ -1,17 +1,13 @@
-// com/example/tp/view/RoomEdit.jsx (RoomCreate 항목 통합 및 수정 기능 완성)
-
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// [추가] deleteRoom 함수를 사용하기 위해 import 목록에 추가
 import { getRoom, updateRoom, deleteRoom } from "../../api/roomAPI"; 
 
 const PRESET_BED_TYPES = ['킹사이즈 침대', '퀸사이즈 침대', '더블 침대', '싱글 침대', '이층 침대'];
-const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3인 조식', '4인 조식']; // [추가]
-const PRESET_POLICIES = ['예약 후 취소 불가', '예약 변경 불가', '환불 불가 규정 적용']; // [추가]
+const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3인 조식', '4인 조식']; 
+const PRESET_POLICIES = ['예약 후 취소 불가', '예약 변경 불가', '환불 불가 규정 적용']; 
 
-// 🌟 수량 조절 컴포넌트 (Quantity Input Component) - 디자인 통일 및 안정화
 const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => { 
-    
+    // ... (QuantityInput은 RoomCreate와 동일하므로 생략)
     const handleValueChange = useCallback((changeName, changeValue) => {
         onChange({ target: { name: changeName, value: changeValue } });
     }, [onChange]);
@@ -50,13 +46,13 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
                     onClick={handleDecrement}
                     disabled={value <= min}
                     className="
-                        h-12 w-9 {/* 버튼 높이와 너비 조정 */}
+                        h-12 w-9
                         bg-gray-200 hover:bg-gray-300 
-                        text-base font-bold text-gray-800 {/* 폰트 크기 조정 */}
+                        text-base font-bold text-gray-800
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed
                         flex items-center justify-center 
-                        rounded-l-lg border-r border-gray-300 {/* 왼쪽 라운드 및 오른쪽 테두리 */}
+                        rounded-l-lg border-r border-gray-300
                     "
                 >
                     -
@@ -71,9 +67,9 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
                     max={max}
                     className="
                         flex-grow text-center 
-                        text-lg font-semibold text-gray-900 {/* 폰트 크기 조정 */}
+                        text-lg font-semibold text-gray-900
                         bg-white 
-                        h-9 {/* 인풋 필드 높이 조정 */}
+                        h-9
                         focus:outline-none 
                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none 
                     "
@@ -85,13 +81,13 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
                     onClick={handleIncrement}
                     disabled={value >= max}
                     className="
-                        h-12 w-9 {/* 버튼 높이와 너비 조정 */}
+                        h-12 w-9
                         bg-gray-200 hover:bg-gray-300 
-                        text-base font-bold text-gray-800 {/* 폰트 크기 조정 */}
+                        text-base font-bold text-gray-800
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed
                         flex items-center justify-center 
-                        rounded-r-lg border-l border-gray-300 {/* 오른쪽 라운드 및 왼쪽 테두리 */}
+                        rounded-r-lg border-l border-gray-300
                     "
                 >
                     +
@@ -100,7 +96,6 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
         </div>
     );
 };
-// 🌟 수량 조절 컴포넌트 끝
 
 const RoomEdit = () => {
   const params = useParams();
@@ -108,23 +103,25 @@ const RoomEdit = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    propertyId: "",
+    // [변경] propertyId -> accommodationId
+    accommodationId: "",
     name: "",
     standardCapacity: 1, 
     maxCapacity: 1,      
     roomCount: 0,
+    totalStock: 1,
     bathroomCount: 0,
     livingRoomCount: 0,
     areaSquareMeter: 0.0,
     
-    // [확장] RoomCreate 항목들
-    packageDescription: PRESET_PACKAGES[0], // 기본값으로 시작
+    // RoomCreate 항목들
+    packageDescription: PRESET_PACKAGES[0], 
     customPackageInput: '', 
     bedTypes: [], 
     customBedType: '', 
     amenities: [],
     policies: [],
-    newPolicyItem: '', // 사용자 정의 정책 추가용
+    newPolicyItem: '', 
     refundable: true,
   });
 
@@ -132,8 +129,7 @@ const RoomEdit = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // --- 핸들러 함수들 ---
-
+  // ... (handleBedTypeChange ~ handleAddNewPolicy ~ handleChange 동일, 생략)
   const handleBedTypeChange = (type) => {
     setFormData(prev => {
         const current = prev.bedTypes;
@@ -197,17 +193,16 @@ const RoomEdit = () => {
   };
 
   const validate = () => {
-    const { propertyId, name, standardCapacity, maxCapacity, roomCount, areaSquareMeter } = formData;
+    // [변경] propertyId -> accommodationId
+    const { accommodationId, name, standardCapacity, maxCapacity, roomCount, areaSquareMeter } = formData;
     const n = name.trim();
-    if (!propertyId || Number(propertyId) <= 0) return "Property ID를 올바르게 입력하세요.";
+    if (!accommodationId || Number(accommodationId) <= 0) return "Accommodation ID를 올바르게 입력하세요.";
     if (!n) return "객실명을 입력하세요.";
     if (Number(standardCapacity) < 1 || Number(maxCapacity) < 1) return "기준/최대 인원은 1 이상이어야 합니다.";
     if (Number(roomCount) < 0) return "객실 수는 0 이상이어야 합니다.";
     if (Number(areaSquareMeter) <= 0) return "평수를 입력하세요.";
     return "";
   };
-  
-  // --- 데이터 로딩 및 저장 로직 ---
 
   const load = useCallback(async () => {
     if (!id) {
@@ -219,14 +214,12 @@ const RoomEdit = () => {
     try {
       setLoading(true);
       setErrMsg("");
-      const data = await getRoom(id); // ⬅️ 기존 데이터 가져오기 (GET)
+      const data = await getRoom(id); 
       
-      // 1. 침대 정보 분리
       const roomBedTypes = data?.bedTypes || []; 
       const customBedType = roomBedTypes.filter(type => !PRESET_BED_TYPES.includes(type)).join(', ');
       const presetBedTypes = roomBedTypes.filter(type => PRESET_BED_TYPES.includes(type));
       
-      // 2. 패키지 정보 분리
       let pkgDesc = data?.packageDescription || PRESET_PACKAGES[0];
       let customPkg = '';
       if (pkgDesc.startsWith('기타:')) {
@@ -235,16 +228,16 @@ const RoomEdit = () => {
       }
       
       setFormData({
-        propertyId: data?.property?.propertyId ?? data?.propertyId ?? "",
+        // [변경] 데이터 구조상 accommodationId를 찾도록 변경
+        accommodationId: data?.accommodation?.accommodationId ?? data?.accommodationId ?? "",
         name: data?.name ?? "",
         standardCapacity: data?.standardCapacity ?? 1, 
         maxCapacity: data?.maxCapacity ?? 1,           
         roomCount: data?.roomCount ?? 0,
+        totalStock: data?.totalStock ?? data?.roomCount ?? 1,
         bathroomCount: data?.bathroomCount ?? 0,
         livingRoomCount: data?.livingRoomCount ?? 0,
         areaSquareMeter: data?.areaSquareMeter ?? 0.0,
-        
-        // [확장 항목 초기화]
         packageDescription: pkgDesc, 
         customPackageInput: customPkg, 
         bedTypes: presetBedTypes, 
@@ -272,7 +265,6 @@ const RoomEdit = () => {
       setSubmitting(true);
       setErrMsg("");
 
-      // 1. 침대 정보 최종 구성
       const finalBedTypes = [...formData.bedTypes];
       if (formData.customBedType.trim()) {
           formData.customBedType.split(',').forEach(type => {
@@ -280,7 +272,6 @@ const RoomEdit = () => {
           });
       }
       
-      // 2. 패키지 정보 최종 구성
       let finalPackageDescription = formData.packageDescription;
       if (finalPackageDescription === '기타: [입력란]' && formData.customPackageInput.trim()) {
           finalPackageDescription = `기타: ${formData.customPackageInput.trim()}`;
@@ -289,7 +280,8 @@ const RoomEdit = () => {
       }
 
       const body = {
-        propertyId: Number(formData.propertyId),
+        // [변경] propertyId -> accommodationId
+        accommodationId: Number(formData.accommodationId),
         name: formData.name.trim(),
         standardCapacity: Number(formData.standardCapacity),
         maxCapacity: Number(formData.maxCapacity),
@@ -298,18 +290,19 @@ const RoomEdit = () => {
         bathroomCount: Number(formData.bathroomCount),
         livingRoomCount: Number(formData.livingRoomCount),
         areaSquareMeter: Number(formData.areaSquareMeter),
-        packageDescription: finalPackageDescription, // 최종 구성된 패키지
+        packageDescription: finalPackageDescription, 
         
         bedTypes: finalBedTypes,
         amenities: formData.amenities || [],
         policies: formData.policies || [],
         
         refundable: Boolean(formData.refundable),
+        totalStock: Number(formData.totalStock),
       };
 
-      await updateRoom(id, body); // ⬅️ 수정 API 호출 (PUT)
+      await updateRoom(id, body); 
       alert("객실이 성공적으로 수정되었습니다.");
-      navigate(`/partner/properties/${formData.propertyId}/rooms`); 
+      navigate(`/partner/rooms`); 
     } catch (e) {
       console.error(e);
       if (e?.response?.status === 400) setErrMsg(e?.response?.data?.message || "필드 검증에 실패했습니다.");
@@ -319,15 +312,15 @@ const RoomEdit = () => {
     }
   };
   
-  // [추가] 객실 삭제 핸들러
   const handleDelete = async () => {
     if (!window.confirm("객실을 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
         return;
     }
     try {
-        await deleteRoom(id); // ⬅️ 삭제 API 호출 (DELETE)
+        await deleteRoom(id); 
         alert("객실이 성공적으로 삭제되었습니다.");
-        navigate(`/partner/properties/${formData.propertyId}/rooms`); 
+        // [변경] 경로 내 properties -> accommodations
+        navigate(`/partner/accommodations/${formData.accommodationId}/rooms`); 
     } catch (error) {
         console.error("객실 삭제 실패:", error);
         alert("객실 삭제 중 오류가 발생했습니다.");
@@ -349,8 +342,9 @@ const RoomEdit = () => {
         <h2 className="text-lg font-semibold border-b pb-2">기본 정보</h2>
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="form-label">Property ID</label>
-                <input type="number" name="propertyId" className="form-input w-full bg-gray-100 cursor-not-allowed" value={formData.propertyId} readOnly />
+                {/* [변경] Label 및 name 변경 */}
+                <label className="form-label">Accommodation ID</label>
+                <input type="number" name="accommodationId" className="form-input w-full bg-gray-100 cursor-not-allowed" value={formData.accommodationId} readOnly />
             </div>
             <div>
                 <label className="form-label">객실 이름 (Type)</label>
@@ -358,6 +352,7 @@ const RoomEdit = () => {
             </div>
         </div>
 
+        {/* ... (객실 정보, 침대 정보 등 UI 동일, 생략) ... */}
         <h2 className="text-lg font-semibold border-b pb-2">객실 정보 (필수)</h2>
         <div className="grid grid-cols-4 gap-4">
             <div>
@@ -380,7 +375,7 @@ const RoomEdit = () => {
             <QuantityInput label="객실 수" name="roomCount" value={formData.roomCount} onChange={handleChange} min={0} />
             <QuantityInput label="욕실 수" name="bathroomCount" value={formData.bathroomCount} onChange={handleChange} min={0} />
             <QuantityInput label="거실 수" name="livingRoomCount" value={formData.livingRoomCount} onChange={handleChange} min={0} />
-            <div></div>
+            <QuantityInput label="총 재고량 (Stock)" name="totalStock" value={formData.totalStock} onChange={handleChange} min={1} max={999} />
         </div>
 
         <h2 className="text-lg font-semibold border-b pb-2">침대 정보 (복수 선택 및 사용자 정의)</h2>
@@ -454,7 +449,6 @@ const RoomEdit = () => {
         
         <h2 className="text-lg font-semibold border-b pb-2">취소 및 추가 정보 (정책)</h2>
         <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
-            
             <div className="grid grid-cols-2 gap-y-2 gap-x-4 pb-3">
                 {PRESET_POLICIES.map(policyName => (
                     <div key={policyName} className="flex items-center gap-2">
@@ -516,13 +510,7 @@ const RoomEdit = () => {
             />
             <label htmlFor="refundable" className="text-gray-700 font-medium cursor-pointer">환불 가능 여부</label>
         </div>
-
-
-        {/* ---------------------------------------------------- */}
-        {/* 수정/삭제/취소 버튼 그룹 (가시성 개선) */}
         <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-            
-            {/* 1. 수정 버튼 (PUT 요청) */}
             <button 
                 type="submit" 
                 disabled={submitting} 
@@ -530,8 +518,6 @@ const RoomEdit = () => {
             >
                 {submitting ? "수정 중..." : "객실 정보 수정"}
             </button>
-            
-            {/* 2. 삭제 버튼 (DELETE 요청) */}
             <button
                 type="button"
                 onClick={handleDelete}
@@ -539,11 +525,9 @@ const RoomEdit = () => {
             >
                 객실 삭제
             </button>
-
-            {/* 3. 취소 버튼 */}
             <button 
                 type="button" 
-                onClick={() => navigate(`/partner/properties/rooms`)}
+                onClick={() => navigate(`/partner/rooms`)}
                 className="btn-secondary-outline px-5 py-2.5 font-semibold text-gray-700 border-gray-300 hover:bg-gray-50 rounded-lg"
             >
                 취소

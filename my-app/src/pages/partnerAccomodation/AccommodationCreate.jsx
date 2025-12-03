@@ -1,12 +1,10 @@
-// src/pages/property/PropertyCreate.jsx
 import axios from "axios"; 
 import React, { useState } from "react";
-import { useNavigate, Form, Link, useSearchParams } from "react-router-dom"; 
+import { useNavigate, Form, useSearchParams } from "react-router-dom"; 
 import AmenitySelector from "../../components/AmenitySelector"; 
 
-const PROPERTY_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; 
-
-const PropertyCreatePage = () => { 
+const ACCOMMODATION_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; 
+const AccommodationCreatePage = () => { 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams(); 
     const partnerId = searchParams.get('partnerId') || 1;
@@ -20,6 +18,7 @@ const PropertyCreatePage = () => {
     const [selectedAmenityNames, setSelectedAmenityNames] = useState(new Set());
     
     const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
+    
     const handleAddressSearch = async () => {
         if (!KAKAO_API_KEY) {
             setErrMsg("Kakao API 키가 설정되지 않았습니다. .env 파일을 확인하세요.");
@@ -76,10 +75,10 @@ const PropertyCreatePage = () => {
     };
 
     const handleCancel = () => {
-        navigate("/partner/properties");
+        // 경로 변경: properties -> accommodations
+        navigate("/partner/accommodations");
     }
 
-    // [수정] amenityId (숫자) -> amenityName (문자열)을 받도록 변경
     const handleAmenityChange = (amenityName) => {
         setSelectedAmenityNames((prevSet) => {
             const newSet = new Set(prevSet);
@@ -91,16 +90,14 @@ const PropertyCreatePage = () => {
             return newSet;
         });
     };
-
-
-
     
     return (
         <div className="container mx-auto p-4 md:p-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">새 숙박 시설 등록</h1>
             <Form 
                 method="post" 
-                action="/partner/properties/new"
+                // Action 경로 변경: properties -> accommodations
+                action="/partner/accommodations/new"
                 className="bg-white shadow-md rounded-lg p-6 space-y-4"
             >
                 <input type="hidden" name="partnerId" defaultValue={partnerId} />
@@ -119,15 +116,16 @@ const PropertyCreatePage = () => {
                 </div>
 
                 <div>
-                    <label className="form-label" htmlFor="propertyType">숙박 시설 유형</label>
+                    {/* 필드명 및 ID 변경: propertyType -> accommodationType */}
+                    <label className="form-label" htmlFor="accommodationType">숙박 시설 유형</label>
                     <select 
-                        name="propertyType" 
-                        id="propertyType"
+                        name="accommodationType" 
+                        id="accommodationType"
                         className="form-input w-full" 
                         required
                     >
                         <option value="">-- 숙박 시설 유형 선택 --</option>
-                        {PROPERTY_TYPES.map((t) => (
+                        {ACCOMMODATION_TYPES.map((t) => (
                             <option key={t} value={t}>{t}</option>
                         ))}
                     </select>
@@ -202,11 +200,25 @@ const PropertyCreatePage = () => {
                 <div className="flex space-x-4">
                     <div className="flex-1">
                         <label className="form-label" htmlFor="checkinTime">체크인 시간</label>
-                        <input type="time" name="checkinTime" id="checkinTime" className="form-input w-full" required />
+                        <input 
+                            type="time" 
+                            name="checkinTime" 
+                            id="checkinTime" 
+                            className="form-input w-full" 
+                            required 
+                            defaultValue="15:00"
+                        />
                     </div>
                     <div className="flex-1">
                         <label className="form-label" htmlFor="checkoutTime">체크아웃 시간</label>
-                        <input type="time" name="checkoutTime" id="checkoutTime" className="form-input w-full" required />
+                        <input 
+                            type="time" 
+                            name="checkoutTime" 
+                            id="checkoutTime" 
+                            className="form-input w-full" 
+                            required 
+                            defaultValue="11:00"
+                        />
                     </div>
                 </div>
                 
@@ -227,4 +239,4 @@ const PropertyCreatePage = () => {
     );
 };
 
-export default PropertyCreatePage;
+export default AccommodationCreatePage;

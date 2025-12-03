@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRoom, deleteRoom } from "../../api/roomAPI";
 
-/**
- * 객실 상세
- */
 const RoomDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,18 +41,20 @@ const RoomDetail = () => {
   if (errMsg) return <div style={{ color: "red" }}>{errMsg}</div>;
   if (!item) return <div>데이터가 없습니다.</div>;
 
-  const propertyPk = item.property?.propertyId ?? item.propertyId;
+  // [변경] property 관련 필드명을 accommodation으로 변경 (데이터 구조에 따라 확인 필요)
+  // 기존: item.property?.propertyId ?? item.propertyId
+  const accommodationPk = item.accommodation?.accommodationId ?? item.accommodationId;
 
   return (
     <div style={{ padding: 16 }}>
       <h1>객실 상세</h1>
 
       <div style={{ margin: "8px 0" }}><b>ID:</b> {item.roomId}</div>
-      <div style={{ margin: "8px 0" }}><b>Property:</b> {propertyPk ?? "-"}</div>
+      {/* [변경] 라벨 및 값 변경 */}
+      <div style={{ margin: "8px 0" }}><b>Accommodation:</b> {accommodationPk ?? "-"}</div>
       <div style={{ margin: "8px 0" }}><b>Name:</b> {item.name}</div>
       <div style={{ margin: "8px 0" }}><b>Capacity:</b> {item.capacity}</div>
       <div style={{ margin: "8px 0" }}><b>Stock:</b> {item.stock}</div>
-      {/* Price/Night 필드 제거됨 */}
       <div style={{ margin: "8px 0" }}><b>Refundable:</b> {String(item.refundable)}</div>
       <div style={{ margin: "8px 0" }}><b>Created:</b> {item.createdAt ?? "-"}</div>
 

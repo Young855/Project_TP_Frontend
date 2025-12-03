@@ -1,30 +1,34 @@
+// 파일명 변경: AccommodationEdit.jsx
 import React, { useState } from "react";
-import { useNavigate, useParams, useLoaderData, Form, Link } from "react-router-dom"; 
-import AmenitySelector from "../../components/AmenitySelector"; // [추가]
-import axios from "axios"; // [추가] 카카오 API 사용
+import { useNavigate, useParams, useLoaderData, Form } from "react-router-dom"; 
+import AmenitySelector from "../../components/AmenitySelector"; 
+import axios from "axios"; 
 
-const PROPERTY_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; // [수정] Create와 통일
+// 상수명 변경
+const ACCOMMODATION_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"];
 
-const PropertyEditPage = () => {
-  const { property } = useLoaderData();
+// 컴포넌트명 변경
+const AccommodationEditPage = () => {
+  // [수정] Loader 데이터 키 변경 (property -> accommodation)
+  const { accommodation } = useLoaderData();
   const { id } = useParams();
-  const navigate = useNavigate(); // [추가]
+  const navigate = useNavigate();
   
-  // 주소 및 좌표 상태 관리
-  const [addressFull, setAddressFull] = useState(property.address || "");
-  const [city, setCity] = useState(property.city || "");
-  const [latitude, setLatitude] = useState(property.latitude || "");
-  const [longitude, setLongitude] = useState(property.longitude || "");
-  const [errMsg, setErrMsg] = useState(""); // [추가]
+  // 주소 및 좌표 상태 관리 (기존 accommodation 데이터로 초기화)
+  const [addressFull, setAddressFull] = useState(accommodation.address || "");
+  const [city, setCity] = useState(accommodation.city || "");
+  const [latitude, setLatitude] = useState(accommodation.latitude || "");
+  const [longitude, setLongitude] = useState(accommodation.longitude || "");
+  const [errMsg, setErrMsg] = useState("");
 
-  // [추가] 편의시설 선택 상태 (loader 데이터로 초기화)
-  const initialAmenityIds = new Set(property.amenities?.map(a => a.amenityId) || []); //
-  const [selectedAmenityIds, setSelectedAmenityIds] = useState(initialAmenityIds);
+  // [수정] 편의시설 선택 상태
+  // 기존 accommodation.amenities에서 name을 추출하여 Set으로 초기화
+  const initialAmenityNames = new Set(accommodation.amenities?.map(a => a.name) || []); 
+  const [selectedAmenityNames, setSelectedAmenityNames] = useState(initialAmenityNames);
 
-  // [추가] 카카오 API 키
   const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
-  // [수정] 주소 검색 로직 (Create와 동일하게)
+  // 주소 검색 로직
   const handleAddressSearch = async () => {
     if (!KAKAO_API_KEY) {
         setErrMsg("Kakao API 키가 설정되지 않았습니다.");
@@ -60,14 +64,13 @@ const PropertyEditPage = () => {
     }
   };
 
-  // [추가] 편의시설 체크박스 핸들러
-  const handleAmenityChange = (amenityId) => {
-      setSelectedAmenityIds((prevSet) => {
+  const handleAmenityChange = (amenityName) => {
+      setSelectedAmenityNames((prevSet) => {
           const newSet = new Set(prevSet);
-          if (newSet.has(amenityId)) {
-              newSet.delete(amenityId);
+          if (newSet.has(amenityName)) {
+              newSet.delete(amenityName);
           } else {
-              newSet.add(amenityId);
+              newSet.add(amenityName);
           }
           return newSet;
       });
@@ -75,35 +78,38 @@ const PropertyEditPage = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">숙소 수정: {property.name}</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">숙소 수정: {accommodation.name}</h1>
       
       <Form 
           method="post" 
-          action={`/partner/properties/${id}/edit`} // [수정] action 경로 (PropertyRouter.jsx와 일치)
+          // Action 경로 변경: properties -> accommodations
+          action={`/partner/accommodations/${id}/edit`} 
           className="bg-white shadow-md rounded-lg p-6 space-y-4"
       >
-        <input type="hidden" name="partnerId" defaultValue={property.partner?.partnerId || property.partnerId} />
+        {/* 기존 데이터 기본값 설정 */}
+        <input type="hidden" name="partnerId" defaultValue={accommodation.partner?.partnerId || accommodation.partnerId} />
         
         <div>
           <label className="form-label" htmlFor="name">숙소명</label>
-          <input name="name" id="name" defaultValue={property.name} className="form-input w-full" maxLength={255} required />
+          <input name="name" id="name" defaultValue={accommodation.name} className="form-input w-full" maxLength={255} required />
         </div>
         
         <div>
-          <label className="form-label" htmlFor="propertyType">숙소 유형</label>
+          {/* 필드명 변경: propertyType -> accommodationType */}
+          <label className="form-label" htmlFor="accommodationType">숙소 유형</label>
           <select 
-            name="propertyType" 
-            id="propertyType"
-            className="form-input w-full" // [수정] form-select -> form-input
-            defaultValue={property.propertyType}
-            required // [추가]
+            name="accommodationType" 
+            id="accommodationType"
+            className="form-input w-full"
+            defaultValue={accommodation.accommodationType}
+            required
           >
              <option value="">-- 숙소 유형 선택 --</option>
-            {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {ACCOMMODATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
-        {/* [수정] 주소 입력 (Create와 동일하게) */}
+        {/* 주소 입력 필드 */}
         <div>
           <label className="form-label">주소</label>
           <div className="flex space-x-2">
@@ -120,7 +126,7 @@ const PropertyEditPage = () => {
              <button
                 type="button"
                 onClick={handleAddressSearch}
-                className="btn-secondary-outline" // [수정]
+                className="btn-secondary-outline"
               >
                 주소 검색
               </button>
@@ -133,12 +139,12 @@ const PropertyEditPage = () => {
           <input 
               name="city" 
               id="city"
-              value={city}
+              value={city} 
               onChange={(e) => setCity(e.target.value)}
               className="form-input w-full"
               maxLength={100}
               placeholder="예: 서울, 강남구"
-              required // [추가]
+              required
           />
         </div>
         
@@ -147,53 +153,62 @@ const PropertyEditPage = () => {
         
         <div>
           <label className="form-label" htmlFor="description">숙소 설명</label>
-          <textarea name="description" id="description" defaultValue={property.description} className="form-input w-full" rows={4} /> 
+          <textarea name="description" id="description" defaultValue={accommodation.description} className="form-input w-full" rows={4} /> 
         </div>
 
-        {/* --- [추가] AmenitySelector --- */}
+        {/* --- AmenitySelector --- */}
         <AmenitySelector 
-            selectedIds={selectedAmenityIds}
+            selectedNames={selectedAmenityNames}
             onChange={handleAmenityChange}
         />
         
-        {/* [추가] 선택된 ID를 콤마(,)로 구분된 문자열로 폼에 포함 */}
         <input 
             type="hidden" 
-            name="amenityIds" 
-            value={Array.from(selectedAmenityIds).join(',')} 
+            name="amenityNames" 
+            value={Array.from(selectedAmenityNames).join(',')} 
         />
         {/* ----------------------------- */}
 
         <div className="flex space-x-4">
           <div className="flex-1">
             <label className="form-label" htmlFor="checkinTime">체크인 시간</label>
-            <input type="time" name="checkinTime" id="checkinTime" defaultValue={property.checkinTime} className="form-input w-full" required /> 
+            <input type="time" name="checkinTime" id="checkinTime" defaultValue={accommodation.checkinTime} className="form-input w-full" required /> 
           </div>
           <div className="flex-1">
             <label className="form-label" htmlFor="checkoutTime">체크아웃 시간</label>
-            <input type="time" name="checkoutTime" id="checkoutTime" defaultValue={property.checkoutTime} className="form-input w-full" required /> 
+            <input type="time" name="checkoutTime" id="checkoutTime" defaultValue={accommodation.checkoutTime} className="form-input w-full" required /> 
           </div>
         </div>
         
         <div>
           <label className="form-label" htmlFor="ratingAvg">평균 평점 (0~5)</label>
-          <input type="number" step="0.01" min={0} max={5} name="ratingAvg" id="ratingAvg" defaultValue={property.ratingAvg} className="form-input w-full" />
+          <input 
+            type="number" 
+            step="0.01" 
+            min={0} 
+            max={5} 
+            name="ratingAvg" 
+            id="ratingAvg" 
+            defaultValue={accommodation.ratingAvg} 
+            className="form-input w-full bg-gray-100 cursor-not-allowed" 
+            readOnly 
+          />
         </div>
         
-        <div className="flex justify-end space-x-2 pt-4">
-          {/* [수정] 취소 버튼: navigate 사용 */}
+        <div className="flex justify-end space-x-3 pt-4">
+          <button type="submit" className="btn-primary">수정 저장</button> 
           <button 
             type="button"
-            onClick={() => navigate(`/partner/properties/${id}`)} // [수정] 경로 수정
-            className="btn-secondary-outline" // [수정]
+            // 취소 버튼 경로 변경
+            onClick={() => navigate(`/partner/accommodations/${id}`)}
+            className="btn-secondary-outline"
           >
             취소
           </button>
-          <button type="submit" className="btn-primary">수정 저장</button> 
         </div>
       </Form>
     </div>
   );
 };
 
-export default PropertyEditPage;
+export default AccommodationEditPage;

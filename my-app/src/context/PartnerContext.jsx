@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getPropertiesByPartnerId } from '../api/propertyAPI'; 
+// [수정] API 함수명 변경
+import { getAccommodationsByPartnerId } from '../api/accommodationAPI'; 
 import { getPartner } from '../api/partnerAPI'; 
 
 const PartnerContext = createContext();
 
 export const PartnerProvider = ({ children }) => {
-  const [properties, setProperties] = useState([]); 
-  const [currentProperty, setCurrentProperty] = useState(null); 
+  // [수정] 상태 변수명 변경 (properties -> accommodations)
+  const [accommodations, setAccommodations] = useState([]); 
+  // [수정] 상태 변수명 변경 (currentProperty -> currentAccommodation)
+  const [currentAccommodation, setCurrentAccommodation] = useState(null); 
   const [partnerInfo, setPartnerInfo] = useState({ 
       partnerId: null, 
       bizName: '', 
@@ -14,7 +17,7 @@ export const PartnerProvider = ({ children }) => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  // [핵심 수정] 데이터를 불러오는 로직을 별도 함수로 분리 (재사용 가능하도록)
+  // 데이터 로드 함수
   const loadPartnerData = async () => {
     const storedPartnerId = localStorage.getItem('partnerId') || 1; 
 
@@ -24,61 +27,59 @@ export const PartnerProvider = ({ children }) => {
       // 1. 파트너 정보와 숙소 목록을 병렬로 조회
       const [pInfo, pList] = await Promise.all([
           getPartner(storedPartnerId),
-          getPropertiesByPartnerId(storedPartnerId)
+          getAccommodationsByPartnerId(storedPartnerId) // [수정]
       ]);
 
       setPartnerInfo(pInfo);
       
-      // API가 null을 반환할 경우를 대비해 빈 배열 처리
       const safeList = Array.isArray(pList) ? pList : [];
-      setProperties(safeList);
+      setAccommodations(safeList); // [수정]
 
       // 2. 현재 선택된 숙소 결정 로직
       if (safeList.length === 0) {
-          // 숙소가 하나도 없으면 무조건 null (그래야 환영 메시지가 뜸)
-          setCurrentProperty(null);
-          localStorage.removeItem('lastSelectedPropertyId');
+          setCurrentAccommodation(null); // [수정]
+          localStorage.removeItem('lastSelectedAccommodationId'); // [수정] 키값 변경
       } else {
-          // 기존에 선택했던 숙소 ID가 유효한지 확인
-          const savedPropId = localStorage.getItem('lastSelectedPropertyId');
+          // [수정] 키값 변경
+          const savedId = localStorage.getItem('lastSelectedAccommodationId');
           
-          // 1순위: 저장된 ID와 일치하는 숙소 찾기
+          // 1순위: 저장된 ID와 일치하는 숙소 찾기 (accommodationId 기준)
           // 2순위: 리스트의 첫 번째 숙소
-          const target = safeList.find(p => p.propertyId === Number(savedPropId)) || safeList[0];
+          const target = safeList.find(p => p.accommodationId === Number(savedId)) || safeList[0];
           
-          setCurrentProperty(target);
-          localStorage.setItem('lastSelectedPropertyId', target.propertyId);
+          setCurrentAccommodation(target); // [수정]
+          localStorage.setItem('lastSelectedAccommodationId', target.accommodationId); // [수정]
       }
 
     } catch (error) {
       console.error("파트너 데이터 로딩 실패:", error);
-      setProperties([]); // 에러 발생 시 안전하게 빈 배열로 초기화
-      setCurrentProperty(null);
+      setAccommodations([]); // [수정]
+      setCurrentAccommodation(null); // [수정]
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 최초 1회 실행
   useEffect(() => {
     loadPartnerData();
   }, []);
 
-  const switchProperty = (property) => {
-    setCurrentProperty(property);
-    if (property) {
-        localStorage.setItem('lastSelectedPropertyId', property.propertyId);
+  // [수정] 함수명 및 파라미터 변경
+  const switchAccommodation = (accommodation) => {
+    setCurrentAccommodation(accommodation);
+    if (accommodation) {
+        localStorage.setItem('lastSelectedAccommodationId', accommodation.accommodationId);
     }
   };
 
   return (
     <PartnerContext.Provider value={{ 
-        properties, 
-        currentProperty, 
-        switchProperty, 
+        accommodations,      // [수정]
+        currentAccommodation,// [수정]
+        switchAccommodation, // [수정]
         partnerInfo,
         isLoading,
-        refreshPartnerData: loadPartnerData // [추가] 외부에서 호출할 수 있도록 내보냄
+        refreshPartnerData: loadPartnerData 
     }}>
       {children}
     </PartnerContext.Provider>

@@ -11,8 +11,6 @@ import {
   MdLocalLaundryService
 } from 'react-icons/md';
 
-// 2. DB가 아닌 프론트엔드에 마스터 데이터를 하드코딩합니다.
-// 텍스트 항목과 이미지 포함 항목을 모두 넣습니다.
 const MASTER_AMENITIES = [
   { name: "레스토랑", icon: <FaUtensils /> },
   { name: "카페&베이커리", icon: <FaCoffee /> },

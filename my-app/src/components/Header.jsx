@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   const location = useLocation();
 
-  /** 검색 기준(criteria) – SearchResultPage에서 navigate 상태로 넘어온 값 */
+  /** 검색 기준(criteria) - SearchResultPage에서 navigate 상태로 넘어온 값 */
   const criteria = location.state?.criteria || null;
 
   /** 현재 페이지가 /search 인지 여부 */

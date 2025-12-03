@@ -47,25 +47,46 @@ export const ROOM_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/rooms/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/rooms/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/rooms/${id}`, 
-        GET_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/rooms/property/${propertyId}`,
-        // 백엔드 컨트롤러 구조(@GetMapping("/{id}/calendar"))에 맞춰 함수형으로 변경
+        // [수정] propertyId -> accommodationId
+        GET_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/rooms/accommodation/${accommodationId}`,
         GET_CALENDAR: (roomId) => `${API_BASE_URL}/rooms/${roomId}/calendar`,
-        // 정책 수정 엔드포인트 (RoomController에는 없었으나 Service에는 존재, POST/PUT 예상)
         POLICY: `${API_BASE_URL}/rooms/policy`,
     },
 }
 
-export const PROPERTIES_ENDPOINTS = {
-    PROPERTIES: {
-        LIST_ALL: `${API_BASE_URL}/partner/properties`, 
+export const DAILY_POLICY_ENDPOINTS = {
+    CALENDAR: `${API_BASE_URL}/daily-policies/calendar`, 
+    POLICY: `${API_BASE_URL}/daily-policies`,
+    BULK: `${API_BASE_URL}/daily-policies/bulk`,
+};
+
+// [수정] PROPERTIES -> ACCOMMODATIONS
+export const ACCOMMODATIONS_ENDPOINTS = {
+    ACCOMMODATIONS: {
+        LIST_ALL: `${API_BASE_URL}/accommodations`, 
         LIST_BY_PARTNER: (partnerId) =>
-             `${API_BASE_URL}/partner/properties/by-partner/${partnerId}`, 
-        ADD: `${API_BASE_URL}/partner/properties`, 
-        GET: (id) => `${API_BASE_URL}/partner/properties/${id}`,
-        MODIFY: (id) => `${API_BASE_URL}/partner/properties/${id}`,
-        DELETE: (id) => `${API_BASE_URL}/partner/properties/${id}`,
+             `${API_BASE_URL}/partner/accommodations/by-partner/${partnerId}`, 
+        LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
+             `${API_BASE_URL}/partner/accommodations/by-partner/${partnerId}/with-main-photo`, 
+             
+        ADD: `${API_BASE_URL}/partner/accommodations`, 
+        GET: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
+        GET_WITH_ALL_PHOTOS: (id) => `${API_BASE_URL}/partner/accommodations/${id}/with-all-photos`, 
+        
+        MODIFY: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
+        DELETE: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
     },
 };
+
+// [수정] PROPERTY_PHOTO -> ACCOMMODATION_PHOTO
+export const ACCOMMODATION_PHOTO_ENDPOINTS = {
+    PHOTOS: {
+        ADD_LIST: (accommodationId) => `${API_BASE_URL}/partner/accommodations/photos/${accommodationId}`,
+        DELETE: (photoId) => `${API_BASE_URL}/partner/accommodations/photos/${photoId}`,
+        GET_METADATA_LIST: (accommodationId) => `${API_BASE_URL}/partner/accommodations/photos/list/${accommodationId}`,
+        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/partner/accommodations/photos/${photoId}/data`,
+    }
+}
 
 export const AMENITIES_ENDPOINTS ={
     AMENITIES: {
@@ -77,11 +98,12 @@ export const AMENITIES_ENDPOINTS ={
     },
 }
 
-export const PROPERTY_AMENITY_ENDPOINTS = {
-    LIST_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/properties/${propertyId}/amenities`,
-    ADD: `${API_BASE_URL}/properties/amenities`, 
-    DELETE: (propertyId, amenityId) => `${API_BASE_URL}/properties/${propertyId}/amenities/${amenityId}`,
-    UPDATE_ALL_BY_PROPERTY: (propertyId) => `${API_BASE_URL}/properties/${propertyId}/amenities`,
+// [수정] PROPERTY_AMENITY -> ACCOMMODATION_AMENITY
+export const ACCOMMODATION_AMENITY_ENDPOINTS = {
+    LIST_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/accommodations/${accommodationId}/amenities`,
+    ADD: `${API_BASE_URL}/accommodations/amenities`, 
+    DELETE: (accommodationId, amenityId) => `${API_BASE_URL}/accommodations/${accommodationId}/amenities/${amenityId}`,
+    UPDATE_ALL_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/accommodations/${accommodationId}/amenities`,
 };
 
 export const ITINERARY_ENDPOINTS = {
@@ -147,12 +169,14 @@ export default{
     PARTNER_ENDPOINTS,
     BOOKING_ENDPOINTS,
     ROOM_ENDPOINTS,
-    PROPERTIES_ENDPOINTS,
+    ACCOMMODATIONS_ENDPOINTS,
+    ACCOMMODATION_PHOTO_ENDPOINTS,
     AMENITIES_ENDPOINTS,
-    PROPERTY_AMENITY_ENDPOINTS,
+    ACCOMMODATION_AMENITY_ENDPOINTS,
     ITINERARY_ENDPOINTS,
     ITINERARY_ITEM_ENDPOINTS,
     HASHTAG_ENDPOINTS,
     FAVORITE_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
+    DAILY_POLICY_ENDPOINTS,
 }

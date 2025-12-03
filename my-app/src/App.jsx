@@ -10,6 +10,10 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
+<<<<<<< HEAD
+=======
+import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
+>>>>>>> 0d07a6289c01807cf220f42da93238f6b6c59ec5
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';
@@ -19,12 +23,13 @@ import ItineraryPage from './pages/itinerary/ItineraryPage';
 
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import UserRouter from "./routers/UserRouter";
-import PropertyRouter from './routers/PropertyRouter';
+import partnerAccommodationRoutes from './routers/PartnerAccomodationRouter';
 import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
 
-import { getAllProperties } from "./api/propertyAPI";
+// [수정] API 함수명 변경
+import { getAllAccommodations } from "./api/accommodationAPI"; 
 import FilterRouter from './routers/FilterRouter';
 import { searchResultRouter } from './routers/SearchResultRouter';
 
@@ -228,11 +233,11 @@ const router = createBrowserRouter([
     element: <PartnerLayout />,
     children: [
       { index: true, element: <PartnerDashboard /> },
-      { path: 'dashboard', element: <PartnerDashboard /> },
-      { path: 'properties', element: <Placeholder title="숙소 관리" /> },
+      {path : 'dashboard', element: <PartnerDashboard/>},
+      { path: 'accommodations', element: <Placeholder title="숙소 관리" /> }, 
       { path: 'reservations', element: <Placeholder title="예약 관리" /> },
       ...RoomRouter,
-      ...PropertyRouter,
+      ...partnerAccommodationRoutes, 
     ],
   },
 ]);

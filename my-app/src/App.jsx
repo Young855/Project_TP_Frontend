@@ -10,10 +10,7 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-<<<<<<< HEAD
-=======
 import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
->>>>>>> 0d07a6289c01807cf220f42da93238f6b6c59ec5
 import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';

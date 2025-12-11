@@ -1,12 +1,19 @@
 import axios from "axios"; 
 import React, { useState } from "react";
-import { useNavigate, Form, useSearchParams } from "react-router-dom"; 
+import { useNavigate, useSearchParams } from "react-router-dom"; // [수정] Form 제거, 일반 form 사용
 import AmenitySelector from "../../components/AmenitySelector"; 
 
+// [추가] API 함수와 Context Hook 임포트
+import { createAccommodation } from "../../api/accommodationAPI"; 
+import { usePartner } from "../../context/PartnerContext"; 
+
 const ACCOMMODATION_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"]; 
-const AccommodationCreatePage = () => { 
+
+const AccommodationCreate = () => { 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams(); 
+    const { refreshPartnerData } = usePartner();
+
     const partnerId = searchParams.get('partnerId') || 1;
     const [addressFull, setAddressFull] = useState("");
     const [city, setCity] = useState("");
@@ -14,6 +21,7 @@ const AccommodationCreatePage = () => {
     const [longitude, setLongitude] = useState("");
     
     const [errMsg, setErrMsg] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false); // [추가] 중복 제출 방지용
 
     const [selectedAmenityNames, setSelectedAmenityNames] = useState(new Set());
     
@@ -34,22 +42,16 @@ const AccommodationCreatePage = () => {
             const response = await axios.get(
                 'https://dapi.kakao.com/v2/local/search/address.json',
                 {
-                    params: { 
-                        query: addressFull 
-                    },
-                    headers: { 
-                        Authorization: `KakaoAK ${KAKAO_API_KEY}` 
-                    },
+                    params: { query: addressFull },
+                    headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` },
                 }
             );
 
             if (response.data.documents.length > 0) {
                 const firstResult = response.data.documents[0];
-                
                 const fullAddr = firstResult.road_address
                                ? firstResult.road_address.address_name 
                                : firstResult.address.address_name;
-                
                 const cityAddr = firstResult.road_address
                                ? firstResult.road_address.region_2depth_name 
                                : firstResult.address.region_2depth_name;
@@ -58,14 +60,11 @@ const AccommodationCreatePage = () => {
                 setCity(cityAddr || "");  
                 setLatitude(firstResult.y);   
                 setLongitude(firstResult.x);  
-                
                 setErrMsg(""); 
 
             } else {
                 setErrMsg('검색 결과가 없습니다. 주소를 확인해주세요.');
-                setLatitude(""); 
-                setLongitude("");
-                setCity("");
+                setLatitude(""); setLongitude(""); setCity("");
             }
 
         } catch (error) {
@@ -75,7 +74,6 @@ const AccommodationCreatePage = () => {
     };
 
     const handleCancel = () => {
-        // 경로 변경: properties -> accommodations
         navigate("/partner/accommodations");
     }
 
@@ -90,14 +88,61 @@ const AccommodationCreatePage = () => {
             return newSet;
         });
     };
+
+    // [추가/수정] 폼 제출 핸들러 (API 호출 + Context 갱신)
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // 기본 폼 제출 동작 막기
+        
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
+        // 폼 데이터 수집
+        const formData = new FormData(e.target);
+        
+        // 백엔드로 보낼 데이터 객체 생성
+        // 주의: 백엔드 DTO 필드명과 일치해야 합니다.
+        const accommodationData = {
+            partnerId: parseInt(formData.get("partnerId")),
+            name: formData.get("name"),
+            accommodationType: formData.get("accommodationType"),
+            address: formData.get("address"),
+            city: formData.get("city"),
+            latitude: Number(formData.get("latitude")),
+            longitude: Number(formData.get("longitude")),
+            description: formData.get("description"),
+            checkinTime: formData.get("checkinTime"),
+            checkoutTime: formData.get("checkoutTime"),
+            ratingAvg: 10.0, // 초기값
+            amenityNames: Array.from(selectedAmenityNames) 
+        };
+
+        try {
+            // 1. API 호출로 숙소 생성
+            await createAccommodation(accommodationData);
+            
+            // 2. [핵심] 파트너 컨텍스트(숙소 목록) 갱신
+            await refreshPartnerData(); 
+
+            alert("숙소가 성공적으로 등록되었습니다.");
+            
+            // 3. 목록 페이지로 이동
+            navigate("/partner/accommodations");
+
+        } catch (error) {
+            console.error("숙소 생성 실패:", error);
+            setErrMsg("숙소 등록 중 오류가 발생했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     
     return (
         <div className="container mx-auto p-4 md:p-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">새 숙박 시설 등록</h1>
-            <Form 
-                method="post" 
-                // Action 경로 변경: properties -> accommodations
-                action="/partner/accommodations/new"
+            
+            {/* [수정] Form -> form, action 제거, onSubmit 추가 */}
+            <form 
+                onSubmit={handleSubmit}
                 className="bg-white shadow-md rounded-lg p-6 space-y-4"
             >
                 <input type="hidden" name="partnerId" defaultValue={partnerId} />
@@ -116,7 +161,6 @@ const AccommodationCreatePage = () => {
                 </div>
 
                 <div>
-                    {/* 필드명 및 ID 변경: propertyType -> accommodationType */}
                     <label className="form-label" htmlFor="accommodationType">숙박 시설 유형</label>
                     <select 
                         name="accommodationType" 
@@ -189,8 +233,10 @@ const AccommodationCreatePage = () => {
                 <AmenitySelector 
                     selectedNames={selectedAmenityNames}
                     onChange={handleAmenityChange}
+                    type="ACCOMMODATION"
                 />
                 
+                {/* handleSubmit에서 state를 직접 사용하므로 hidden input은 폼 데이터 수집용으로 유지하거나 제거해도 됨 */}
                 <input 
                     type="hidden" 
                     name="amenityNames" 
@@ -225,7 +271,13 @@ const AccommodationCreatePage = () => {
                 <input type="hidden" name="ratingAvg" defaultValue={5.0} />
 
                 <div className="flex justify-end space-x-2 pt-4">
-                    <button type="submit" className="btn-primary">저장</button>
+                    <button 
+                        type="submit" 
+                        className="btn-primary"
+                        disabled={isSubmitting} // 제출 중 버튼 비활성화
+                    >
+                        {isSubmitting ? "저장 중..." : "저장"}
+                    </button>
                     <button 
                         type="button" 
                         onClick={handleCancel} 
@@ -234,9 +286,9 @@ const AccommodationCreatePage = () => {
                         취소
                     </button>
                 </div>
-            </Form>
+            </form>
         </div>
     );
 };
 
-export default AccommodationCreatePage;
+export default AccommodationCreate;

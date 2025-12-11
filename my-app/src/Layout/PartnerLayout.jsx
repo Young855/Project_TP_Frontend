@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Calendar, List, LogOut, User, 
@@ -19,6 +19,26 @@ const PartnerLayoutContent = () => {
   } = usePartner();
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const dropdownRef = useRef(null);
+
+  // 3. 외부 클릭 감지 로직 추가
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // 드롭다운이 열려있고, 클릭한 요소가 드롭다운 영역(dropdownRef) 내부에 포함되지 않으면 닫기
+      if (isDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    // 이벤트 리스너 등록
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // 컴포넌트가 언마운트되거나 업데이트되기 전 리스너 제거 (Clean-up)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const getLinkClass = (path) => {
     const isActive = location.pathname === path || location.pathname.startsWith(path + '/');
@@ -114,9 +134,8 @@ const PartnerLayoutContent = () => {
 
       {/* ================= [메인 콘텐츠] ================= */}
       <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden bg-gray-50">
-        {/* 헤더 (Switcher 포함) */}
         <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-20 shadow-sm shrink-0">
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
                 <button 
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="group flex items-center gap-3 text-lg font-bold text-gray-800 hover:bg-gray-50 px-4 py-2 rounded-xl transition-all border border-transparent hover:border-gray-200"

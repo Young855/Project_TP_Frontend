@@ -11,6 +11,8 @@ import {
     updateAccommodation, 
     deleteAccommodation 
 } from "../api/accommodationAPI"; 
+import PhotoList from "../pages/photo/PhotoList";
+import PhotoCreate from "../pages/photo/PhotoCreate";
 
 // Loader
 const accommodationLoader = async ({ params }) => {
@@ -102,6 +104,14 @@ export const accommodationRoutes = [
                 path: ":id/delete",
                 action: accommodationDeleteAction, 
             },
+             {
+                path: "photos/:accommodationId",
+                element: <PhotoList type="ACCOMMODATION" />
+            },
+            {
+                path: "photos/:accommodationId/new", // /partner/accommodations/photos/1/new
+                element: <PhotoCreate type="ACCOMMODATION" />
+            }
         ],
     },
 ];

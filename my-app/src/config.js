@@ -47,7 +47,8 @@ export const ROOM_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/rooms/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/rooms/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/rooms/${id}`, 
-        // [수정] propertyId -> accommodationId
+        LIST_BY_ACCOMMODATION_WITH_PHOTO: (accommodationId) =>
+             `${API_BASE_URL}/rooms/by-accommodation/${accommodationId}/with-main-photo`,
         GET_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/rooms/accommodation/${accommodationId}`,
         GET_CALENDAR: (roomId) => `${API_BASE_URL}/rooms/${roomId}/calendar`,
         POLICY: `${API_BASE_URL}/rooms/policy`,
@@ -78,13 +79,22 @@ export const ACCOMMODATIONS_ENDPOINTS = {
     },
 };
 
-// [수정] PROPERTY_PHOTO -> ACCOMMODATION_PHOTO
 export const ACCOMMODATION_PHOTO_ENDPOINTS = {
     PHOTOS: {
         ADD_LIST: (accommodationId) => `${API_BASE_URL}/partner/accommodations/photos/${accommodationId}`,
         DELETE: (photoId) => `${API_BASE_URL}/partner/accommodations/photos/${photoId}`,
         GET_METADATA_LIST: (accommodationId) => `${API_BASE_URL}/partner/accommodations/photos/list/${accommodationId}`,
         GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/partner/accommodations/photos/${photoId}/data`,
+        REORDER: (accommodationId) => `/partner/accommodations/photos/${accommodationId}/reorder`, // 백엔드 @PostMapping("/{accommodationId}/reorder") 와 일치
+    }
+}
+export const ROOM_PHOTO_ENDPOINTS = {
+    PHOTOS: {
+        ADD_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/${roomId}`,
+        DELETE: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}`,
+        GET_METADATA_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/list/${roomId}`,
+        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}/data`,
+        REORDER: (roomId) => `/partner/rooms/photos/${roomId}/reorder`, 
     }
 }
 
@@ -177,6 +187,7 @@ export default{
     ITINERARY_ITEM_ENDPOINTS,
     HASHTAG_ENDPOINTS,
     FAVORITE_ENDPOINTS,
+    ROOM_PHOTO_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
     DAILY_POLICY_ENDPOINTS,
 }

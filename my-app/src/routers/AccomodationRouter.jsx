@@ -1,4 +1,4 @@
-import AccommodationPage from "../pages/accommodation/AccommodationPage";
+
 import AccommodationList from "../pages/accommodation/AccommodationList";
 import AccommodationDetail from "../pages/accommodation/AccommodationDetail";
 import AccommodationCreate from "../pages/accommodation/AccommodationCreate";
@@ -25,6 +25,7 @@ const AccommodationRouter = [
                 path: ":id/edit",
                 element: <AccommodationEdit />
             },
+           
         ],
     },
 ];

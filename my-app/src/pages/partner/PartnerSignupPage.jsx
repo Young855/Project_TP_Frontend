@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-
+import axios from 'axios';
 import { 
     createPartner, 
     checkPartnerEmailDuplication, 
 } from '../../api/partnerAPI'; 
+
+const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
 export default function PartnerSignupPage() {
   const navigate = useNavigate();
@@ -17,6 +19,10 @@ export default function PartnerSignupPage() {
   const openingDate = verifiedBizData.openingDate || '';
   const isBizInfoVerified = verifiedBizData.isBizInfoVerified || false; 
   const initialVerifiedEmail = verifiedBizData.contactEmail || ''; 
+
+  // [수정 1] 불필요한 좌표/도시 State 삭제, 주소만 남김
+  const [addressFull, setAddressFull] = useState("");
+  const [errMsg, setErrMsg] = useState("");
 
   const [bizName, setBizName] = useState('');
   const [contactEmail, setContactEmail] = useState(initialVerifiedEmail); 
@@ -33,12 +39,10 @@ export default function PartnerSignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
   useEffect(() => {
-    // 💡 [수정] 이메일이 외부에서 인증되어 넘어왔다면, 초기에는 확인 완료로 표시
     if (!!initialVerifiedEmail) {
         setIsEmailVerified(true);
     }
     
-    // 필수 정보 확인 방어 로직 (BizVerificationPage에서 정보를 받았는지 확인)
     if (!isBizInfoVerified) {
       console.warn('사업자 정보 진위 확인이 필요합니다. Step 1로 이동합니다.');
       navigate('/partner/bizverification', { replace: true }); 
@@ -65,6 +69,47 @@ export default function PartnerSignupPage() {
     }
   };
 
+  const handleAddressSearch = async () => {
+    if (!KAKAO_API_KEY) {
+        setErrMsg("Kakao API 키가 설정되지 않았습니다. .env 파일을 확인하세요.");
+        return;
+    }
+    
+    if (addressFull.trim() === '') {
+        setErrMsg('주소를 입력한 후 검색 버튼을 눌러주세요.');   
+        return;
+    }
+
+    try {
+        const response = await axios.get(
+            'https://dapi.kakao.com/v2/local/search/address.json',
+            {
+                params: { query: addressFull },
+                headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` },
+            }
+        );
+
+        if (response.data.documents.length > 0) {
+            const firstResult = response.data.documents[0];
+            
+            const fullAddr = firstResult.road_address
+                           ? firstResult.road_address.address_name 
+                           : firstResult.address.address_name;
+            
+            // [수정 2] 좌표, 도시 저장 로직 제거 -> 오직 주소 문자열만 저장
+            setAddressFull(fullAddr); 
+            setErrMsg(""); 
+
+        } else {
+            setErrMsg('검색 결과가 없습니다. 주소를 확인해주세요.');
+        }
+
+    } catch (error) {
+        console.error('API 호출 중 오류 발생:', error);
+        setErrMsg('API 호출 중 오류가 발생했습니다.');
+    }
+};
+
   const validatePasswordConfirm = (currentPasswordConfirm) => {
     if (currentPasswordConfirm !== password) {
       setPasswordConfirmError('비밀번호가 일치하지 않습니다.');
@@ -86,7 +131,6 @@ export default function PartnerSignupPage() {
     }
   };
   
-  // [수정] 이메일 중복 확인만 수행하고 종료
   const handleEmailCheck = async () => {
     if (!validateEmail(contactEmail)) {
         setIsEmailVerified(false); 
@@ -106,7 +150,6 @@ export default function PartnerSignupPage() {
             setEmailError('이미 등록된 사업자 이메일입니다.'); 
             setIsEmailVerified(false);
         } else {
-            // [수정] 중복 확인 완료 후 인증번호 발송 없이 종료
             setEmailError('사용 가능한 이메일입니다.');
             setIsEmailVerified(true); 
             window.alert('사용 가능한 이메일입니다.');
@@ -122,7 +165,6 @@ export default function PartnerSignupPage() {
     }
   };
 
-  // 비밀번호 입력 핸들러
   const handlePasswordChange = (e) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
@@ -130,7 +172,6 @@ export default function PartnerSignupPage() {
     if (passwordConfirm.length > 0) { validatePasswordConfirm(passwordConfirm); }
   };
 
-  // 비밀번호 확인 입력 핸들러
   const handlePasswordConfirmChange = (e) => {
     const newPasswordConfirm = e.target.value;
     setPasswordConfirm(newPasswordConfirm);
@@ -144,20 +185,17 @@ export default function PartnerSignupPage() {
     let isValid = true;
     let errorMessages = [];
 
-    // 1. Step 2 필수 필드 및 유효성 검사
     if (bizName.trim() === '') { setBizNameError('사업자명을 입력해주세요.'); isValid = false; errorMessages.push('사업자/회사 이름이 입력되지 않았습니다.'); } else { setBizNameError(''); } 
     if (!validateEmail(contactEmail)) { isValid = false; if(emailError) errorMessages.push(`이메일: ${emailError}`); }
     if (!validatePassword(password)) { isValid = false; if(passwordError) errorMessages.push(`비밀번호: ${passwordError}`); }
     if (!validatePasswordConfirm(passwordConfirm)) { isValid = false; if(passwordConfirmError) errorMessages.push(`비밀번호 확인: ${passwordConfirmError}`); }
     
-    // 2. 이메일 중복 확인 여부 체크 (최종 방어 로직)
     if (validateEmail(contactEmail) && !isEmailVerified) {
         setEmailError('이메일 중복 확인이 완료되지 않았습니다.');
         isValid = false;
         errorMessages.push('이메일 중복 확인이 완료되지 않았습니다.');
     }
     
-    // 3. Step 1 확인 여부 (최종 방어 로직)
     if (!isBizInfoVerified) {
         setBizVerificationError('사업자등록정보 진위 확인이 필요합니다.');
         isValid = false;
@@ -173,22 +211,21 @@ export default function PartnerSignupPage() {
     if (isValid) {
         setIsSubmitting(true);
         
-        const partnerData = {
+       const partnerData = {
             bizName,
             contactEmail,
             contactPhone: contactPhone.trim() || null, 
             bizRegNumber,
             ceoName,
             openingDate,
-            passwordHash: password 
+            passwordHash: password,
+            businessAddress: addressFull // 주소만 전송
         };
 
         try {
             const createdPartner = await createPartner(partnerData); 
-
             console.log('파트너 등록 성공:', createdPartner);
             window.alert('파트너 등록(회원가입)이 완료되었습니다! 로그인 페이지로 이동합니다.');
-            
             navigate('/partner/login'); 
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || '파트너 등록 중 알 수 없는 오류가 발생했습니다.';
@@ -206,7 +243,6 @@ export default function PartnerSignupPage() {
         <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">파트너 등록</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
             
-          {/* --- Step 1 확인 정보 요약 섹션 --- */}
           <div className="space-y-2 pt-2 pb-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800"> 확인된 사업자 정보</h3>
               <p className="text-gray-700 text-sm">
@@ -220,9 +256,7 @@ export default function PartnerSignupPage() {
                   </p>
               )}
           </div>
-          {/* --- Step 1 확인 정보 요약 섹션 끝 --- */}
           
-          {/* 사업자명 (bizName) */}
           <div>
               <label htmlFor="bizName" className="form-label">사업자/회사 이름</label>
               <input
@@ -242,9 +276,8 @@ export default function PartnerSignupPage() {
               {bizNameError && <p className="text-red-500 text-sm mt-1">{bizNameError}</p>}
           </div>
           
-          {/* 비즈니스 이메일 (중복 확인 필드) */}
           <div>
-            <label htmlFor="contactEmail" className="form-label">비즈네스 이메일 (아이디)</label>
+            <label htmlFor="contactEmail" className="form-label">비즈니스 이메일 (아이디)</label>
             <div className="flex space-x-2 items-center">
               <input
                 type="email"
@@ -273,6 +306,7 @@ export default function PartnerSignupPage() {
                 {isEmailVerified ? "확인 완료" : (isSubmitting ? '확인 중...' : '중복 확인')}
               </button>
             </div>
+            
             {emailError && (
                 <p className={`text-sm mt-1 ${isEmailVerified ? 'text-green-500' : 'text-red-500'}`}>
                     {emailError}
@@ -284,6 +318,34 @@ export default function PartnerSignupPage() {
                 </p>
             )}
           </div>
+
+            <div>
+                <label className="form-label">사업자 주소</label>
+                <div className="flex space-x-2">
+                    <input 
+                        type="text"
+                        name="address"
+                        value={addressFull} 
+                        onChange={(e) => setAddressFull(e.target.value)}
+                        className="form-input flex-1"
+                        placeholder="도로명 주소를 입력하거나 '주소 검색'을 이용하세요" 
+                        maxLength={255}
+                        required
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAddressSearch}
+                        className="btn-secondary-outline whitespace-nowrap" 
+                    >
+                        주소 검색
+                    </button>
+                </div>
+                {errMsg && (
+                    <p className="text-sm text-red-500 mt-1">{errMsg}</p>
+                )}
+            </div>
+
+            {/* [수정 3] 도시 입력창 및 Hidden 좌표값 Input 삭제 */}
 
           <div>
             <label htmlFor="password" className="form-label">비밀번호</label>
@@ -341,7 +403,6 @@ export default function PartnerSignupPage() {
           </button>
         </form>
         
-        {/* 로그인 페이지로 이동 */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             이미 파트너 계정이 있으신가요?{' '}

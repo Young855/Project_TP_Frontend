@@ -1,8 +1,7 @@
-// com/example/tp/view/RoomCreate.jsx
-
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createRoom } from '../../api/roomAPI';
+import AmenitySelector from '../../components/AmenitySelector';
 
 const PRESET_BED_TYPES = ['킹사이즈 침대', '퀸사이즈 침대', '더블 침대', '싱글 침대', '이층 침대'];
 const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3인 조식', '4인 조식'];
@@ -20,6 +19,7 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
         }
     }, [name, value, handleValueChange, min]);
 
+
     const handleIncrement = useCallback(() => {
         if (value < max) {
             handleValueChange(name, Number(value) + 1);
@@ -34,6 +34,7 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
             onChange(e); 
         }
     };
+    
     
     return (
         <div className="flex-1 min-w-[100px]">
@@ -100,6 +101,7 @@ const RoomCreate = () => {
     // [변경] propertyId -> accommodationId
     const accommodationId = searchParams.get('accommodationId');
 
+
     const [formData, setFormData] = useState({
         name: '',
         standardCapacity: 2, 
@@ -122,6 +124,25 @@ const RoomCreate = () => {
 
         refundable: true
     });
+
+    const handleAmenityChange = (amenityName) => {
+        setFormData(prev => {
+            const currentList = prev.amenities || [];
+            // 이미 있는지 확인 (객체 배열이므로 name 속성 비교)
+            const exists = currentList.some(item => item.name === amenityName);
+            
+            let newList;
+            if (exists) {
+                // 있으면 제거
+                newList = currentList.filter(item => item.name !== amenityName);
+            } else {
+                // 없으면 추가 (객체 형태로 추가)
+                newList = [...currentList, { name: amenityName }];
+            }
+            
+            return { ...prev, amenities: newList };
+        });
+    };
 
     const handleBedTypeChange = (type) => {
         setFormData(prev => {
@@ -209,6 +230,8 @@ const RoomCreate = () => {
                 finalPackageDescription = '해당사항 없음';
             }
 
+            
+
             // 3. DTO 구성
             const body = {
                 // [변경] propertyId -> accommodationId
@@ -224,7 +247,7 @@ const RoomCreate = () => {
                 packageDescription: finalPackageDescription,
                 
                 bedTypes: finalBedTypes.length > 0 ? finalBedTypes : [], 
-                amenities: formData.amenities || [], 
+                amenities: formData.amenities.map(item => item.name),
                 policies: formData.policies.length > 0 ? formData.policies : [], 
                 
                 refundable: Boolean(formData.refundable),
@@ -240,6 +263,8 @@ const RoomCreate = () => {
             alert("객실 생성에 실패했습니다.");
         }
     };
+
+    const amenityNameSet = new Set(formData.amenities.map(a => a.name));
 
     return (
         // ... (JSX 내부는 변수명이 쓰이지 않아 동일하나, 생략된 부분은 위와 같음)
@@ -393,6 +418,13 @@ const RoomCreate = () => {
                     </div>
                 </div>
 
+                
+
+                <AmenitySelector 
+                    selectedNames={amenityNameSet}
+                    onChange={handleAmenityChange}
+                    type="ROOM" 
+                />
                 <div className="flex items-center gap-2 bg-gray-50 p-3 rounded border">
                     <input 
                         type="checkbox" name="refundable" id="refundable"
@@ -401,8 +433,6 @@ const RoomCreate = () => {
                     />
                     <label htmlFor="refundable" className="text-gray-700 font-medium cursor-pointer">환불 가능 여부</label>
                 </div>
-
-
                 <div className="flex justify-end gap-2 pt-4 border-t mt-4">
                     <button type="submit" className="btn-primary">
                         객실 생성하기

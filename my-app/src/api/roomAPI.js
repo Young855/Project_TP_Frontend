@@ -30,11 +30,10 @@ export const getRoomsByAccommodation = async (accommodationId) => {
   }
 };
 
-// 3. 단일 객실 조회 (GET /rooms/{id})
 export const getRoom = async (roomId) => {
   try {
     const response = await api.get(ROOM_ENDPOINTS.ROOMS.GET(roomId));
-    return response.data;
+    return response.data; 
   } catch (error) {
     console.error("객실 상세 조회 오류:", error);
     throw error;
@@ -66,14 +65,14 @@ export const deleteRoom = async (roomId) => {
 /**
  * 6. [중요] 숙소 내 모든 객실의 캘린더 데이터 조회
  */
-export const getFullCalendarData = async (accommodationId, startDate, endDate) => {
+export const getFullCalendarData = async (accommodationId, startDate, endDate, page = 0, size = 5) => {
   try {
-    // Step 1: 해당 숙소의 모든 객실 리스트 조회
-    const rooms = await getRoomsByAccommodation(accommodationId);
+    const responseData = await getRoomByAccommodationIDWithMainPhoto(accommodationId, page, size);
+    const rooms = responseData.content || responseData; 
     
-    if (!rooms || rooms.length === 0) return [];
-
-    // Step 2: 각 객실별로 캘린더 데이터 병렬 호출
+    if (!rooms || rooms.length === 0) {
+        return responseData.content ? { ...responseData, content: [] } : [];
+    }
     const calendarPromises = rooms.map(async (room) => {
         try {
             const response = await api.get(DAILY_POLICY_ENDPOINTS.CALENDAR, {
@@ -83,10 +82,9 @@ export const getFullCalendarData = async (accommodationId, startDate, endDate) =
                     endDate 
                 }
             });
-            // Room 정보와 해당 Room의 정책(dailyPolicies)을 결합하여 반환
             return {
                 ...room,
-                dailyPolicies: response.data // List<DailyRoomPolicyDTO>
+                dailyPolicies: response.data 
             };
         } catch (err) {
             console.error(`Room ${room.roomId} calendar fetch failed`, err);
@@ -94,9 +92,17 @@ export const getFullCalendarData = async (accommodationId, startDate, endDate) =
         }
     });
 
-    // Step 3: 데이터 통합 반환
     const fullData = await Promise.all(calendarPromises);
-    return fullData;
+
+    // 🌟 [수정 포인트 2] 페이징 정보가 있었다면 합쳐서 반환
+    if (responseData.content) {
+        return {
+            ...responseData, // totalPages, totalElements, number 등 유지
+            content: fullData // content만 캘린더 정보가 포함된 데이터로 교체
+        };
+    } else {
+        return fullData; // 페이징이 아니면 배열 그대로 반환
+    }
 
   } catch (error) {
     console.error("통합 캘린더 데이터 조회 오류:", error);
@@ -126,6 +132,24 @@ export const updateBulkPolicy = async (bulkData) => {
     return response.data;
   } catch (error) {
     console.error("일괄 수정 오류:", error);
+    throw error;
+  }
+};
+
+export const getRoomByAccommodationIDWithMainPhoto = async (accommodationId, page = 0, size = 5) => {
+  try {
+    const response = await api.get(
+      ROOM_ENDPOINTS.ROOMS.LIST_BY_ACCOMMODATION_WITH_PHOTO(accommodationId),
+      {
+        params: {
+          page: page,
+          size: size
+        }
+      }
+    );
+    return response.data; // 
+  } catch (error) {
+    console.error(`숙소 ${accommodationId}의 객실 목록 조회 오류 (이미지 통합):`, error);
     throw error;
   }
 };

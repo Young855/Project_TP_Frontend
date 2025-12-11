@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRoom, updateRoom, deleteRoom } from "../../api/roomAPI"; 
+import AmenitySelector from '../../components/AmenitySelector';
 
 const PRESET_BED_TYPES = ['킹사이즈 침대', '퀸사이즈 침대', '더블 침대', '싱글 침대', '이층 침대'];
 const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3인 조식', '4인 조식']; 
@@ -105,6 +106,7 @@ const RoomEdit = () => {
   const [formData, setFormData] = useState({
     // [변경] propertyId -> accommodationId
     accommodationId: "",
+    accommodationName: "",
     name: "",
     standardCapacity: 1, 
     maxCapacity: 1,      
@@ -125,9 +127,29 @@ const RoomEdit = () => {
     refundable: true,
   });
 
+
   const [errMsg, setErrMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleAmenityChange = (amenityName) => {
+      setFormData(prev => {
+          const currentList = prev.amenities || [];
+          // 이미 있는지 확인 (객체 배열이므로 name 속성 비교)
+          const exists = currentList.some(item => item.name === amenityName);
+          
+          let newList;
+          if (exists) {
+              // 있으면 제거
+              newList = currentList.filter(item => item.name !== amenityName);
+          } else {
+              // 없으면 추가 (객체 형태로 추가)
+              newList = [...currentList, { name: amenityName }];
+          }
+          
+          return { ...prev, amenities: newList };
+      });
+   };
 
   // ... (handleBedTypeChange ~ handleAddNewPolicy ~ handleChange 동일, 생략)
   const handleBedTypeChange = (type) => {
@@ -227,9 +249,11 @@ const RoomEdit = () => {
         pkgDesc = '기타: [입력란]'; 
       }
       
+      
       setFormData({
         // [변경] 데이터 구조상 accommodationId를 찾도록 변경
-        accommodationId: data?.accommodation?.accommodationId ?? data?.accommodationId ?? "",
+        accommodationId: data?.accommodationId ?? "", // 기존 DTO 구조 사용
+        accommodationName: data?.accommodationName ?? "", 
         name: data?.name ?? "",
         standardCapacity: data?.standardCapacity ?? 1, 
         maxCapacity: data?.maxCapacity ?? 1,           
@@ -332,6 +356,8 @@ const RoomEdit = () => {
 
   if (loading) return <div className="p-8">로딩 중...</div>;
 
+  const amenityNameSet = new Set(formData.amenities.map(a => a.name));
+
   return (
     <div className="container mx-auto p-8 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">객실 수정: {formData.name}</h1>
@@ -342,9 +368,14 @@ const RoomEdit = () => {
         <h2 className="text-lg font-semibold border-b pb-2">기본 정보</h2>
         <div className="grid grid-cols-2 gap-4">
             <div>
-                {/* [변경] Label 및 name 변경 */}
-                <label className="form-label">Accommodation ID</label>
-                <input type="number" name="accommodationId" className="form-input w-full bg-gray-100 cursor-not-allowed" value={formData.accommodationId} readOnly />
+                <label className="form-label">숙소명 (Accommodation)</label>
+                <input 
+                    type="text" 
+                    className="form-input w-full bg-gray-100 cursor-not-allowed font-bold text-gray-700" 
+                    value={formData.accommodationName}
+                    readOnly 
+                />
+                <input type="hidden" name="accommodationId" value={formData.accommodationId} />
             </div>
             <div>
                 <label className="form-label">객실 이름 (Type)</label>
@@ -501,7 +532,12 @@ const RoomEdit = () => {
                 </div>
             </div>
         </div>
-        
+        <AmenitySelector 
+            selectedNames={amenityNameSet}
+            onChange={handleAmenityChange}
+            type="ROOM" 
+        />
+
         <div className="flex items-center gap-2 bg-gray-50 p-3 rounded border">
             <input 
                 type="checkbox" name="refundable" id="refundable"

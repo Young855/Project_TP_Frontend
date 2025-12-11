@@ -29,6 +29,8 @@ import RoomRouter from './routers/RoomRouter';
 import { getAllAccommodations } from "./api/accommodationAPI"; 
 import FilterRouter from './routers/FilterRouter';
 import { searchResultRouter } from './routers/SearchResultRouter';
+import AdminLayout from './Layout/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -235,6 +237,16 @@ const router = createBrowserRouter([
       { path: 'reservations', element: <Placeholder title="예약 관리" /> },
       ...RoomRouter,
       ...partnerAccommodationRoutes, 
+    ],
+  },
+  {
+    path: '/admin',
+    element: <AdminLayout />, 
+    children: [
+      { index: true, element: <AdminDashboard /> },
+      { path: 'dashboard', element: <AdminDashboard /> },
+      { path: 'users', element: <Placeholder title="회원 관리" /> }, 
+      { path: 'accommodations', element: <Placeholder title="전체 숙소 관리" /> }, 
     ],
   },
 ]);

@@ -160,6 +160,7 @@ const AccommodationEditPage = () => {
         <AmenitySelector 
             selectedNames={selectedAmenityNames}
             onChange={handleAmenityChange}
+            type="ACCOMMODATION"
         />
         
         <input 

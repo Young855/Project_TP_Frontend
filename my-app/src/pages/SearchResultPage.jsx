@@ -1,10 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState, useRef, useEffect } from "react";
+import { addFavorite, getFavorites, removeFavorite  } from "../api/favoriteAPI";
+import { useUrlUser } from "../hooks/useUrlUser";
 
 // 상단 옵션 & 상수
 // 왼쪽 필터의 숙소 유형 라디오 버튼 목록
 // label은 화면에 보이는 한글, value는 실제 필터에 사용되는 값
-const PROPERTY_TYPE_OPTIONS = [
+const ACCOMMODATION_TYPE_OPTIONS = [
   { label: "전체", value: "ALL" },
   { label: "호텔", value: "HOTEL" },
   { label: "펜션", value: "PENSION" },
@@ -227,6 +229,7 @@ function PriceRangeSlider({ min, max, step, minValue, maxValue, onChange }) {
 export default function SearchResultPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { userId } = useUrlUser(); // URL ?userId=1을 '로그인 유저'로 가정
   const originalResults = state?.results || [];
   const criteria = state?.criteria || {};
 
@@ -243,13 +246,30 @@ export default function SearchResultPage() {
   const [selectedRoomFacilities, setSelectedRoomFacilities] = useState(
     new Set()
   );
-  const [selectedEtcFacilities, setSelectedEtcFacilities] = useState(new Set());
+  // const [selectedEtcFacilities, setSelectedEtcFacilities] = useState(new Set());
 
   // 정렬 옵션 상태
   const [sortOption, setSortOption] = useState("RECOMMENDED");
 
-  // 찜 상태 (추가된 부분): propertyId -> true/false
+  // 찜 상태 (추가된 부분): AccommodationId -> true/false
   const [favoriteMap, setFavoriteMap] = useState({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await getFavorites(userId);
+        const nextMap = {};
+        (list ?? []).forEach((fav) => {
+          if (fav.accommodationId != null) {
+            nextMap[fav.accommodationId] = true;
+          }
+        });
+        setFavoriteMap(nextMap);
+      } catch (err) {
+        console.error("찜 목록 불러오기 실패:", err);
+      }
+    })();
+  }, [userId]);
 
   // 토글용 헬퍼
   const toggleInSet = (setFn, value) => {
@@ -270,7 +290,7 @@ export default function SearchResultPage() {
     setSelectedTags(new Set());
     setSelectedCommonFacilities(new Set());
     setSelectedRoomFacilities(new Set());
-    setSelectedEtcFacilities(new Set());
+    // setSelectedEtcFacilities(new Set());
   };
 
   // 실제 필터링 + 정렬
@@ -282,7 +302,7 @@ export default function SearchResultPage() {
 
       // 2) 숙소 유형
       if (selectedType !== "ALL") {
-        if ((p.propertyType || "").toUpperCase() !== selectedType) {
+        if ((p.accommodationType || "").toUpperCase() !== selectedType) {
           return false;
         }
       }
@@ -321,11 +341,11 @@ export default function SearchResultPage() {
           if (!amenities.includes(need)) return false;
         }
       }
-      if (selectedEtcFacilities.size > 0) {
-        for (const need of selectedEtcFacilities) {
-          if (!amenities.includes(need)) return false;
-        }
-      }
+      // if (selectedEtcFacilities.size > 0) {
+      //   for (const need of selectedEtcFacilities) {
+      //     if (!amenities.includes(need)) return false;
+      //   }
+      // }
 
       return true;
     });
@@ -377,12 +397,12 @@ export default function SearchResultPage() {
     selectedTags,
     selectedCommonFacilities,
     selectedRoomFacilities,
-    selectedEtcFacilities,
+    // selectedEtcFacilities,
     sortOption,
   ]);
 
-  const handleGoDetail = (propertyId) => {
-    navigate(`/accommodation/${propertyId}`);
+  const handleGoDetail = (accommodationId) => {
+    navigate(`/accommodation/${accommodationId}`);
   };
 
   // 상단 검색 요약 버튼 클릭 시 -> 메인 페이지로 돌아가서 검색 수정
@@ -390,17 +410,42 @@ export default function SearchResultPage() {
     navigate("/", { state: { criteria } });
   };
 
-  // 찜 토글 핸들러 (추가된 부분)
-  const toggleFavorite = (e, id) => {
+   // 🔧 수정된 찜 토글 핸들러
+  const toggleFavorite = async (e, accommodationId) => {
     e.stopPropagation(); // 카드 클릭으로 상세 이동 막기
 
+    const currentlyFavorite = !!favoriteMap[accommodationId];
+
+    // UI 먼저 토글
     setFavoriteMap((prev) => ({
       ...prev,
-      [id]: !prev[id],
+      [accommodationId]: !currentlyFavorite,
     }));
 
-    // TODO: 실제 API 연동 시 여기에서 add/remove 호출
+    try {
+      if (!currentlyFavorite) {
+        // 찜 추가
+        await addFavorite(userId, accommodationId);
+        console.log(
+          `찜 추가 완료 -> userId=${userId}, accommodationId=${accommodationId}`
+        );
+      } else {
+        // 찜 해제
+        await removeFavorite(userId, accommodationId);
+        console.log(
+          `찜 해제 완료 -> userId=${userId}, accommodationId=${accommodationId}`
+        );
+      }
+    } catch (error) {
+      console.error("찜 토글 실패:", error);
+      // 실패하면 UI 롤백
+      setFavoriteMap((prev) => ({
+        ...prev,
+        [accommodationId]: currentlyFavorite,
+      }));
+    }
   };
+
 
   if (!state) {
     return (
@@ -442,14 +487,14 @@ export default function SearchResultPage() {
           <div className="border-t pt-3 mt-3">
             <h3 className="text-sm font-semibold mb-2">숙소 유형</h3>
             <div className="space-y-1 text-sm">
-              {PROPERTY_TYPE_OPTIONS.map((opt) => (
+              {ACCOMMODATION_TYPE_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <input
                     type="radio"
-                    name="propertyType"
+                    name="accommodationType"
                     value={opt.value}
                     checked={selectedType === opt.value}
                     onChange={() => setSelectedType(opt.value)}
@@ -549,7 +594,7 @@ export default function SearchResultPage() {
             <div>
               <h3 className="text-sm font-semibold mb-1">기타 시설</h3>
               <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                {ETC_FACILITY_OPTIONS.map((f) => (
+                {/* {ETC_FACILITY_OPTIONS.map((f) => (
                   <button
                     key={f}
                     type="button"
@@ -562,7 +607,7 @@ export default function SearchResultPage() {
                   >
                     {f}
                   </button>
-                ))}
+                ))} */}
               </div>
             </div>
           </div>
@@ -600,16 +645,16 @@ export default function SearchResultPage() {
             <div className="space-y-3">
               {displayResults.map((p) => (
                 <div
-                  key={p.propertyId}
+                  key={p.accommodationId}
                   className="relative bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition cursor-pointer"
-                  onClick={() => handleGoDetail(p.propertyId)}
+                  onClick={() => handleGoDetail(p.accommodationId)}
                 >
                   {/* ⭐ 오른쪽 상단 하트 버튼 (추가된 부분) */}
                   <button
-                    onClick={(e) => toggleFavorite(e, p.propertyId)}
+                    onClick={(e) => toggleFavorite(e, p.accommodationId)}
                     className="absolute top-3 right-3"
                   >
-                    {favoriteMap[p.propertyId] ? (
+                    {favoriteMap[p.accommodationId] ? (
                       // 빨간 하트 (찜 ON)
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -619,9 +664,9 @@ export default function SearchResultPage() {
                         height="28"
                       >
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
-          4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
-          14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
-          6.86-8.55 11.54L12 21.35z" />
+                        4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
+                        14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
+                        6.86-8.55 11.54L12 21.35z" />
                       </svg>
                     ) : (
                       // 회색 하트 (찜 OFF)
@@ -635,8 +680,8 @@ export default function SearchResultPage() {
                         height="28"
                       >
                         <path d="M12.1 8.64a3.5 3.5 0 0 0-5.2 0 
-          3.86 3.86 0 0 0 0 5.32L12 19l5.1-5.04a3.86 3.86 0 
-          0 0 0-5.32 3.5 3.5 0 0 0-5.2 0z" />
+                        3.86 3.86 0 0 0 0 5.32L12 19l5.1-5.04a3.86 3.86 0 
+                        0 0 0-5.32 3.5 3.5 0 0 0-5.2 0z" />
                       </svg>
                     )}
                   </button>
@@ -653,7 +698,7 @@ export default function SearchResultPage() {
                         {p.address} {p.city ? `(${p.city})` : ""}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {p.propertyType}
+                        {p.accommodationType}
                         {p.checkinTime && p.checkoutTime
                           ? ` · 체크인 ${p.checkinTime} / 체크아웃 ${p.checkoutTime}`
                           : ""}

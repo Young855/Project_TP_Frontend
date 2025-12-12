@@ -1,45 +1,55 @@
-import { Routes, Route, useNavigate, useSearchParams, Navigate } from "react-router-dom";
+// src/pages/favorite/FavoritePage.jsx
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
-import FavoriteDetail from "./FavoriteDetail";
-import FavoriteEdit from "./FavoriteEdit";
 import FavoriteList from "./FavoriteList";
+import { useUrlUser } from "../../hooks/useUrlUser";
 
+// 찜 목록 최상위 페이지
+// - URL: /favorites 또는 /favorites?userId=1 형식
+// - 내부에서는 카드 형태의 FavoriteList만 사용
 export default function FavoritePage({ userId: propUserId }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { userId: urlUserId } = useUrlUser();
 
-  // ?? 와 || 함께 쓸 때는 괄호로 감싸기
-  const userId = (propUserId ?? searchParams.get("userId")) || 1;
+  const userId = Number(propUserId ?? urlUserId ?? 1);
+
+  const handleGoToSearch = () => {
+    // 메인 페이지로 바로 이동
+    navigate(`/?userId=${userId}`);
+  };
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">찜 목록</h1>
-
+    <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-10">
+      {/* 상단 헤더 영역 */}
+      <div className="flex justify-between items-center mb-6 md:mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">찜 목록</h1>
+          <p className="mt-1 text-sm text-gray-500">
+   
+          </p>
+        </div>
         <button
-          className="btn-primary"
-          onClick={() => navigate("/?focus=search")}
+        type="button"
+        onClick={handleGoToSearch}
+        className="px-4 py-2 md:px-6 md:py-2.5 rounded-lg 
+                    border border-blue-500 
+                    text-blue-600 
+                    text-sm md:text-base font-bold
+                    bg-white hover:bg-blue-50 
+                    transition-colors"
         >
-          숙소 찾으러 가기
-        </button>
+        숙소 찾으러 가기
+</button>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <Routes>
-          <Route index element={<FavoriteList userId={userId} />} />
+      {/* 찜 목록 카드 리스트 */}
+      <Routes>
+        {/* 기본: /favorites → 나의 찜 목록 카드들 */}
+        <Route index element={<FavoriteList userId={userId} />} />
 
-          {/* create 라우트: 검색 페이지로 리다이렉트 */}
-          <Route
-            path="create"
-            element={<Navigate to="/?focus=search" replace />}
-          />
-
-          <Route path=":id" element={<FavoriteDetail userId={userId} />} />
-          <Route path=":id/edit" element={<FavoriteEdit userId={userId} />} />
-
-          <Route path="*" element={<Navigate to="/favorites" replace />} />
-        </Routes>
-      </div>
+        {/* 그 외 서브 경로는 전부 /favorites 루트로 리다이렉트 */}
+        <Route path="*" element={<Navigate to="/favorites" replace />} />
+      </Routes>
     </div>
   );
 }

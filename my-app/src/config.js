@@ -64,7 +64,7 @@ export const DAILY_POLICY_ENDPOINTS = {
 // [수정] PROPERTIES -> ACCOMMODATIONS
 export const ACCOMMODATIONS_ENDPOINTS = {
     ACCOMMODATIONS: {
-        LIST_ALL: `${API_BASE_URL}/accommodations`, 
+        LIST_ALL: `${API_BASE_URL}/partner/accommodations`, 
         LIST_BY_PARTNER: (partnerId) =>
              `${API_BASE_URL}/partner/accommodations/by-partner/${partnerId}`, 
         LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
@@ -148,10 +148,9 @@ export const HASHTAG_ENDPOINTS = {
 
 export const FAVORITE_ENDPOINTS = {
     FAVORITES: {
-        LIST: `${API_BASE_URL}/favorites`, 
-        ADD : `${API_BASE_URL}/favorites`, 
-        GET : (id) => `${API_BASE_URL}/favorites/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/favorites/${id}`, 
+        ADD: `${API_BASE_URL}/favorites/create`,
+        LIST:`${API_BASE_URL}/favorites/list`,
+        DELETE:`${API_BASE_URL}/favorites/delete`,
     },
 }
 

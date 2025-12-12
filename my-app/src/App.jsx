@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
 import './index.css';
+import { useUrlUser } from './hooks/useUrlUser';
 
 import Header from './components/Header';
 import Modal from './components/Modal';
@@ -40,6 +41,7 @@ const Placeholder = ({ title }) => (
 
 function UserLayout() {
   const navigate = useNavigate();
+  const { userId } = useUrlUser();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchParams, setSearchParams] = useState({});
@@ -116,13 +118,13 @@ function UserLayout() {
       });
       return false;
     }
-    return true;
+    return true;``
   };
 
   // 메인/헤더에서 공통으로 사용하는 검색 함수 / 메인 페이지든 헤더든 전부 이 handleSearch만 호출
   const handleSearch = async ({ destination, checkIn, checkOut, guests }) => {
     try {
-      const all = await getAllProperties(); // 전체 숙소 조회
+      const all = await getAllAccommodations(); // 전체 숙소 조회
       const list = Array.isArray(all) ? all : all?.content || [];
       const keyword = (destination || "").toLowerCase();
 
@@ -140,18 +142,29 @@ function UserLayout() {
           })
         : list;
 
+
       // 검색 결과 페이지로 이동
-      navigate('/search-results', {
-        state: {
-          results: filtered,
-          criteria: { destination, checkIn, checkOut, guests },
-        },
-      });
-    } catch (e) {
-      console.error('숙소 검색 오류:', e);
-      alert('숙소 검색 중 오류가 발생했습니다.');
-    }
-  };
+      // navigate("/search-results", {
+    //   state: {
+    //     results: filtered,
+    //     criteria: { destination, checkIn, checkOut, guests },
+          navigate(
+            {
+              pathname: "/search-results",
+              search: `?userId=${userId}`,
+            },
+            {
+              state: {
+                results: filtered,
+                criteria: { destination, checkIn, checkOut, guests },
+              },
+            }
+          );
+        } catch (e) {
+          console.error("숙소 검색 오류:", e);
+          alert("숙소 검색 중 오류가 발생했습니다.");
+        }
+      };
 
   const appProps = {
     isLoggedIn,

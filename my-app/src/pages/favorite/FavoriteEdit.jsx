@@ -4,8 +4,7 @@ import { addFavorite, getFavorites, removeFavorite } from "../../api/favoriteAPI
 
 export default function FavoriteEdit({ userId }) {
   const { id } = useParams();
-  const [targetType, setTargetType] = useState("");
-  const [targetId, setTargetId] = useState("");
+  const [accommodationId, setAccommodationId] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,8 +13,7 @@ export default function FavoriteEdit({ userId }) {
         const list = await getFavorites(userId);
         const fav = list.find((f) => String(f.favoriteId) === id);
         if (fav) {
-          setTargetType(fav.targetType);
-          setTargetId(fav.targetId);
+        setAccommodationId(fav.accommodationId);
         }
       } catch (err) {
         console.error("수정 데이터 불러오기 오류:", err);
@@ -29,8 +27,8 @@ export default function FavoriteEdit({ userId }) {
     e.preventDefault();
     try {
       setLoading(true);
-      await removeFavorite(userId, targetType, targetId);
-      await addFavorite(userId, { targetType, targetId });
+      await removeFavorite(userId, Number(accommodationId));
+      await addFavorite(userId, Number(accommodationId));
       alert ("찜이 수정되었다.");
       Navigate("/favorites");
     } catch (err) {
@@ -46,23 +44,13 @@ export default function FavoriteEdit({ userId }) {
     <div>
       <h2>찜 수정</h2>
       <form onSubmit={handleUpdate} style={{ display: "grid", gap: 12, maxWidth: 400}}>
-        <label>
-          대상 종류
-          <select value={targetType}
-           onChange={(e) => setTargetType(e.target.value)}
-           >
-            <option value="PROPERTY">숙소</option>
-            <option value="REVIEW">리뷰</option>
-            <option value="POST">게시글</option>
-          </select>
-        </label>
 
         <label>
-          대상 ID
+          숙소 ID
           <input 
             type="number"
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
+            value={accommodationId}
+            onChange={(e) => setAccommodationId(e.target.value)}
           />
         </label>
 

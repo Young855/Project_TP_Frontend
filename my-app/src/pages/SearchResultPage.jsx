@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { addFavorite, getFavorites, removeFavorite  } from "../api/favoriteAPI";
 import { useUrlUser } from "../hooks/useUrlUser";
+import { getAccommodationPhotoBlobUrl } from "../api/accommodationPhotoAPI";
 
 // 상단 옵션 & 상수
 // 왼쪽 필터의 숙소 유형 라디오 버튼 목록
@@ -426,17 +427,20 @@ export default function SearchResultPage() {
       if (!currentlyFavorite) {
         // 찜 추가
         await addFavorite(userId, accommodationId);
+        alert("찜 목록에 추가 되었습니다.");
         console.log(
           `찜 추가 완료 -> userId=${userId}, accommodationId=${accommodationId}`
         );
+
       } else {
-        // 찜 해제
         await removeFavorite(userId, accommodationId);
+        alert("찜 목록에서 삭제 되었습니다.");
         console.log(
           `찜 해제 완료 -> userId=${userId}, accommodationId=${accommodationId}`
         );
       }
     } catch (error) {
+      alert("찜 실패");
       console.error("찜 토글 실패:", error);
       // 실패하면 UI 롤백
       setFavoriteMap((prev) => ({
@@ -687,8 +691,22 @@ export default function SearchResultPage() {
                   </button>
 
                   {/* 썸네일 자리 (이미지 없으면 회색 박스) */}
-                  <div className="w-full md:w-40 h-32 bg-gray-200 rounded-lg flex-shrink-0" />
-
+                  <div className="w-full md:w-40 h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                    {p.thumbnailPhotoId ? (
+                      <img
+                        src={getAccommodationPhotoBlobUrl(p.thumbnailPhotoId)}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder-room.jpg";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                        이미지 없음
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">

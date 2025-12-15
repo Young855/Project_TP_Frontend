@@ -64,7 +64,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     });
   };
 
-  /** 🔥 pill 클릭 시 패널 열기/닫기 */
+  /* pill 클릭 시 패널 열기/닫기 */
   const handleTogglePanel = () => {
     if (!criteria) return;
     // 열 때 현재 criteria 기준으로 초기화

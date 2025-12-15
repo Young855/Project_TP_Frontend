@@ -32,6 +32,7 @@ import FilterRouter from './routers/FilterRouter';
 import { searchResultRouter } from './routers/SearchResultRouter';
 import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -229,6 +230,7 @@ const router = createBrowserRouter([
       { path: 'login-selection', element: <LoginSelectionPage /> },
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },
+      { path: 'accommodation/*', element:<AccommodationPage /> },
       { path: 'bookings/*', element: <BookingPage /> },
       { path: 'payment', element: <PaymentPage /> },
       { path: 'itinerary', element: <ItineraryPage /> },

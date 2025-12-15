@@ -41,6 +41,9 @@ export default function FavoriteList({ userId }) {
     try {
       // 실제 서버에서는 찜 삭제
       await removeFavorite(userId, favorite.accommodationId);
+      alert("찜 목록에서 삭제되었습니다.");
+
+      await fetchFavorites();
       // 여기서는 목록에서 제거하지 않는다.
       // → 새로고침 또는 페이지 다시 들어왔을 때 getFavorites() 결과에서 아예 사라진다.
     } catch (err) {

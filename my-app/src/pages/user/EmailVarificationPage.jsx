@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
-import { checkEmailDuplication, sendVerificationEmail, verifyEmailCode } from '../../api/userAPI'; 
-import { checkPartnerEmailDuplication, sendPartnerVerificationEmail, verifyPartnerEmailCode } from '../../api/partnerAPI'; 
+import {  sendVerificationEmail, verifyEmailCode } from '../../api/userAPI'; 
+import { sendPartnerVerificationEmail, verifyPartnerEmailCode } from '../../api/partnerAPI'; 
 
 const INITIAL_TIMER_SECONDS = 180; 
 
@@ -101,7 +101,7 @@ function EmailVerificationPage({ type = 'signup' }) {
         } catch (error) {
             console.error("API 오류:", error);
             const errorMessage = error.response?.data?.message || '인증번호 발송에 실패했습니다.';
-            alert('오류 발생: ' + errorMessage);
+            alert(errorMessage);
         } finally {
             setIsSending(false);
         }

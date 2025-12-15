@@ -2,46 +2,46 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Calendar, List, LogOut, User, 
-    Building, ChevronDown, PlusCircle, Settings, MapPin 
+    Building, ChevronDown, PlusCircle, Settings, MapPin, Lock 
 } from 'lucide-react';
 import { PartnerProvider, usePartner } from '../context/PartnerContext';
 
 const PartnerLayoutContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  // [수정] Context 변수명 변경
+  
   const { 
-      accommodations, // properties -> accommodations
-      currentAccommodation, // currentProperty -> currentAccommodation
-      switchAccommodation, // switchProperty -> switchAccommodation
+      accommodations, 
+      currentAccommodation, 
+      switchAccommodation, 
       partnerInfo, 
       isLoading, 
   } = usePartner();
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const dropdownRef = useRef(null);
 
-  // 3. 외부 클릭 감지 로직 추가
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // 드롭다운이 열려있고, 클릭한 요소가 드롭다운 영역(dropdownRef) 내부에 포함되지 않으면 닫기
       if (isDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
     };
-
-    // 이벤트 리스너 등록
     document.addEventListener('mousedown', handleClickOutside);
-    
-    // 컴포넌트가 언마운트되거나 업데이트되기 전 리스너 제거 (Clean-up)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isDropdownOpen]);
 
-  const getLinkClass = (path) => {
+  const isConfirmed = currentAccommodation?.auth === 'CONFIRM';
+
+  const getLinkClass = (path, disabled = false) => {
     const isActive = location.pathname === path || location.pathname.startsWith(path + '/');
+    
+    if (disabled) {
+        return `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-400 cursor-not-allowed hover:bg-transparent`;
+    }
+
     return `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
       isActive 
         ? 'bg-blue-600 text-white shadow-md' 
@@ -49,55 +49,109 @@ const PartnerLayoutContent = () => {
     }`;
   };
 
-  const handleLogout = () => {
+  // 🌟 [추가] 페이지 이동 방지 가드 (Guard)
+  // URL에 'new'나 'edit'이 포함되어 있으면 작성 중인 것으로 간주하고 경고창을 띄웁니다.
+  const handleNavigationGuard = (e) => {
+      const isFormPage = /\/(new|edit)(\/|$|\?)/.test(location.pathname);
+      
+      if (isFormPage) {
+          if (!window.confirm("작성 중인 내용이 저장되지 않았습니다. 정말 이동하시겠습니까?")) {
+              e?.preventDefault(); // 이동 취소
+              return false;       // 진행 막기
+          }
+      }
+      return true; // 이동 허용
+  };
+
+  const handleLogout = (e) => {
+    if (!handleNavigationGuard(e)) return;
+
     localStorage.removeItem('partnerId'); 
     navigate('/');
+  };
+  
+  // 객실 관리 클릭 핸들러 (가드 + 권한 체크)
+  const handleRoomManagementClick = (e) => {
+      // 1. 작성 중 데이터 보호 체크
+      if (!handleNavigationGuard(e)) return;
+
+      // 2. 기존 권한 체크 로직
+      if (!currentAccommodation) {
+          e.preventDefault();
+          alert("먼저 숙소를 선택해주세요.");
+          return;
+      }
+      
+      if (!isConfirmed) {
+          e.preventDefault(); 
+          const status = currentAccommodation.auth || 'PENDING';
+          alert(`현재 숙소 상태는 [${status}] 입니다.\n관리자의 승인(CONFIRM)을 받은 후에 객실을 등록/관리할 수 있습니다.`);
+      }
+  };
+
+  // 숙소 전환 핸들러 (드롭다운)
+  const handleSwitchAccommodation = (acc) => {
+      // 숙소 전환 시에도 페이지가 이동되므로 가드 적용
+      if (/\/(new|edit)(\/|$|\?)/.test(location.pathname)) {
+          if (!window.confirm("작성 중인 내용이 저장되지 않았습니다. 숙소를 변경하시겠습니까?")) {
+              return;
+          }
+      }
+
+      switchAccommodation(acc);
+      setIsDropdownOpen(false);
+      navigate('/partner/dashboard');
   };
 
   if (isLoading) return <div className="flex h-screen justify-center items-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      {/*[사이드바]*/}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-10">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-50">
         <div className="p-6 border-b border-gray-100">
-            <Link to="/partner/dashboard" className="block">
+            {/* 로고 클릭 시에도 가드 적용 */}
+            <Link to="/partner/dashboard" onClick={handleNavigationGuard} className="block">
                 <h1 className="text-2xl font-bold text-blue-600">숙박시설 <br/>관리 시스템</h1>
             </Link>
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {/* 1. 대시보드 */}
-          <Link to="/partner/dashboard" className={getLinkClass('/partner/dashboard')}>
+          {/* 각 링크에 onClick={handleNavigationGuard} 추가 */}
+          <Link to="/partner/dashboard" onClick={handleNavigationGuard} className={getLinkClass('/partner/dashboard')}>
             <LayoutDashboard size={20} />
             <span>대시보드</span>
           </Link>
           
-          {/* 2. 숙박 시설 관리 (경로 변경) */}
-          <Link to="/partner/accommodations" className={getLinkClass('/partner/accommodations')}>
+          <Link to="/partner/accommodations" onClick={handleNavigationGuard} className={getLinkClass('/partner/accommodations')}>
             <Building size={20} />
             <span>숙박 시설 관리</span>
           </Link>
           
-          {/* 3. 요금/재고 관리 */}
-          <Link to="/partner/rooms" className={getLinkClass('/partner/rooms')}>
-            <Calendar size={20} />
-            <span>객실 관리</span>
+          <Link 
+            to="/partner/rooms" 
+            onClick={handleRoomManagementClick} 
+            className={getLinkClass('/partner/rooms', !isConfirmed)} 
+          >
+            <div className="relative flex items-center gap-3 w-full">
+                <Calendar size={20} />
+                <span>객실 관리</span>
+                {!isConfirmed && currentAccommodation && (
+                    <Lock size={14} className="ml-auto text-gray-400" />
+                )}
+            </div>
           </Link>
 
-          {/* 4. 예약 목록 */}
-          <Link to="/partner/reservations" className={getLinkClass('/partner/reservations')}>
+          <Link to="/partner/reservations" onClick={handleNavigationGuard} className={getLinkClass('/partner/reservations')}>
             <List size={20} />
             <span>예약 목록</span>
           </Link>
 
-          {/* 현재 숙소 수정 바로가기 */}
           <div className="pt-6 mt-2">
              <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Accommodation</p>
              {currentAccommodation ? (
                  <Link 
-                    // [수정] 경로 및 변수 변경
                     to={`/partner/accommodations/${currentAccommodation.accommodationId}`} 
+                    onClick={handleNavigationGuard}
                     className={getLinkClass(`/partner/accommodations/${currentAccommodation.accommodationId}`)}
                  >
                     <Settings size={20} />
@@ -111,7 +165,6 @@ const PartnerLayoutContent = () => {
           </div>
         </nav>
 
-        {/* 하단 파트너 정보 */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3 mb-3 px-2">
                 <div className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm">
@@ -132,9 +185,9 @@ const PartnerLayoutContent = () => {
         </div>
       </aside>
 
-      {/* ================= [메인 콘텐츠] ================= */}
-      <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden bg-gray-50">
-        <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-20 shadow-sm shrink-0">
+      <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden bg-gray-50 isolate">
+        
+        <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm shrink-0">
             <div className="relative" ref={dropdownRef}>
                 <button 
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -144,6 +197,11 @@ const PartnerLayoutContent = () => {
                         <Building size={20} />
                     </div>
                     <span>{currentAccommodation ? currentAccommodation.name : "숙소를 선택해주세요"}</span>
+                    {currentAccommodation && !isConfirmed && (
+                         <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 border border-yellow-200">
+                             {currentAccommodation.auth || 'PENDING'}
+                         </span>
+                    )}
                     <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -157,11 +215,7 @@ const PartnerLayoutContent = () => {
                                 accommodations.map((acc) => (
                                     <button
                                         key={acc.accommodationId}
-                                        onClick={() => {
-                                            switchAccommodation(acc);
-                                            setIsDropdownOpen(false);
-                                            navigate('/partner/dashboard');
-                                        }}
+                                        onClick={() => handleSwitchAccommodation(acc)} // [수정] 핸들러 교체
                                         className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-l-4 ${
                                             currentAccommodation?.accommodationId === acc.accommodationId 
                                             ? 'border-blue-600 bg-blue-50/50' 
@@ -169,9 +223,14 @@ const PartnerLayoutContent = () => {
                                         }`}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-semibold truncate ${currentAccommodation?.accommodationId === acc.accommodationId ? 'text-blue-700' : 'text-gray-700'}`}>
-                                                {acc.name}
-                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <p className={`text-sm font-semibold truncate ${currentAccommodation?.accommodationId === acc.accommodationId ? 'text-blue-700' : 'text-gray-700'}`}>
+                                                    {acc.name}
+                                                </p>
+                                                {acc.auth !== 'CONFIRM' && (
+                                                    <span className="w-2 h-2 rounded-full bg-yellow-400" title="승인 대기중"/>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-gray-400 truncate">{acc.address || "주소 미입력"}</p>
                                         </div>
                                         {currentAccommodation?.accommodationId === acc.accommodationId && (
@@ -186,7 +245,7 @@ const PartnerLayoutContent = () => {
                         <div className="p-2 border-t border-gray-100 mt-1">
                             <Link 
                                 to={`/partner/accommodations/new?partnerId=${partnerInfo.partnerId}`} 
-                                onClick={() => setIsDropdownOpen(false)}
+                                onClick={() => setIsDropdownOpen(false)} // 여긴 New 페이지로 가는 거라 가드 불필요 (가더라도 새 페이지라 상관없음. 필요하면 추가)
                                 className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"
                             >
                                 <PlusCircle size={18} />
@@ -201,6 +260,7 @@ const PartnerLayoutContent = () => {
                 {currentAccommodation && (
                     <Link 
                         to={`/partner/accommodations/${currentAccommodation.accommodationId}`}
+                        onClick={handleNavigationGuard}
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
                     >
                         <MapPin size={16} />
@@ -210,8 +270,7 @@ const PartnerLayoutContent = () => {
             </div>
         </header>
 
-        {/* 콘텐츠 영역 */}
-        <div className="flex-1 overflow-auto p-6 md:p-8">
+        <div className="flex-1 overflow-auto p-6 md:p-8 relative z-0">
             
             {!isLoading && accommodations.length === 0 && location.pathname === '/partner/dashboard' && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center mb-6 animate-in fade-in slide-in-from-bottom-4">

@@ -8,7 +8,6 @@ const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3
 const PRESET_POLICIES = ['예약 후 취소 불가', '예약 변경 불가', '환불 불가 규정 적용'];
 
 const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
-    // ... (QuantityInput 코드는 변경 없음, 생략)
     const handleValueChange = useCallback((changeName, changeValue) => {
         onChange({ target: { name: changeName, value: changeValue } });
     }, [onChange]);
@@ -98,9 +97,10 @@ const RoomCreate = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     
-    // [변경] propertyId -> accommodationId
     const accommodationId = searchParams.get('accommodationId');
 
+    // [추가] 중복 제출 방지를 위한 상태
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -155,7 +155,6 @@ const RoomCreate = () => {
         });
     };
     
-    // ... (이벤트 핸들러들 동일, 생략)
     const handlePackagePresetChange = (preset) => {
         setFormData(prev => ({ 
             ...prev, 
@@ -209,11 +208,17 @@ const RoomCreate = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // [변경] accommodationId 체크
+        
+        // [추가] 이미 제출 중이면 함수 종료 (중복 클릭 방지)
+        if (isSubmitting) return;
+
         if (!accommodationId) {
             alert("숙소 정보가 없습니다.");
             return;
         }
+
+        // [추가] 제출 시작 상태 설정
+        setIsSubmitting(true);
 
         try {
             const finalBedTypes = [...formData.bedTypes];
@@ -230,11 +235,8 @@ const RoomCreate = () => {
                 finalPackageDescription = '해당사항 없음';
             }
 
-            
-
-            // 3. DTO 구성
+            // DTO 구성
             const body = {
-                // [변경] propertyId -> accommodationId
                 accommodationId: Number(accommodationId),
                 name: formData.name,
                 standardCapacity: Number(formData.standardCapacity),
@@ -261,23 +263,25 @@ const RoomCreate = () => {
         } catch (error) {
             console.error(error);
             alert("객실 생성에 실패했습니다.");
+        } finally {
+            // [추가] 성공하든 실패하든 처리가 끝나면 버튼 잠금 해제
+            setIsSubmitting(false);
         }
     };
 
     const amenityNameSet = new Set(formData.amenities.map(a => a.name));
 
     return (
-        // ... (JSX 내부는 변수명이 쓰이지 않아 동일하나, 생략된 부분은 위와 같음)
         <div className="container mx-auto p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">새 객실 타입 추가</h1>
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-6">
                 <h2 className="text-lg font-semibold border-b pb-2">기본 정보</h2>
                 <div>
                     <label className="form-label">객실 이름 (Type)</label>
+                    {/* 처리 중일 때 입력 방지를 원하면 readOnly={isSubmitting} 추가 가능 */}
                     <input type="text" name="name" className="form-input w-full" placeholder="예: 스탠다드 더블, 디럭스 오션뷰" required onChange={handleChange}/>
                 </div>
 
-                {/* 나머지 폼 필드들 (변경사항 없음) */}
                 <h2 className="text-lg font-semibold border-b pb-2">객실 정보 (필수)</h2>
                 <div className="grid grid-cols-4 gap-4">
                     <div>
@@ -300,7 +304,6 @@ const RoomCreate = () => {
                     <QuantityInput label="총 재고량 (Stock)" name="totalStock" value={formData.totalStock} onChange={handleChange} min={1} max={999} />
                 </div>
 
-                {/* ... (침대, 패키지, 정책, 환불 여부 등 UI 코드 동일) ... */}
                 <h2 className="text-lg font-semibold border-b pb-2">침대 정보 (복수 선택 및 사용자 정의)</h2>
                 <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
                     <div className="flex flex-wrap gap-2">
@@ -418,8 +421,6 @@ const RoomCreate = () => {
                     </div>
                 </div>
 
-                
-
                 <AmenitySelector 
                     selectedNames={amenityNameSet}
                     onChange={handleAmenityChange}
@@ -433,14 +434,21 @@ const RoomCreate = () => {
                     />
                     <label htmlFor="refundable" className="text-gray-700 font-medium cursor-pointer">환불 가능 여부</label>
                 </div>
+                
+                {/* [수정] 제출 중일 때 버튼 비활성화 처리 */}
                 <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-                    <button type="submit" className="btn-primary">
-                        객실 생성하기
+                    <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className={`btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        {isSubmitting ? "생성 중..." : "객실 생성하기"}
                     </button>
                     <button 
                         type="button" 
                         onClick={() => navigate(-1)} 
-                        className="btn-secondary-outline"
+                        disabled={isSubmitting}
+                        className={`btn-secondary-outline ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         취소
                     </button>

@@ -25,7 +25,10 @@ const RateCalendarPage = () => {
     const [page, setPage] = useState(0);        
     const [totalPages, setTotalPages] = useState(0); 
     const pageSize = 5; 
+    
+    // 로딩 및 처리 상태
     const [loading, setLoading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // 모달 제어 State
     const [editingPolicy, setEditingPolicy] = useState(null);
@@ -69,9 +72,13 @@ const RateCalendarPage = () => {
         loadData(0); 
     }, [startDate, currentAccommodation]);
 
-    const handlePageChange = (newPage) => loadData(newPage);
+    const handlePageChange = (newPage) => {
+        if (isProcessing || loading) return; 
+        loadData(newPage);
+    };
 
     const moveDate = (days) => {
+        if (isProcessing || loading) return; 
         const newDate = new Date(startDate);
         newDate.setDate(startDate.getDate() + days);
         setStartDate(newDate);
@@ -79,6 +86,8 @@ const RateCalendarPage = () => {
 
     // --- Handlers ---
     const handleCellClick = (roomId, policy, dateStr) => {
+        if (loading || isProcessing) return;
+
         if (policy) {
             setEditingPolicy({ ...policy, roomId, targetDate: policy.targetDate ?? dateStr }); 
         } else {
@@ -90,6 +99,9 @@ const RateCalendarPage = () => {
         if (!updatedPolicy.price || !updatedPolicy.stock) {
             alert("요금과 재고는 필수입니다."); return;
         }
+        if (isProcessing) return;
+        setIsProcessing(true);
+
         try {
             await updateDailyPolicy({
                 roomId: updatedPolicy.roomId,
@@ -99,9 +111,11 @@ const RateCalendarPage = () => {
                 isActive: updatedPolicy.isActive,
             });
             setEditingPolicy(null);
-            loadData(page);
+            await loadData(page); 
         } catch (error) {
             alert("저장 실패");
+        } finally {
+            setIsProcessing(false); 
         }
     };
 
@@ -109,6 +123,9 @@ const RateCalendarPage = () => {
         if (!bulkData.roomId || !bulkData.startDate || !bulkData.endDate || !bulkData.price || !bulkData.stock) {
             alert("필수 항목을 입력해주세요."); return;
         }
+        if (isProcessing) return;
+        setIsProcessing(true);
+
         try {
             await updateBulkPolicy({
                 roomId: Number(bulkData.roomId),
@@ -120,14 +137,17 @@ const RateCalendarPage = () => {
                 days: bulkData.days.length > 0 ? bulkData.days : null, 
             });
             setIsBulkModalOpen(false);
-            loadData(page);
+            await loadData(page); 
             alert("일괄 설정 완료");
         } catch (error) {
             alert("일괄 수정 실패");
+        } finally {
+            setIsProcessing(false); 
         }
     };
 
     const handleImageManage = (target) => {
+        if (isProcessing) return;
         const targetId = target.roomId;
         if (target.photos && target.photos.length > 0) {
             navigate(`/partner/rooms/photos/${targetId}`);
@@ -135,44 +155,65 @@ const RateCalendarPage = () => {
             navigate(`/partner/rooms/photos/${targetId}/new`);
         }
     };
+    
+    const isBusy = loading || isProcessing; 
 
     if (!currentAccommodation) return <div className="p-8 text-center text-gray-500">상단에서 숙소를 먼저 선택해주세요.</div>;
 
     return (
-        // [변경 1] h-full 제거, min-h-screen 추가 (컨텐츠가 길어지면 브라우저 스크롤 발생)
-        <div className="p-4 md:p-8 flex flex-col min-h-screen">
+        <div className="p-4 md:p-8 flex flex-col min-h-screen relative z-0">
             
-            {/* Header */}
-            {/* 상단 헤더는 최상단에 고정 (top-0) */}
-            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-0 z-50">
+            {/* Header Toolbar: z-index를 50 -> 10으로 낮춤 (Layout Header가 보통 20~30임) */}
+            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold text-gray-800">객실 요금 캘린더</h2>
                     <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button onClick={() => moveDate(-7)} className="p-1 hover:bg-white rounded shadow-sm"><ChevronLeft size={20}/></button>
+                        <button 
+                            onClick={() => moveDate(-7)} 
+                            disabled={isBusy}
+                            className={`p-1 hover:bg-white rounded shadow-sm ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <ChevronLeft size={20}/>
+                        </button>
                         <span className="px-4 font-medium text-sm">{dates[0]} ~ {dates[dates.length-1]}</span>
-                        <button onClick={() => moveDate(7)} className="p-1 hover:bg-white rounded shadow-sm"><ChevronRight size={20}/></button>
+                        <button 
+                            onClick={() => moveDate(7)} 
+                            disabled={isBusy}
+                            className={`p-1 hover:bg-white rounded shadow-sm ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <ChevronRight size={20}/>
+                        </button>
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => setIsBulkModalOpen(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition font-medium text-sm">
-                        <CalendarRange size={18}/> 일괄 설정
+                    <button 
+                        onClick={() => !isBusy && setIsBulkModalOpen(true)} 
+                        disabled={isBusy}
+                        className={`flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition font-medium text-sm ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <CalendarRange size={18}/> {isProcessing ? "처리 중..." : "일괄 설정"}
                     </button>
-                    <Link to={`/partner/rooms/new?accommodationId=${currentAccommodation.accommodationId}`} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm">
+                    <Link 
+                        to={`/partner/rooms/new?accommodationId=${currentAccommodation.accommodationId}`} 
+                        onClick={(e) => isBusy && e.preventDefault()} 
+                        className={`flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
                         <PlusCircle size={18}/> 객실 추가
                     </Link>
                 </div>
             </div>
 
             {/* Table Area */}
-            {/* [변경 2] flex-grow, overflow-auto 제거 -> overflow-x-auto만 유지 (세로는 페이지 스크롤 사용) */}
-            <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className={`overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
                 {loading ? (
                     <div className="text-center py-20">데이터를 불러오는 중입니다...</div>
                 ) : (
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50 sticky top-[0px] z-40 shadow-sm">
+                        {/* Table Header: z-index를 40 -> 10으로 낮춤 */}
+                        <thead className="bg-gray-50 sticky top-[0px] z-10 shadow-sm">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64 border-r border-gray-200 bg-gray-50 sticky left-0 z-40">객실 정보</th>
+                                {/* Corner Cell: z-index를 40 -> 20으로 낮춤 (헤더(10)보다는 높아야 함) */}
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64 border-r border-gray-200 bg-gray-50 sticky left-0 z-20">객실 정보</th>
                                 {dates.map((dateStr) => (
                                     <th key={dateStr} className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-24 border-r last:border-r-0 ${getDayName(dateStr) === '토' ? 'text-blue-600' : getDayName(dateStr) === '일' ? 'text-red-600' : 'text-gray-500'}`}>
                                         <div>{dateStr.substring(5)}</div>
@@ -184,7 +225,8 @@ const RateCalendarPage = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {roomData.map((room) => (
                                 <tr key={room.roomId} className="hover:bg-gray-50">
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 bg-white sticky left-0 z-30">
+                                    {/* Sticky First Column: z-index를 30 -> 10으로 낮춤 (헤더보다는 낮거나 같게) */}
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 bg-white sticky left-0 z-10">
                                         <div className="flex items-center gap-4">
                                             <div 
                                                 className="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden cursor-pointer border hover:border-blue-500 transition-colors"
@@ -233,24 +275,39 @@ const RateCalendarPage = () => {
 
             {/* Pagination */}
             <div className="p-4 border-t bg-gray-50 flex justify-center items-center gap-4 mt-auto">
-                <button disabled={page === 0} onClick={() => handlePageChange(page - 1)} className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-100">이전</button>
+                <button 
+                    disabled={page === 0 || isBusy} 
+                    onClick={() => handlePageChange(page - 1)} 
+                    className={`px-3 py-1 border rounded bg-white hover:bg-gray-100 ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    이전
+                </button>
                 <span className="text-sm font-medium">{page + 1} / {totalPages || 1}</span>
-                <button disabled={page >= totalPages - 1} onClick={() => handlePageChange(page + 1)} className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-100">다음</button>
+                <button 
+                    disabled={page >= totalPages - 1 || isBusy} 
+                    onClick={() => handlePageChange(page + 1)} 
+                    className={`px-3 py-1 border rounded bg-white hover:bg-gray-100 ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    다음
+                </button>
             </div>
 
             {/* --- Modals --- */}
+            {/* 모달은 z-index 수정 안함 (기본적으로 높게 설정되어 있음) */}
             <SinglePolicyModal 
                 isOpen={!!editingPolicy}
                 initialData={editingPolicy}
-                onClose={() => setEditingPolicy(null)}
+                onClose={() => !isProcessing && setEditingPolicy(null)} 
                 onSave={handleSaveSinglePolicy}
+                isProcessing={isProcessing} 
             />
 
             <BulkPolicyModal
                 isOpen={isBulkModalOpen}
                 rooms={roomData}
-                onClose={() => setIsBulkModalOpen(false)}
+                onClose={() => !isProcessing && setIsBulkModalOpen(false)} 
                 onSave={handleSaveBulkPolicy}
+                isProcessing={isProcessing} 
             />
         </div>
     );

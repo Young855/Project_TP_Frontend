@@ -112,7 +112,7 @@ const AccommodationCreate = () => {
             description: formData.get("description"),
             checkinTime: formData.get("checkinTime"),
             checkoutTime: formData.get("checkoutTime"),
-            ratingAvg: 10.0, // 초기값
+            ratingAvg: 5.0, // 초기값
             amenityNames: Array.from(selectedAmenityNames) 
         };
 

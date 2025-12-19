@@ -5,19 +5,24 @@ const formatDate = (date) => date.toISOString().split('T')[0];
 
 const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
     // 요일 옵션 (월=1 ~ 일=0 or 7)
-    // *주의: 실제 DB/로직의 요일 ID 체계에 맞춰야 합니다. 
-    // 여기서는 JS getDay() 기준(일0, 월1...)으로 매핑합니다.
     const dayOptions = [
         { id: 1, name: '월' }, { id: 2, name: '화' }, { id: 3, name: '수' }, 
         { id: 4, name: '목' }, { id: 5, name: '금' }, { id: 6, name: '토' }, { id: 0, name: '일' }
     ];
 
+    // [추가] 오늘로부터 6개월 뒤 날짜 계산 (최대 선택 가능 날짜)
+    const getMaxDate = () => {
+        const date = new Date();
+        date.setMonth(date.getMonth() + 6);
+        return formatDate(date);
+    };
+
     const [form, setForm] = useState({
         roomId: '',
         startDate: formatDate(new Date()),
         endDate: formatDate(new Date()),
-        price: '',
-        stock: '', 
+        price: 10000, // [수정] 기본 요금 10,000원
+        stock: 0,     // [수정] 기본 재고 0
         isActive: true,
         days: [], 
     });
@@ -69,7 +74,11 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
         if (isOpen && rooms.length > 0) {
             setForm(prev => ({
                 ...prev,
-                roomId: prev.roomId || rooms[0].roomId 
+                roomId: prev.roomId || rooms[0].roomId,
+                startDate: formatDate(new Date()), // 열릴 때 오늘 날짜로 리셋
+                endDate: formatDate(new Date()),
+                price: 10000, // [수정] 열릴 때마다 10,000원으로 초기화
+                stock: 0      // [수정] 열릴 때마다 0으로 초기화
             }));
         }
     }, [isOpen, rooms]);
@@ -77,6 +86,11 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
+
+        // [추가] 요금(price)이 음수면 입력 차단
+        if (name === 'price' && newValue !== '' && Number(newValue) < 0) {
+            return;
+        }
 
         setForm(prev => {
             const updated = { ...prev, [name]: newValue };
@@ -99,15 +113,22 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        const blockedInput = Number(form.stock || 0);
-        
+        // [수정] 값이 비어있으면('') 0으로 처리
+        const blockedInput = form.stock === '' ? 0 : Number(form.stock);
+        const priceInput = form.price === '' ? 0 : Number(form.price);
+
         // [안전장치] 기간 내 최대 예약수 때문에 설정 불가한 경우 차단
         if (periodStats && blockedInput > periodStats.safeBlockLimit) {
             alert(`선택 기간 중 예약이 가장 많은 날(${periodStats.maxBkStock}건)이 있어,\n최대 ${periodStats.safeBlockLimit}개까지만 차단 가능합니다.`);
             return;
         }
 
-        onSave(form); 
+        // [수정] 전송 데이터 구성
+        onSave({ 
+            ...form, 
+            stock: blockedInput,
+            price: priceInput
+        }); 
     };
 
     if (!isOpen) return null;
@@ -138,12 +159,12 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
                         </div>
                         {periodStats.maxBkStock > 0 && (
                             <div className="flex justify-between mb-1 text-red-600">
-                                <span>기간 내 최대 예약:</span>
+                                <span>예약된 제고:</span>
                                 <span className="font-bold">-{periodStats.maxBkStock}</span>
                             </div>
                         )}
                         <div className="flex justify-between mb-1">
-                            <span>차단할 객실(Blocked):</span>
+                            <span>차단할 객실:</span>
                             <span>-{currentBlocked}</span>
                         </div>
                         <div className="border-t border-black/10 mt-1 pt-1 flex justify-between font-bold text-sm">
@@ -172,14 +193,24 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
                         <div className="flex-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">시작일</label>
                             <input 
-                                type="date" name="startDate" value={form.startDate} onChange={handleChange} 
+                                type="date" 
+                                name="startDate" 
+                                value={form.startDate} 
+                                onChange={handleChange} 
+                                min={formatDate(new Date())} // [추가] 오늘 이전 선택 불가
+                                max={getMaxDate()}           // [추가] 6개월 제한
                                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
                             />
                         </div>
                         <div className="flex-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">종료일</label>
                             <input 
-                                type="date" name="endDate" value={form.endDate} onChange={handleChange} min={form.startDate} 
+                                type="date" 
+                                name="endDate" 
+                                value={form.endDate} 
+                                onChange={handleChange} 
+                                min={form.startDate} 
+                                max={getMaxDate()}           // [추가] 6개월 제한
                                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
                             />
                         </div>
@@ -216,7 +247,7 @@ const BulkPolicyModal = ({ isOpen, onClose, onSave, rooms }) => {
                             <label className="block text-xs font-medium text-gray-700 mb-1">요금</label>
                             <input 
                                 type="number" name="price" placeholder="변경 안함" 
-                                value={form.price} onChange={handleChange} 
+                                value={form.price} onChange={handleChange} min="0" // [추가] 음수 입력 방지
                                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
                             />
                         </div>

@@ -8,7 +8,6 @@ const PRESET_PACKAGES = ['해당사항 없음', '1인 조식', '2인 조식', '3
 const PRESET_POLICIES = ['예약 후 취소 불가', '예약 변경 불가', '환불 불가 규정 적용']; 
 
 const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => { 
-    // ... (QuantityInput은 RoomCreate와 동일하므로 생략)
     const handleValueChange = useCallback((changeName, changeValue) => {
         onChange({ target: { name: changeName, value: changeValue } });
     }, [onChange]);
@@ -104,7 +103,6 @@ const RoomEdit = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    // [변경] propertyId -> accommodationId
     accommodationId: "",
     accommodationName: "",
     name: "",
@@ -115,8 +113,6 @@ const RoomEdit = () => {
     bathroomCount: 0,
     livingRoomCount: 0,
     areaSquareMeter: 0.0,
-    
-    // RoomCreate 항목들
     packageDescription: PRESET_PACKAGES[0], 
     customPackageInput: '', 
     bedTypes: [], 
@@ -135,23 +131,18 @@ const RoomEdit = () => {
   const handleAmenityChange = (amenityName) => {
       setFormData(prev => {
           const currentList = prev.amenities || [];
-          // 이미 있는지 확인 (객체 배열이므로 name 속성 비교)
           const exists = currentList.some(item => item.name === amenityName);
           
           let newList;
           if (exists) {
-              // 있으면 제거
               newList = currentList.filter(item => item.name !== amenityName);
           } else {
-              // 없으면 추가 (객체 형태로 추가)
               newList = [...currentList, { name: amenityName }];
           }
           
           return { ...prev, amenities: newList };
       });
    };
-
-  // ... (handleBedTypeChange ~ handleAddNewPolicy ~ handleChange 동일, 생략)
   const handleBedTypeChange = (type) => {
     setFormData(prev => {
         const current = prev.bedTypes;
@@ -215,7 +206,6 @@ const RoomEdit = () => {
   };
 
   const validate = () => {
-    // [변경] propertyId -> accommodationId
     const { accommodationId, name, standardCapacity, maxCapacity, roomCount, areaSquareMeter } = formData;
     const n = name.trim();
     if (!accommodationId || Number(accommodationId) <= 0) return "Accommodation ID를 올바르게 입력하세요.";
@@ -251,8 +241,7 @@ const RoomEdit = () => {
       
       
       setFormData({
-        // [변경] 데이터 구조상 accommodationId를 찾도록 변경
-        accommodationId: data?.accommodationId ?? "", // 기존 DTO 구조 사용
+        accommodationId: data?.accommodationId ?? "",
         accommodationName: data?.accommodationName ?? "", 
         name: data?.name ?? "",
         standardCapacity: data?.standardCapacity ?? 1, 
@@ -550,21 +539,23 @@ const RoomEdit = () => {
             <button 
                 type="submit" 
                 disabled={submitting} 
-                className="btn-primary px-5 py-2.5 font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+                className="btn-primary px-5 py-2.5 font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {submitting ? "수정 중..." : "객실 정보 수정"}
             </button>
             <button
                 type="button"
                 onClick={handleDelete}
-                className="px-5 py-2.5 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition duration-150 font-semibold"
+                disabled={submitting} 
+                className="px-5 py-2.5 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition duration-150 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
                 객실 삭제
             </button>
             <button 
                 type="button" 
                 onClick={() => navigate(`/partner/rooms`)}
-                className="btn-secondary-outline px-5 py-2.5 font-semibold text-gray-700 border-gray-300 hover:bg-gray-50 rounded-lg"
+                disabled={submitting}
+                className="btn-secondary-outline px-5 py-2.5 font-semibold text-gray-700 border-gray-300 hover:bg-gray-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 취소
             </button>

@@ -34,7 +34,6 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
         }
     };
     
-    
     return (
         <div className="flex-1 min-w-[100px]">
             <label className="block text-sm font-medium text-gray-700 leading-none">{label}</label>
@@ -83,9 +82,7 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed
                         flex items-center justify-center 
-                        rounded-r-lg border-l border-gray-300
-                    "
-                >
+                        rounded-r-lg border-l border-gray-300">
                     +
                 </button>
             </div>
@@ -98,8 +95,6 @@ const RoomCreate = () => {
     const [searchParams] = useSearchParams();
     
     const accommodationId = searchParams.get('accommodationId');
-
-    // [추가] 중복 제출 방지를 위한 상태
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -128,15 +123,12 @@ const RoomCreate = () => {
     const handleAmenityChange = (amenityName) => {
         setFormData(prev => {
             const currentList = prev.amenities || [];
-            // 이미 있는지 확인 (객체 배열이므로 name 속성 비교)
             const exists = currentList.some(item => item.name === amenityName);
             
             let newList;
             if (exists) {
-                // 있으면 제거
                 newList = currentList.filter(item => item.name !== amenityName);
             } else {
-                // 없으면 추가 (객체 형태로 추가)
                 newList = [...currentList, { name: amenityName }];
             }
             
@@ -208,16 +200,12 @@ const RoomCreate = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // [추가] 이미 제출 중이면 함수 종료 (중복 클릭 방지)
         if (isSubmitting) return;
 
         if (!accommodationId) {
             alert("숙소 정보가 없습니다.");
             return;
         }
-
-        // [추가] 제출 시작 상태 설정
         setIsSubmitting(true);
 
         try {
@@ -234,8 +222,6 @@ const RoomCreate = () => {
             } else if (finalPackageDescription === '기타: [입력란]') {
                 finalPackageDescription = '해당사항 없음';
             }
-
-            // DTO 구성
             const body = {
                 accommodationId: Number(accommodationId),
                 name: formData.name,
@@ -264,11 +250,9 @@ const RoomCreate = () => {
             console.error(error);
             alert("객실 생성에 실패했습니다.");
         } finally {
-            // [추가] 성공하든 실패하든 처리가 끝나면 버튼 잠금 해제
             setIsSubmitting(false);
         }
     };
-
     const amenityNameSet = new Set(formData.amenities.map(a => a.name));
 
     return (
@@ -278,7 +262,6 @@ const RoomCreate = () => {
                 <h2 className="text-lg font-semibold border-b pb-2">기본 정보</h2>
                 <div>
                     <label className="form-label">객실 이름 (Type)</label>
-                    {/* 처리 중일 때 입력 방지를 원하면 readOnly={isSubmitting} 추가 가능 */}
                     <input type="text" name="name" className="form-input w-full" placeholder="예: 스탠다드 더블, 디럭스 오션뷰" required onChange={handleChange}/>
                 </div>
 
@@ -303,7 +286,6 @@ const RoomCreate = () => {
                     <QuantityInput label="거실 수" name="livingRoomCount" value={formData.livingRoomCount} onChange={handleChange} min={0} />
                     <QuantityInput label="총 재고량 (Stock)" name="totalStock" value={formData.totalStock} onChange={handleChange} min={1} max={999} />
                 </div>
-
                 <h2 className="text-lg font-semibold border-b pb-2">침대 정보 (복수 선택 및 사용자 정의)</h2>
                 <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
                     <div className="flex flex-wrap gap-2">
@@ -401,7 +383,6 @@ const RoomCreate = () => {
                                 항목 추가
                             </button>
                         </div>
-                        
                         <div className="mt-3 flex flex-wrap gap-2 text-xs">
                             {formData.policies
                                 .filter(policy => !PRESET_POLICIES.includes(policy)) 
@@ -420,7 +401,6 @@ const RoomCreate = () => {
                         </div>
                     </div>
                 </div>
-
                 <AmenitySelector 
                     selectedNames={amenityNameSet}
                     onChange={handleAmenityChange}
@@ -434,8 +414,6 @@ const RoomCreate = () => {
                     />
                     <label htmlFor="refundable" className="text-gray-700 font-medium cursor-pointer">환불 가능 여부</label>
                 </div>
-                
-                {/* [수정] 제출 중일 때 버튼 비활성화 처리 */}
                 <div className="flex justify-end gap-2 pt-4 border-t mt-4">
                     <button 
                         type="submit" 

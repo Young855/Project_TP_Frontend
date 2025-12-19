@@ -1,36 +1,31 @@
 import { useState } from "react";
-import { useNavigate, useParams, useLoaderData, Link } from "react-router-dom"; 
+import { useNavigate, useParams, useLoaderData, useNavigation } from "react-router-dom"; 
 import { deleteAccommodation } from "../../api/accommodationAPI";
 import { usePartner } from "../../context/PartnerContext"; 
+const Spinner = ({ color = "text-white" }) => (
+  <svg className={`animate-spin -ml-1 mr-2 h-4 w-4 ${color}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
 
 const AccommodationDetailPage = () => {
   const { accommodation } = useLoaderData();
   const { id } = useParams();
   const navigate = useNavigate();
-  
+  const navigation = useNavigation();
+  const isNavigating = navigation.state === "loading"; 
   const { refreshPartnerData } = usePartner();
-  
-  // 2. 삭제 진행 상태를 관리하는 State 추가
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const partnerPk = accommodation.partnerId; 
-
+  const isBusy = isDeleting || isNavigating;
   const handleDelete = async () => {
-    // 이미 삭제 중이면 중복 실행 방지
-    if (isDeleting) return;
+    if (isBusy) return;
 
     if (window.confirm(`숙소 '${accommodation.name}'을(를) 정말 삭제하시겠습니까?`)) {
         try {
-            // 로딩 시작 (버튼 잠금)
             setIsDeleting(true);
-
-            // 1. API 삭제 요청
             await deleteAccommodation(id);
-            
-            // 2. 전역 컨텍스트 갱신
             await refreshPartnerData();
-            
-            // 3. 목록 페이지로 이동
             navigate('/partner/accommodations'); 
         } catch (error) {
             console.error(error);
@@ -70,33 +65,29 @@ const AccommodationDetailPage = () => {
             <p className="text-gray-500">등록된 편의시설이 없습니다.</p>
           )}
         </div>
-
         <div className="mt-8 border-t pt-6 flex justify-end space-x-3">
           <button 
             onClick={() => navigate(`/partner/accommodations/${id}/edit`)} 
-            disabled={isDeleting} // 삭제 중 비활성화
-            className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${isDeleting ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={isBusy} 
+            className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            정보 수정
+            {isNavigating ? <><Spinner />이동 중...</> : "정보 수정"}
           </button>
           
           <button 
             onClick={handleDelete}
-            disabled={isDeleting} // 삭제 중 비활성화
-            className={`px-4 py-2 border border-red-500 text-red-600 rounded hover:bg-red-50 transition ${isDeleting ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={isBusy} 
+            className={`flex items-center px-4 py-2 border border-red-500 text-red-600 rounded hover:bg-red-50 transition ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isDeleting ? "삭제 중..." : "숙소 삭제"}
+            {isDeleting ? <><Spinner color="text-red-600" />삭제 중...</> : "숙소 삭제"}
           </button>
-
-          <Link 
-            to="/partner/accommodations" 
-            onClick={(e) => {
-              if (isDeleting) e.preventDefault();
-            }}
-            className={`px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition ${isDeleting ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
+          <button 
+            onClick={() => navigate('/partner/accommodations')} 
+            disabled={isBusy}
+            className={`flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
           > 
-            목록으로
-          </Link>
+            {isNavigating ? <><Spinner color="text-gray-600" />이동 중...</> : "목록으로"}
+          </button>
         </div>
       </div>
     </div>

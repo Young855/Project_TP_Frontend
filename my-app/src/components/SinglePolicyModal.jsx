@@ -67,11 +67,11 @@ const SinglePolicyModal = ({ isOpen, onClose, onSave, initialData }) => {
                     </div>
                     {/* 예약 현황: 0건이라도 흐리게 표시하여 정보 제공 */}
                     <div className={`flex justify-between mb-1 ${bkStock > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                        <span>현재 예약(bkStock):</span>
+                        <span>현재 예약:</span>
                         <span className="font-bold">-{bkStock}</span>
                     </div>
                     <div className="flex justify-between mb-1">
-                        <span>차단할 객실(Blocked):</span>
+                        <span>차단할 객실:</span>
                         <span>-{currentBlocked}</span>
                     </div>
                     <div className="border-t border-black/10 mt-1 pt-1 flex justify-between font-bold text-sm">

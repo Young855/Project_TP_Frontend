@@ -28,8 +28,8 @@ export default function FavoriteDetail({ userId }){
     <div>
       <h2>찜 상세 정보</h2>
       <p><b>ID:</b> {favorite.favoriteId}</p>
-      <p><b>타입:</b> {favorite.targetType}</p>
-      <p><b>대상 ID:</b> {favorite.targetId}</p>
+      <p><b>타입:</b> {favorite.accommodationType}</p>
+      <p><b>대상 ID:</b> {favorite.accommodationId}</p>
       <p><b>사용자:</b> {favorite.userId}</p>
 
       <Link to="/favorites">← 목록으로 돌아가기</Link>

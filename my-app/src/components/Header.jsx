@@ -1,40 +1,93 @@
-import { Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+
+/**
+ * Header 가운데 검색 pill(여행지 | 날짜 | 인원)
+ * - 기존: /search + location.state.criteria 있을 때만 표시
+ * - 개선: /search, /accommodation 계열에서 표시
+ * - 개선: location.state가 없어도(localStorage fallback) 새로고침/직접진입에도 표시
+ */
+const STORAGE_KEY = "tp_search_criteria";
 
 const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   const location = useLocation();
 
-  /** 검색 기준(criteria) - SearchResultPage에서 navigate 상태로 넘어온 값 */
-  const criteria = location.state?.criteria || null;
+  /**
+   * 1) 라우팅 state로 넘어온 criteria
+   *    - navigate('/xxx', { state: { criteria } })로 들어왔을 때만 존재
+   */
+  const navCriteria = location.state?.criteria || null;
 
-  /** 현재 페이지가 /search 인지 여부 */
-  const isSearchPage = location.pathname.startsWith('/search');
+  /** 2) 현재 페이지가 pill을 보여줄 페이지인지 */
+  const isSearchLikePage =
+    location.pathname.startsWith("/search") ||
+    location.pathname.startsWith("/accommodation");
+
+  /**
+   * 3) 새로고침/직접 URL 진입 시 state가 날아가므로 localStorage에서 복구
+   */
+  const storageCriteria = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+
+      const destination = String(parsed.destination ?? "");
+      const checkIn = String(parsed.checkIn ?? "");
+      const checkOut = String(parsed.checkOut ?? "");
+      const guests = Number(parsed.guests ?? 2);
+
+      if (!destination || !checkIn || !checkOut) return null;
+
+      return { destination, checkIn, checkOut, guests: Number.isFinite(guests) ? guests : 2 };
+    } catch {
+      return null;
+    }
+  }, [location.key]);
+
+  /**
+   * 4) 최종 criteria: state 우선, 없으면 storage fallback
+   */
+  const criteria = navCriteria || storageCriteria;
+
+  /**
+   * 5) criteria가 있으면 localStorage에 저장(상세로 넘어가도 유지)
+   */
+  useEffect(() => {
+    if (!criteria) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(criteria));
+    } catch {
+      // storage 실패해도 UI는 동작하도록 무시
+    }
+  }, [criteria]);
 
   /** 검색 패널 열림 상태 */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   /** 검색 패널 내부 폼 상태 */
   const [searchForm, setSearchForm] = useState({
-    destination: criteria?.destination || '',
-    checkIn: criteria?.checkIn || '',
-    checkOut: criteria?.checkOut || '',
+    destination: criteria?.destination || "",
+    checkIn: criteria?.checkIn || "",
+    checkOut: criteria?.checkOut || "",
     guests: criteria?.guests || 2,
   });
 
-  // 페이지 이동 시 자동 닫기 
+  // 페이지 이동 시 자동 닫기
   useEffect(() => {
-    if (!isSearchPage) {
+    if (!isSearchLikePage) {
       setIsPanelOpen(false);
     }
-  }, [isSearchPage]);
+  }, [isSearchLikePage]);
 
   // criteria가 바뀌면 검색폼도 항상 맞춤
   useEffect(() => {
     setSearchForm({
-      destination: criteria?.destination || '',
-      checkIn: criteria?.checkIn || '',
-      checkOut: criteria?.checkOut || '',
+      destination: criteria?.destination || "",
+      checkIn: criteria?.checkIn || "",
+      checkOut: criteria?.checkOut || "",
       guests: criteria?.guests || 2,
     });
   }, [criteria]);
@@ -44,8 +97,8 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     const value = e.target.value;
 
     setSearchForm((prev) => {
-      // 체크인 날짜가 바뀔 때 체크카웃보다 늦으면 체크아웃도 같이 맞춰주기
-      if (field === 'checkIn') {
+      // 체크인 날짜가 바뀔 때 체크아웃보다 늦으면 체크아웃도 같이 맞춰주기
+      if (field === "checkIn") {
         const updated = {
           ...prev,
           checkIn: value,
@@ -57,9 +110,10 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
         }
         return updated;
       }
+
       return {
         ...prev,
-        [field]: field === 'guests' ? Number(value) : value,
+        [field]: field === "guests" ? Number(value) : value,
       };
     });
   };
@@ -67,6 +121,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   /* pill 클릭 시 패널 열기/닫기 */
   const handleTogglePanel = () => {
     if (!criteria) return;
+
     // 열 때 현재 criteria 기준으로 초기화
     if (!isPanelOpen) {
       setSearchForm({
@@ -76,26 +131,34 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
         guests: criteria.guests,
       });
     }
+
     setIsPanelOpen((prev) => !prev);
   };
 
   // 검색 버튼 눌렀을 때
   const handleSearchClick = () => {
     if (!onSubmitSearch) return;
+
+    // (중요) 새로고침/상세 진입 대비: 검색 실행 시에도 localStorage 저장
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchForm));
+    } catch {
+      // ignore
+    }
+
     onSubmitSearch(searchForm);
     setIsPanelOpen(false);
   };
 
   /** 로그인/회원가입 */
   const handleAuthClick = () => {
-    navigate('/login-selection');
+    navigate("/login-selection");
   };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 w-full">
-
           {/* 왼쪽 로고 */}
           <div className="flex items-center w-1/3">
             <Link to="/" className="text-2xl font-bold text-blue-600 cursor-pointer">
@@ -103,9 +166,12 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
             </Link>
           </div>
 
-          {/* 가운데 pill — 검색 페이지일 때만 표시 */}
-          <div className="hidden md:flex justify-center items-center w-1/3 mt-4">
-            {isSearchPage && criteria && (
+          {/* 가운데 pill — 검색/상세 페이지에서 표시 */}
+          <div
+           className="flex justify-center items-center w-1/3"
+           style={{ transform: "translate(-40px, 12px)" }}
+          >
+            {isSearchLikePage && criteria && (
               <button
                 type="button"
                 onClick={handleTogglePanel}
@@ -113,7 +179,9 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
               >
                 <span>{criteria.destination}</span>
                 <span className="w-px h-3 bg-gray-300" />
-                <span>{criteria.checkIn} ~ {criteria.checkOut}</span>
+                <span>
+                  {criteria.checkIn} ~ {criteria.checkOut}
+                </span>
                 <span className="w-px h-3 bg-gray-300" />
                 <span>{criteria.guests}명</span>
               </button>
@@ -138,12 +206,11 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
         </div>
       </nav>
 
-      {/* 검색 패널 — 검색페이지 + 열림일 때만 표시 */}
-      {isSearchPage && isPanelOpen && (
+      {/* 검색 패널 — 검색/상세 페이지 + 열림일 때만 표시 */}
+      {isSearchLikePage && isPanelOpen && (
         <div className="border-t border-gray-200 bg-white shadow-sm">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
-
               {/* 여행지 */}
               <div className="flex-1">
                 <label className="block text-xs text-gray-500 mb-1">여행지</label>
@@ -151,12 +218,12 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                   type="text"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   value={searchForm.destination}
-                  onChange={handleChange('destination')}
+                  onChange={handleChange("destination")}
                   placeholder="여행지나 숙소를 검색해보세요."
                 />
               </div>
 
-              {/* 체크인 */}
+              {/* 체크인/체크아웃 */}
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">체크인</label>
@@ -164,20 +231,19 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                     type="date"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                     value={searchForm.checkIn}
-                    onChange={handleChange('checkIn')}
-                    min={new Date().toISOString().split('T')[0]}
+                    onChange={handleChange("checkIn")}
+                    min={new Date().toISOString().split("T")[0]}
                   />
                 </div>
 
-                {/* 체크아웃 */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">체크아웃</label>
                   <input
                     type="date"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                     value={searchForm.checkOut}
-                    onChange={handleChange('checkOut')}
-                    min={searchForm.checkIn || new Date().toISOString().split('T')[0]}
+                    onChange={handleChange("checkOut")}
+                    min={searchForm.checkIn || new Date().toISOString().split("T")[0]}
                   />
                 </div>
               </div>
@@ -190,7 +256,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                   min={1}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   value={searchForm.guests}
-                  onChange={handleChange('guests')}
+                  onChange={handleChange("guests")}
                 />
               </div>
 
@@ -204,7 +270,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                   검색
                 </button>
               </div>
-
             </div>
           </div>
         </div>

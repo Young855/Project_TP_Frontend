@@ -27,9 +27,7 @@ export default function FavoriteEdit({ userId }) {
     e.preventDefault();
     try {
       setLoading(true);
-      await removeFavorite(userId, Number(accommodationId));
-      await addFavorite(userId, Number(accommodationId));
-      alert ("찜이 수정되었다.");
+      alert ("찜이 수정 기능 준비 중입니다.");
       Navigate("/favorites");
     } catch (err) {
       alert("수정 실패:" + err.message);

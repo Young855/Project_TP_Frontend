@@ -33,6 +33,7 @@ import { searchResultRouter } from './routers/SearchResultRouter';
 import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
+import AdminRouter from './routers/AdminRouter';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -261,7 +262,7 @@ const router = createBrowserRouter([
       { index: true, element: <AdminDashboard /> },
       { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'users', element: <Placeholder title="회원 관리" /> }, 
-      { path: 'accommodations', element: <Placeholder title="전체 숙소 관리" /> }, 
+      ...AdminRouter,
     ],
   },
 ]);

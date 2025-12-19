@@ -47,10 +47,9 @@ const AdminLayout = () => {
             <span>대시보드</span>
           </Link>
           
-          {/* 2. 회원 관리 */}
-          <Link to="/admin/users" className={getLinkClass('/admin/users')}>
+          <Link to="/admin/accounts" className={getLinkClass('/admin/accounts')}>
             <Users size={20} />
-            <span>회원 관리</span>
+            <span>회원(계정) 관리</span>
           </Link>
           
           {/* 3. 숙소 관리 */}

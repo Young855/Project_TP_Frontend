@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ACCOMMODATIONS_ENDPOINTS, axiosConfig } from "../config";
+import { ACCOMMODATIONS_ENDPOINTS, axiosConfig, ADMIN_ENDPOINTS } from "../config";
 
 const api = axios.create(axiosConfig);
 
@@ -104,6 +104,30 @@ export const deleteAccommodation = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`숙소 ${id} 삭제 오류:`, error);
+    throw error;
+  }
+}
+export const searchAccommodations = async (params) => {
+  // params: { keyword, partnerId, authStatus, page, size }
+  try {
+    // config.js에 정의된 ADMIN_ENDPOINTS.ACCOMMODATIONS.SEARCH 사용
+    const response = await api.get(ADMIN_ENDPOINTS.ACCOMMODATIONS.SEARCH, { params });
+    return response.data;
+  } catch (error) {
+    console.error("숙소 검색 실패:", error);
+    throw error;
+  }
+};
+
+// 🌟 [Admin] 숙소 상태 일괄 변경 (연결 지점 수정)
+export const updateAccommodationStatuses = async (statusUpdates) => {
+  // statusUpdates: { [id]: "CONFIRM", [id]: "DECLINED" ... }
+  try {
+    // config.js에 정의된 ADMIN_ENDPOINTS.ACCOMMODATIONS.BULK_STATUS 사용
+    const response = await api.put(ADMIN_ENDPOINTS.ACCOMMODATIONS.BULK_STATUS, statusUpdates);
+    return response.data;
+  } catch (error) {
+    console.error("상태 업데이트 실패:", error);
     throw error;
   }
 };

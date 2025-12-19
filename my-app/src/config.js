@@ -164,6 +164,17 @@ export const BOOKINGROOM_ENDPOINTS ={
     },
 }
 
+export const ADMIN_ENDPOINTS = {
+    ACCOMMODATIONS: {
+        SEARCH: `${API_BASE_URL}/admin/accommodations/search`,
+        BULK_STATUS: `${API_BASE_URL}/admin/accommodations/status/bulk`,
+    },
+    ACCOUNTS: {
+        SEARCH: `${API_BASE_URL}/admin/accounts/search`,
+        BULK_ROLE: `${API_BASE_URL}/admin/accounts/role/bulk`,
+    },
+}
+
 export const axiosConfig = {
     baseURL: API_BASE_URL,
     headers: {
@@ -178,6 +189,7 @@ export default{
     PARTNER_ENDPOINTS,
     BOOKING_ENDPOINTS,
     ROOM_ENDPOINTS,
+    ADMIN_ENDPOINTS,
     ACCOMMODATIONS_ENDPOINTS,
     ACCOMMODATION_PHOTO_ENDPOINTS,
     AMENITIES_ENDPOINTS,

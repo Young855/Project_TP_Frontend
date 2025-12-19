@@ -96,8 +96,8 @@ const RateCalendarPage = () => {
     };
 
     const handleSaveSinglePolicy = async (updatedPolicy) => {
-        if (!updatedPolicy.price || !updatedPolicy.stock) {
-            alert("요금과 재고는 필수입니다."); return;
+        if (!updatedPolicy.price || updatedPolicy.stock === null || updatedPolicy.stock === '') {
+            alert("요금입력은  필수입니다."); return;
         }
         if (isProcessing) return;
         setIsProcessing(true);
@@ -120,7 +120,13 @@ const RateCalendarPage = () => {
     };
 
     const handleSaveBulkPolicy = async (bulkData) => {
-        if (!bulkData.roomId || !bulkData.startDate || !bulkData.endDate || !bulkData.price || !bulkData.stock) {
+        if (
+            !bulkData.roomId || 
+            !bulkData.startDate || 
+            !bulkData.endDate || 
+            !bulkData.price || 
+            bulkData.stock === null || bulkData.stock === '' // 0은 허용, null/빈값만 차단
+        ) {
             alert("필수 항목을 입력해주세요."); return;
         }
         if (isProcessing) return;
@@ -164,7 +170,7 @@ const RateCalendarPage = () => {
         <div className="p-4 md:p-8 flex flex-col min-h-screen relative z-0">
             
             {/* Header Toolbar: z-index를 50 -> 10으로 낮춤 (Layout Header가 보통 20~30임) */}
-            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-0 z-10">
+            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-0 z-30">
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold text-gray-800">객실 요금 캘린더</h2>
                     <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -248,20 +254,43 @@ const RateCalendarPage = () => {
                                     </td>
                                     {dates.map((dateStr) => {
                                         const policy = room.dailyPolicies?.find(p => p.targetDate === dateStr);
-                                        const isEmpty = !policy || (policy.price === null || policy.stock === null);
+                                        const max = policy?.roomMaxStock ?? room.totalStock ?? 0; // 전체 방 개수
+                                        const blocked = policy?.stock ?? 0;                       // 차단된 개수
+                                        const booked = policy?.bkStock ?? 0;                      // 예약된 개수
+                                        const dMax = max - blocked;          // 그 날의 총 재고 (운영 가능 객실)
+                                        const dRemaining = dMax - booked;    // 그 날의 잔여 재고 (판매 가능)
+                                        // 가격 정보가 없으면 등록 안된 상태로 간주
+                                        const isRegistered = policy && policy.price !== null;
+                                        
                                         return (
                                             <td 
                                                 key={dateStr} 
-                                                className={`px-2 py-2 text-center text-sm border-r last:border-r-0 cursor-pointer transition duration-150 ${isEmpty ? 'bg-gray-50 hover:bg-blue-100' : (policy.isActive ? 'bg-green-50/50 hover:bg-yellow-100' : 'bg-red-50/50 hover:bg-yellow-100')}`}
-                                                onClick={() => handleCellClick(room.roomId, policy, dateStr)}
+                                                className={`px-2 py-2 text-center text-sm border-r last:border-r-0 cursor-pointer transition duration-150 ${
+                                                    !isRegistered ? 'bg-gray-50 hover:bg-blue-100' : 
+                                                    (!policy.isActive ? 'bg-red-50/50 hover:bg-yellow-100' : 'bg-green-50/50 hover:bg-yellow-100')
+                                                }`}
+                                                onClick={() => handleCellClick(room.roomId, {
+                                                    ...policy, 
+                                                    // 모달에 넘겨줄 때 필요한 정보들 명시적 전달
+                                                    roomMaxStock: max,
+                                                    bkStock: booked,
+                                                    stock: blocked // DB의 stock은 이제 'blocked'임
+                                                }, dateStr)}
                                             >
-                                                {!isEmpty ? (
+                                                {isRegistered ? (
                                                     <>
-                                                        <div className={policy.isActive ? 'text-green-700 font-bold' : 'text-red-500'}>{policy.isActive ? policy.price?.toLocaleString() : '판매중단'}</div>
-                                                        <div className="text-xs text-gray-500 mt-1">재고: {policy.stock} / {room.totalStock}</div>
+                                                        <div className={policy.isActive ? 'text-green-700 font-bold' : 'text-red-500'}>
+                                                            {policy.isActive ? policy.price?.toLocaleString() : '판매중단'}
+                                                        </div>
+                                                        {/* [요청사항 반영] 잔여 재고 / 당일 총 재고 표시 */}
+                                                        <div className={`text-xs mt-1 ${dRemaining <= 0 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                                                            {dRemaining} / {dMax}
+                                                        </div>
                                                     </>
                                                 ) : (
-                                                    <div className="h-10 flex items-center justify-center"><span className="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow hover:bg-blue-600">등록</span></div>
+                                                    <div className="h-10 flex items-center justify-center">
+                                                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow hover:bg-blue-600">등록</span>
+                                                    </div>
                                                 )}
                                             </td>
                                         );

@@ -47,8 +47,7 @@ const AccommodationDetailPage = () => {
       <div className="bg-white shadow-md rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold mb-3 border-b pb-2">기본 정보</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-          <div><b>ID:</b> {accommodation.accommodationId}</div>
-          <div><b>Partner ID:</b> {partnerPk ?? "-"}</div>
+          <div><b>파트너(대표자):</b> {accommodation.partnerName ?? "-"}</div>
           <div><b>유형:</b> {accommodation.accommodationType}</div>
           <div><b>평점:</b> {accommodation.ratingAvg ?? "-"} / 5.0</div>
           <div className="md:col-span-2"><b>설명:</b> {accommodation.description ?? "-"}</div>

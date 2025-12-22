@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, PlusCircle, CalendarRange, Edit } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, CalendarRange, Edit, Loader2, BedDouble } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getFullCalendarData, updateDailyPolicy, updateBulkPolicy } from '../../api/roomAPI';
 import { usePartner } from '../../context/PartnerContext';
@@ -211,14 +211,30 @@ const RateCalendarPage = () => {
 
             {/* Table Area */}
             <div className={`overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
+                
+                {/* 1. 로딩 중일 때 */}
                 {loading ? (
-                    <div className="text-center py-20">데이터를 불러오는 중입니다...</div>
+                    <div className="flex flex-col items-center justify-center py-32 text-gray-500">
+                        <Loader2 className="animate-spin mb-3 text-blue-500" size={40} />
+                        <span className="text-lg font-medium">객실 정보를 불러오는 중입니다...</span>
+                    </div>
+                ) : roomData.length === 0 ? (
+                    
+                    /* 2. 로딩 끝났는데 데이터가 없을 때 (추가된 부분) */
+                    <div className="flex flex-col items-center justify-center py-32 text-gray-500">
+                        <div className="text-5xl mb-4">
+                            <BedDouble size={48} className="text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-700">등록된 객실이 없습니다.</h3>
+                        <p className="mt-2 text-sm text-gray-400">
+                            우측 상단의 <span className="text-blue-600 font-bold">'객실 추가'</span> 버튼을 눌러 첫 객실을 등록해보세요!
+                        </p>
+                    </div>
+
                 ) : (
                     <table className="min-w-full divide-y divide-gray-200">
-                        {/* Table Header: z-index를 40 -> 10으로 낮춤 */}
                         <thead className="bg-gray-50 sticky top-[0px] z-10 shadow-sm">
                             <tr>
-                                {/* Corner Cell: z-index를 40 -> 20으로 낮춤 (헤더(10)보다는 높아야 함) */}
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64 border-r border-gray-200 bg-gray-50 sticky left-0 z-20">객실 정보</th>
                                 {dates.map((dateStr) => (
                                     <th key={dateStr} className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-24 border-r last:border-r-0 ${getDayName(dateStr) === '토' ? 'text-blue-600' : getDayName(dateStr) === '일' ? 'text-red-600' : 'text-gray-500'}`}>
@@ -231,7 +247,6 @@ const RateCalendarPage = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {roomData.map((room) => (
                                 <tr key={room.roomId} className="hover:bg-gray-50">
-                                    {/* Sticky First Column: z-index를 30 -> 10으로 낮춤 (헤더보다는 낮거나 같게) */}
                                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 bg-white sticky left-0 z-10">
                                         <div className="flex items-center gap-4">
                                             <div 
@@ -254,36 +269,39 @@ const RateCalendarPage = () => {
                                     </td>
                                     {dates.map((dateStr) => {
                                         const policy = room.dailyPolicies?.find(p => p.targetDate === dateStr);
-                                        const max = policy?.roomMaxStock ?? room.totalStock ?? 0; // 전체 방 개수
-                                        const blocked = policy?.stock ?? 0;                       // 차단된 개수
-                                        const booked = policy?.bkStock ?? 0;                      // 예약된 개수
-                                        const dMax = max - blocked;          // 그 날의 총 재고 (운영 가능 객실)
-                                        const dRemaining = dMax - booked;    // 그 날의 잔여 재고 (판매 가능)
-                                        // 가격 정보가 없으면 등록 안된 상태로 간주
+                                        const max = policy?.roomMaxStock ?? room.totalStock ?? 0;
+                                        const blocked = policy?.stock ?? 0;
+                                        const booked = policy?.bkStock ?? 0;
+                                        const dMax = max - blocked;
+                                        const dRemaining = dMax - booked; 
                                         const isRegistered = policy && policy.price !== null;
-                                        
+                                        const isSoldOut = isRegistered && dRemaining <= 0;
+                                        const cellColorClass = !isRegistered 
+                                            ? 'bg-gray-50 hover:bg-blue-100' 
+                                            : (!policy.isActive || isSoldOut 
+                                                ? 'bg-red-100 hover:bg-red-200'  
+                                                : 'bg-green-50/50 hover:bg-green-100');
+
                                         return (
                                             <td 
                                                 key={dateStr} 
-                                                className={`px-2 py-2 text-center text-sm border-r last:border-r-0 cursor-pointer transition duration-150 ${
-                                                    !isRegistered ? 'bg-gray-50 hover:bg-blue-100' : 
-                                                    (!policy.isActive ? 'bg-red-50/50 hover:bg-yellow-100' : 'bg-green-50/50 hover:bg-yellow-100')
-                                                }`}
+                                                className={`px-2 py-2 text-center text-sm border-r last:border-r-0 cursor-pointer transition duration-150 ${cellColorClass}`}
                                                 onClick={() => handleCellClick(room.roomId, {
                                                     ...policy, 
-                                                    // 모달에 넘겨줄 때 필요한 정보들 명시적 전달
                                                     roomMaxStock: max,
                                                     bkStock: booked,
-                                                    stock: blocked // DB의 stock은 이제 'blocked'임
+                                                    stock: blocked
                                                 }, dateStr)}
                                             >
                                                 {isRegistered ? (
                                                     <>
-                                                        <div className={policy.isActive ? 'text-green-700 font-bold' : 'text-red-500'}>
-                                                            {policy.isActive ? policy.price?.toLocaleString() : '판매중단'}
+                                                        {/* 가격 표시 */}
+                                                        <div className={(!policy.isActive || isSoldOut) ? 'text-red-600 font-bold' : 'text-green-700 font-bold'}>
+                                                            {!policy.isActive ? '판매중지' : (isSoldOut ? '매진' : policy.price?.toLocaleString())}
                                                         </div>
-                                                        {/* [요청사항 반영] 잔여 재고 / 당일 총 재고 표시 */}
-                                                        <div className={`text-xs mt-1 ${dRemaining <= 0 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                                                        
+                                                        {/* 재고 표시 */}
+                                                        <div className={`text-xs mt-1 ${isSoldOut ? 'text-red-700 font-extrabold' : 'text-gray-500'}`}>
                                                             {dRemaining} / {dMax}
                                                         </div>
                                                     </>

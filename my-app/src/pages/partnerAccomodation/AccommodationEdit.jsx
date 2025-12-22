@@ -1,8 +1,15 @@
 import React, { useState } from "react";
-// 1. useNavigation 추가
-import { useNavigate, useParams, useLoaderData, Form, useNavigation } from "react-router-dom"; 
+import { useNavigate, useParams, useLoaderData, useNavigation } from "react-router-dom"; 
 import AmenitySelector from "../../components/AmenitySelector"; 
-import axios from "axios"; 
+import { updateAccommodation } from "../../api/accommodationAPI"; 
+
+// [추가] 로딩 스피너 컴포넌트
+const Spinner = ({ color = "text-white" }) => (
+  <svg className={`animate-spin -ml-1 mr-2 h-4 w-4 ${color}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
 
 const ACCOMMODATION_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"];
 
@@ -11,29 +18,27 @@ const AccommodationEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // 2. Form 제출 상태 감지를 위한 hook 사용
+  // React Router의 네비게이션 상태 감지
   const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const isNavigating = navigation.state === "loading";
 
-  // 주소 및 좌표 상태 관리
   const [addressFull, setAddressFull] = useState(accommodation.address || "");
   const [city, setCity] = useState(accommodation.city || "");
   const [latitude, setLatitude] = useState(accommodation.latitude || "");
   const [longitude, setLongitude] = useState(accommodation.longitude || "");
   const [errMsg, setErrMsg] = useState("");
 
-  // 3. 주소 검색 로딩 상태 관리
   const [isAddressSearching, setIsAddressSearching] = useState(false);
-
+  const [submitting, setSubmitting] = useState(false);
+  
   const initialAmenityNames = new Set(accommodation.amenities?.map(a => a.name) || []); 
   const [selectedAmenityNames, setSelectedAmenityNames] = useState(initialAmenityNames);
 
   const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
-  // 모든 로딩 상태 통합 (Form 제출 중이거나 주소 검색 중일 때 true)
-  const isBusy = isSubmitting || isAddressSearching;
+  // [상태 통합] API 제출 중, 라우터 이동 중, 주소 검색 중 하나라도 있으면 busy 상태
+  const isBusy = submitting || isNavigating || isAddressSearching;
 
-  // 주소 검색 로직
   const handleAddressSearch = async () => {
     if (!KAKAO_API_KEY) {
         setErrMsg("Kakao API 키가 설정되지 않았습니다.");
@@ -44,20 +49,20 @@ const AccommodationEdit = () => {
         return;
     }
 
-    // 검색 시작 시 로딩 상태 true
     setIsAddressSearching(true);
-    setErrMsg(""); // 기존 에러 초기화
+    setErrMsg(""); 
 
     try {
-        const response = await axios.get(
-            'https://dapi.kakao.com/v2/local/search/address.json',
+        const response = await fetch(
+            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(addressFull)}`,
             {
-                params: { query: addressFull },
                 headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` },
             }
         );
-        if (response.data.documents.length > 0) {
-            const firstResult = response.data.documents[0];
+        const data = await response.json();
+
+        if (data.documents && data.documents.length > 0) {
+            const firstResult = data.documents[0];
             const fullAddr = firstResult.road_address ? firstResult.road_address.address_name : firstResult.address.address_name;
             const cityAddr = firstResult.road_address ? firstResult.road_address.region_2depth_name : firstResult.address.region_2depth_name;
             setAddressFull(fullAddr);
@@ -69,9 +74,9 @@ const AccommodationEdit = () => {
             setLatitude(""); setLongitude(""); setCity("");
         }
     } catch (error) {
+        console.error(error);
         setErrMsg('API 호출 중 오류가 발생했습니다.');
     } finally {
-        // 성공하든 실패하든 검색 종료 시 로딩 상태 false
         setIsAddressSearching(false);
     }
   };
@@ -88,21 +93,61 @@ const AccommodationEdit = () => {
       });
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+    if (isBusy) return;
+
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    
+    // API Payload 구성
+    const payload = {
+        ...data,
+        partnerId: Number(data.partnerId), 
+        latitude: Number(latitude),        
+        longitude: Number(longitude),
+        // 편의시설 배열 처리
+        amenityNames: Array.from(selectedAmenityNames),
+        amenities: Array.from(selectedAmenityNames).map(name => ({ name }))
+    };
+
+    try {
+        setSubmitting(true); // 로딩 시작
+        
+        // 1. 서버 수정 요청
+        await updateAccommodation(id, payload);
+
+        // 2. 알림 표시
+        alert("수정이 완료되었습니다.");
+        
+        // 3. 페이지 이동
+        navigate(`/partner/accommodations/${id}`);
+
+        // [핵심] 성공 시에는 setSubmitting(false)를 호출하지 않습니다.
+        // 페이지가 완전히 이동할 때까지 버튼을 '저장 중...' 상태(스피너)로 유지합니다.
+        
+    } catch (error) {
+        console.error("수정 실패:", error);
+        const msg = error.response?.data?.message || "수정 중 오류가 발생했습니다.";
+        alert(msg);
+        
+        // 에러가 났을 때만 로딩을 풀어줍니다.
+        setSubmitting(false); 
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">숙소 수정: {accommodation.name}</h1>
       
-      <Form 
-          method="post" 
-          action={`/partner/accommodations/${id}/edit`} 
+      <form 
+          onSubmit={handleSubmit}
           className="bg-white shadow-md rounded-lg p-6 space-y-4"
       >
-        {/* 기존 input 필드들 (생략 없이 유지) */}
         <input type="hidden" name="partnerId" defaultValue={accommodation.partner?.partnerId || accommodation.partnerId} />
         
         <div>
           <label className="form-label" htmlFor="name">숙소명</label>
-          {/* 작업 중일 때 입력도 막고 싶다면 readOnly={isBusy} 추가 가능 */}
           <input name="name" id="name" defaultValue={accommodation.name} className="form-input w-full" maxLength={255} required />
         </div>
         
@@ -132,14 +177,14 @@ const AccommodationEdit = () => {
                 maxLength={255}
                 required
             />
-             {/* 4. 주소 검색 버튼 비활성화 처리 */}
              <button
                 type="button"
                 onClick={handleAddressSearch}
-                disabled={isBusy} // 로딩 중이면 비활성화
-                className={`btn-secondary-outline ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={isBusy} 
+                className={`flex items-center justify-center btn-secondary-outline ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
+                style={{ minWidth: '100px' }}
               >
-                {isAddressSearching ? "검색 중..." : "주소 검색"}
+                {isAddressSearching ? <><Spinner color="text-blue-600" /> 검색 중</> : "주소 검색"}
               </button>
           </div>
           {errMsg && (<p className="text-sm text-red-500 mt-1">{errMsg}</p>)}
@@ -173,6 +218,7 @@ const AccommodationEdit = () => {
             type="ACCOMMODATION"
         />
         
+        {/* hidden input은 payload에서 배열로 덮어쓰므로 무시됨 */}
         <input 
             type="hidden" 
             name="amenityNames" 
@@ -204,26 +250,25 @@ const AccommodationEdit = () => {
             readOnly 
           />
         </div>
-        
-        <div className="flex justify-end space-x-3 pt-4">
-          {/* 5. 저장 및 취소 버튼 비활성화 처리 */}
+         <div className="flex justify-end space-x-3 pt-4">
           <button 
             type="submit" 
             disabled={isBusy} 
-            className={`btn-primary ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`flex items-center btn-primary ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isSubmitting ? "저장 중..." : "수정 저장"}
+            {/* [변경] isBusy일 때 스피너와 '저장 중...' 표시 */}
+            {isBusy ? <><Spinner /> 저장 중...</> : "수정 저장"}
           </button> 
           <button 
-            type="button"
-            onClick={() => navigate(`/partner/accommodations/${id}`)}
-            disabled={isBusy}
-            className={`btn-secondary-outline ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
+            type="button" 
+            onClick={() => navigate(`/partner/accommodations/${id}`)} 
+            disabled={isBusy} 
+            className={`flex items-center btn-secondary-outline ${isBusy ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             취소
           </button>
         </div>
-      </Form>
+      </form>
     </div>
   );
 };

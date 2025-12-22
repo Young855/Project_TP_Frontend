@@ -1,6 +1,5 @@
-import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, LogOut, Settings, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Building, LogOut, Shield } from 'lucide-react';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -56,12 +55,6 @@ const AdminLayout = () => {
           <Link to="/admin/accommodations" className={getLinkClass('/admin/accommodations')}>
             <Building size={20} />
             <span>전체 숙소 관리</span>
-          </Link>
-
-          {/* 4. 설정 (필요시) */}
-          <Link to="/admin/settings" className={getLinkClass('/admin/settings')}>
-            <Settings size={20} />
-            <span>시스템 설정</span>
           </Link>
         </nav>
 

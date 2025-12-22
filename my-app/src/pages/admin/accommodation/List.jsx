@@ -110,11 +110,18 @@ const List = () => {
 
   // 4. 상태 변경 (Combo)
   const handleStatusChange = (id, newStatus) => {
-    setModifiedStatuses(prev => ({
-      ...prev,
-      [id]: newStatus
-    }));
-    if (!selectedIds.has(id)) {
+    if (selectedIds.has(id)) {
+        const newModifiedStatuses = { ...modifiedStatuses };
+        selectedIds.forEach((selectedId) => {
+            newModifiedStatuses[selectedId] = newStatus;
+        });
+        
+        setModifiedStatuses(newModifiedStatuses);
+    } else {
+        setModifiedStatuses(prev => ({
+            ...prev,
+            [id]: newStatus
+        }));
         const newSelected = new Set(selectedIds);
         newSelected.add(id);
         setSelectedIds(newSelected);
@@ -155,17 +162,12 @@ const List = () => {
 
   return (
     <div className="space-y-6">
-      {/* ================= [상단 필터 영역] ================= */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        
-        {/* 🌟 [수정] 헤더 영역: 제목과 초기화 버튼을 양쪽 끝으로 배치 */}
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <Filter size={20} />
                 숙소 관리 필터
             </h2>
-
-            {/* 🌟 초기화 버튼 (입력창들과 줄 분리됨) */}
             <button 
                 onClick={handleReset} 
                 className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded transition text-sm font-medium"

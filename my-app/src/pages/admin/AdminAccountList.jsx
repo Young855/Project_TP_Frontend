@@ -80,15 +80,24 @@ const AdminAccountList = () => {
      }
   };
 
-  const handleRoleChange = (id, newRole) => { /* ... */ 
-      setModifiedRoles(prev => ({ ...prev, [id]: newRole }));
-      if (!selectedIds.has(id)) {
+ const handleRoleChange = (id, newRole) => {
+      if (selectedIds.has(id)) {
+          const newModifiedRoles = { ...modifiedRoles };
+          selectedIds.forEach((selectedId) => {
+              const account = accounts.find(a => a.accountId === selectedId);
+              if (account && account.role !== 'ROLE_MASTER') {
+                  newModifiedRoles[selectedId] = newRole;
+              }
+          });
+          
+          setModifiedRoles(newModifiedRoles);
+      } else {
+          setModifiedRoles(prev => ({ ...prev, [id]: newRole }));
           const newSelected = new Set(selectedIds);
           newSelected.add(id);
           setSelectedIds(newSelected);
       }
   };
-
   const handleBulkUpdate = async () => { /* ... */ 
       if (selectedIds.size === 0) return;
       if (!confirm(`선택한 ${selectedIds.size}개 계정의 권한을 수정하시겠습니까?`)) return;
@@ -182,7 +191,8 @@ const AdminAccountList = () => {
                {!hasSearched ? (
                    <>
                        <Search className="mb-3 text-gray-300" size={48} />
-                       <p className="font-medium text-lg text-gray-600">조회할 조건을 입력해주세요</p>
+                       <p className="font-medium text-lg text-gray-600">조건을 입력하고 조회 버튼을 눌러주세요.</p>
+                       <p className="text-sm mt-1">원하는 필터를 선택 후 검색해주세요.</p>
                    </>
                ) : (
                    <>

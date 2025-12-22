@@ -108,7 +108,7 @@ export const AMENITIES_ENDPOINTS ={
     },
 }
 
-// [수정] PROPERTY_AMENITY -> ACCOMMODATION_AMENITY
+
 export const ACCOMMODATION_AMENITY_ENDPOINTS = {
     LIST_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/accommodations/${accommodationId}/amenities`,
     ADD: `${API_BASE_URL}/accommodations/amenities`, 
@@ -175,6 +175,10 @@ export const ADMIN_ENDPOINTS = {
     },
 }
 
+export const PRICE_ENDPOINTS = {
+    CALCULATE: `${API_BASE_URL}/prices/calculate`, 
+}
+
 export const axiosConfig = {
     baseURL: API_BASE_URL,
     headers: {
@@ -201,4 +205,5 @@ export default{
     ROOM_PHOTO_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
     DAILY_POLICY_ENDPOINTS,
+    PRICE_ENDPOINTS,
 }

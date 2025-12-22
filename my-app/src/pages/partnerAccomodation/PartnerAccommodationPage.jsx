@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAccommodationsByPartnerIdWithMainPhoto, deleteAccommodation } from '../../api/accommodationAPI';
 import { usePartner } from '../../context/PartnerContext'; 
 import { ACCOMMODATION_PHOTO_ENDPOINTS } from '../../config';
-import { Loader2 } from 'lucide-react'; // 🌟 로딩 아이콘 추가
+import { Loader2, Building } from 'lucide-react'; // 🌟 로딩 아이콘 추가
 
 export default function PartnerAccommodationsPage({ showModal }) {
   const navigate = useNavigate();
@@ -153,20 +153,44 @@ export default function PartnerAccommodationsPage({ showModal }) {
             </thead>
             
             <tbody className="divide-y divide-gray-200">
-              {accommodations.length === 0 && !isLoading ? (
+              {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                    등록된 숙박 시설이 없습니다.
+                  <td colSpan="6" className="px-6 py-32 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+                      <span className="text-lg font-medium text-gray-600">숙소 목록을 불러오는 중입니다...</span>
+                    </div>
                   </td>
                 </tr>
+              ) : accommodations.length === 0 ? (
+                
+                /* 2. 데이터가 없을 때 (예쁜 아이콘과 안내 문구) */
+                <tr>
+                  <td colSpan="6" className="px-6 py-32 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="bg-gray-100 p-6 rounded-full mb-4">
+                            <Building size={48} className="text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-700">등록된 숙박 시설이 없습니다.</h3>
+                        <p className="mt-2 text-sm text-gray-400">
+                            우측 상단의 <span className="text-blue-600 font-bold">'+ 숙박 시설 추가'</span> 버튼을 눌러<br/>
+                            파트너님의 첫 숙소를 등록해보세요!
+                        </p>
+                    </div>
+                  </td>
+                </tr>
+
               ) : (
+                
+                /* 3. 데이터가 있을 때 (기존 리스트 렌더링) */
                 accommodations.map((acc) => (
                   <tr key={acc.accommodationId} className="hover:bg-blue-50 transition-colors">
-                    {/* ... 이미지, 이름, 상태 등 기존 컬럼들 (기존 동일) ... */}
+                    {/* ... (기존 td 내용들 그대로 유지) ... */}
+                    
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div 
                         className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden cursor-pointer border hover:border-blue-500 transition-colors"
-                        onClick={() => !isActionProcessing && handleImageManage(acc, 'ACCOMMODATION')} // 로딩 중 클릭 방지
+                        onClick={() => !isActionProcessing && handleImageManage(acc, 'ACCOMMODATION')}
                       >
                         {acc.photos && acc.photos.length > 0 ? (
                           <img 
@@ -201,7 +225,6 @@ export default function PartnerAccommodationsPage({ showModal }) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[150px]">{acc.address}</td>
                     
-                    {/* 🌟 관리 버튼 영역 */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button 
                         onClick={() => handleManageAccommodation(acc)} 

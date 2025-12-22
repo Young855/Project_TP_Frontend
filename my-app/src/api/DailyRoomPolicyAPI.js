@@ -85,16 +85,21 @@ export const updateBulkDailyRoomPolicy = async (bulkRequest) => {
   }
 };
 
-/**
- * (선택) 프론트 가격 계산용 유틸
- * - 정책 배열에서 "예약 가능" 판단 + 가격(최저/첫날/평균/합계) 계산
- * - AccommodationRoomDetail에서 바로 쓰려고 넣어둠
- */
-export const evaluatePoliciesForStay = (policies, { mode = "MIN_PER_NIGHT" } = {}) => {
+// 예약 가능 조건
+// 1. 숙박해야 하는 박 수
+// 2. 모든 날짜가 활성 + 재고 존재
+export const evaluatePoliciesForStay = (
+  policies,
+  { mode = "MIN_PER_NIGHT", nightsRequired } = {}
+) => {
   const list = Array.isArray(policies) ? policies : [];
 
-  // 예약 가능 조건(보수적으로): 모든 날짜가 isActive=true && stock>0
-  const isBookable = list.length > 0 && list.every((x) => (x?.isActive ?? true) === true && (x?.stock ?? 0) > 0);
+  // ✅ 네 요구사항: "숙박해야 하는 모든 날짜"가 정책으로 존재해야 예약 가능
+  const isBookable =
+    typeof nightsRequired === "number" &&
+    nightsRequired > 0 &&
+    list.length === nightsRequired &&
+    list.every((x) => (x?.isActive ?? true) === true && (x?.stock ?? 0) > 0);
 
   const prices = list
     .map((x) => x?.price)

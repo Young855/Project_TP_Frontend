@@ -64,18 +64,18 @@ export const DAILY_POLICY_ENDPOINTS = {
 // [수정] PROPERTIES -> ACCOMMODATIONS
 export const ACCOMMODATIONS_ENDPOINTS = {
     ACCOMMODATIONS: {
-        LIST_ALL: `${API_BASE_URL}/partner/accommodations`, 
+        LIST_ALL: `${API_BASE_URL}/accommodations`, 
         LIST_BY_PARTNER: (partnerId) =>
-             `${API_BASE_URL}/partner/accommodations/by-partner/${partnerId}`, 
+             `${API_BASE_URL}/accommodations/by-partner/${partnerId}`, 
         LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
-             `${API_BASE_URL}/partner/accommodations/by-partner/${partnerId}/with-main-photo`, 
-             
-        ADD: `${API_BASE_URL}/partner/accommodations`, 
-        GET: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
-        GET_WITH_ALL_PHOTOS: (id) => `${API_BASE_URL}/partner/accommodations/${id}/with-all-photos`, 
+             `${API_BASE_URL}/accommodations/by-partner/${partnerId}/with-main-photo`, 
+        SEARCH_WITH_MAIN_PHOTO: `${API_BASE_URL}/accommodations/search/with-main-photo`,
+        ADD: `${API_BASE_URL}/accommodations`, 
+        GET: (id) => `${API_BASE_URL}/accommodations/${id}`,
+        GET_WITH_ALL_PHOTOS: (id) => `${API_BASE_URL}/accommodations/${id}/with-all-photos`, 
         
-        MODIFY: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
-        DELETE: (id) => `${API_BASE_URL}/partner/accommodations/${id}`,
+        MODIFY: (id) => `${API_BASE_URL}/accommodations/${id}`,
+        DELETE: (id) => `${API_BASE_URL}/accommodations/${id}`,
     },
 };
 

@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useUrlUser } from "../hooks/useUrlUser";
 
 // Hooks
 import { useAccommodationFilter } from "../hooks/useAccommodationFilter";
-import { useAccommodationFavorites } from "../hooks/useAccommodationFavorites";
-import { useAccommodationImages } from "../hooks/useAccommodationImages";
+import { useIntersectionObserver } from "../hooks/useIntersectionObserver"; 
 
 // Components
 import SearchFilterSidebar from "../components/common/searches/SearchFilterSidebar";
 import AccommodationCard from "../components/common/searches/AccommodationCard";
 
 // Constants & API
-import { SORT_OPTIONS } from "../constants/SearchOption.js"; // 파일명 SearchOption.js (s 없음) 주의
+import { SORT_OPTIONS } from "../constants/SearchOption";
+import { ACCOMMODATION_PHOTO_ENDPOINTS } from "../config"; 
 import { calculateTotalPrices } from "../api/accommodationPriceAPI";
+import { getFavoriteIdMap, addFavorite, removeFavorite } from "../api/favoriteAPI"; 
+import { searchAccommodationsWithMainPhoto } from "../api/accommodationAPI"; 
 
 export default function SearchResultPage() {
   const navigate = useNavigate();
@@ -21,38 +23,73 @@ export default function SearchResultPage() {
   const { state } = useLocation();
   const { userId } = useUrlUser();
 
-  // state가 없거나 새로고침 등으로 유실되었을 때를 대비한 기본값 처리
-  const originalResults = state?.results || [];
-  const criteria = state?.criteria || {};
+  // 1. 초기 데이터 설정 (URL 파라미터를 최우선으로 사용)
+  const params = new URLSearchParams(location.search);
+  const initialCriteria = {
+    destination: params.get("keyword") || state?.criteria?.destination || "",
+    checkIn: params.get("checkIn") || state?.criteria?.checkIn || "",
+    checkOut: params.get("checkOut") || state?.criteria?.checkOut || "",
+    guests: params.get("guests") || state?.criteria?.guests || state?.criteria?.totalGuests || 2,
+  };
 
-  // 계산된 총 가격을 저장할 State
+  const [criteria] = useState(initialCriteria);
+
+  // 2. 데이터 상태 관리
+  const [results, setResults] = useState([]); 
+  const [page, setPage] = useState(0);        
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLast, setIsLast] = useState(false); 
+  const [totalCount, setTotalCount] = useState(0);
+
+  // 3. 부가 정보 상태 관리
   const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
+  const [favoriteMap, setFavoriteMap] = useState({});
 
-  // 1. URL 동기화 로직 (페이지 진입시 쿼리 파라미터 세팅)
+
+  // -----------------------------------------------------------
+  // [Logic B] 데이터 페칭 (검색)
+  // -----------------------------------------------------------
   useEffect(() => {
-    if (!criteria?.checkIn || !criteria?.checkOut) return;
+    const fetchAccommodations = async () => {
+      // 이미 로딩 중이거나, 마지막 페이지인데 또 부르려 하면 중단
+      if (isLoading) return; 
 
-    const params = new URLSearchParams(location.search);
+      setIsLoading(true);
+      try {
+        const searchParams = {
+            keyword: criteria.destination || "", 
+            checkIn: criteria.checkIn,
+            checkOut: criteria.checkOut,
+            guests: criteria.guests,
+        };
 
-    if (!params.get("checkIn")) params.set("checkIn", criteria.checkIn);
-    if (!params.get("checkOut")) params.set("checkOut", criteria.checkOut);
+        const data = await searchAccommodationsWithMainPhoto(searchParams, page, 10);
+        
+        const newItems = data.content || [];
+        const isLastPage = data.last;
+        const total = data.totalElements;
 
-    const guests = criteria?.guests ?? criteria?.totalGuests;
-    if (guests != null && !params.get("guests")) params.set("guests", String(guests));
+        setResults((prev) => {
+          return page === 0 ? newItems : [...prev, ...newItems];
+        });
+        
+        setIsLast(isLastPage);
+        if (page === 0) setTotalCount(total);
 
-    if (userId && !params.get("userId")) params.set("userId", String(userId));
+      } catch (error) {
+        console.error("숙소 리스트 로딩 실패:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const nextSearch = `?${params.toString()}`;
-    if (nextSearch === location.search) return;
+    fetchAccommodations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); // 🌟 의존성에서 criteria 제거 (최초 로딩 및 페이지 변경 때만 실행)
 
-    navigate(
-      { pathname: location.pathname, search: nextSearch },
-      { replace: true, state }
-    );
-  }, [criteria, location.pathname, location.search, navigate, state, userId]);
-
-  // 2. 필터 Custom Hook 호출 (displayResults가 여기서 생성됩니다)
-  // [중요] useEffect보다 먼저 호출되어야 합니다.
+  // -----------------------------------------------------------
+  // [Logic C] 필터링 Hook
+  // -----------------------------------------------------------
   const {
     excludeSoldOut, setExcludeSoldOut,
     selectedType, setSelectedType,
@@ -64,104 +101,106 @@ export default function SearchResultPage() {
     sortOption, setSortOption,
     toggleInSet,
     resetFilters,
-    displayResults // 필터링된 결과 리스트
-  } = useAccommodationFilter(originalResults);
+    displayResults 
+  } = useAccommodationFilter(results);
 
-  // 3. 가격 계산 API 호출 (displayResults가 생성된 후 실행)
+  // -----------------------------------------------------------
+  // [Logic D] 가격 및 찜 로딩
+  // -----------------------------------------------------------
+  
+  // D-1. 가격 계산
   useEffect(() => {
-    // 날짜가 없거나 숙소가 없으면 계산 안 함
-    if (!criteria.checkIn || !criteria.checkOut || displayResults.length === 0) {
-      return;
-    }
+    if (!criteria.checkIn || !criteria.checkOut || displayResults.length === 0) return;
 
-    // 현재 화면에 나온 숙소 ID들만 수집
-    const ids = displayResults.map((p) => Number(p.accommodationId));
+    // 이미 계산된 ID는 제외하고 새로 필요한 것만 요청 (API 호출 최적화)
+    const idsToCalculate = displayResults
+        .map(p => Number(p.accommodationId))
+        .filter(id => calculatedPriceMap[id] === undefined);
 
-    // API 호출
-    calculateTotalPrices(ids, criteria.checkIn, criteria.checkOut)
+    if (idsToCalculate.length === 0) return;
+
+    calculateTotalPrices(idsToCalculate, criteria.checkIn, criteria.checkOut)
       .then((priceList) => {
-        const newMap = {};
-        priceList.forEach((item) => {
-          if (item.available) {
-            newMap[item.accommodationId] = item.totalPrice;
-          }
+        setCalculatedPriceMap((prev) => {
+            const newMap = { ...prev };
+            priceList.forEach((item) => {
+                if (item.available) newMap[item.accommodationId] = item.totalPrice;
+            });
+            return newMap;
         });
-        setCalculatedPriceMap(newMap);
       })
-      .catch((err) => {
-        console.error("가격 계산 실패:", err);
-      });
-  }, [displayResults, criteria.checkIn, criteria.checkOut]);
+      .catch((err) => console.error("가격 계산 실패:", err));
+  }, [displayResults, criteria.checkIn, criteria.checkOut]); // calculatedPriceMap 의존성 제거
 
-  // 4. 나머지 Custom Hooks 호출
-  // 찜하기 로직
-  const { favoriteMap, toggleFavorite } = useAccommodationFavorites(userId);
+  // D-2. 찜 목록 로딩
+  useEffect(() => {
+    if (userId) {
+      getFavoriteIdMap(userId).then(setFavoriteMap);
+    }
+  }, [userId]);
 
-  // 이미지 로딩 로직
-  const { photoUrlMap } = useAccommodationImages(displayResults);
+  // -----------------------------------------------------------
+  // [Logic E] 이벤트 핸들러
+  // -----------------------------------------------------------
+  const handleObserver = useCallback(() => {
+    if (!isLoading && !isLast) {
+      setPage((prev) => prev + 1);
+    }
+  }, [isLoading, isLast]);
 
-  // 5. 페이지 이동 핸들러
+  const observerRef = useIntersectionObserver(handleObserver);
+
   const handleGoDetail = (accommodationId) => {
     const params = new URLSearchParams(location.search);
-
-    if (criteria?.checkIn && !params.get("checkIn")) params.set("checkIn", criteria.checkIn);
-    if (criteria?.checkOut && !params.get("checkOut")) params.set("checkOut", criteria.checkOut);
-
-    const guests = criteria?.guests ?? criteria?.totalGuests;
-    if (guests != null && !params.get("guests")) params.set("guests", String(guests));
-
-    if (userId && !params.get("userId")) params.set("userId", String(userId));
-
+    if (criteria.checkIn && !params.get("checkIn")) params.set("checkIn", criteria.checkIn);
+    if (criteria.checkOut && !params.get("checkOut")) params.set("checkOut", criteria.checkOut);
+    
     const qs = params.toString();
     navigate(`/accommodation/${accommodationId}${qs ? `?${qs}` : ""}`);
   };
 
-  // 6. 예외 처리 (검색 데이터 없음)
-  if (!state) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        메인 페이지에서 검색 후 다시 방문해 주세요.
-      </div>
-    );
-  }
+  const handleToggleFavorite = async (e, accommodationId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    const isFav = !!favoriteMap[accommodationId];
+    setFavoriteMap((prev) => ({ ...prev, [accommodationId]: !isFav }));
+
+    try {
+      if (isFav) await removeFavorite(userId, accommodationId);
+      else await addFavorite(userId, accommodationId);
+    } catch (error) {
+      setFavoriteMap((prev) => ({ ...prev, [accommodationId]: isFav }));
+    }
+  };
 
   const titleText = criteria.destination
-    ? `'${criteria.destination}' 검색 결과 ${displayResults.length}개`
-    : `숙소 검색 결과 ${displayResults.length}개`;
+    ? `'${criteria.destination}' 검색 결과 ${totalCount}개`
+    : `숙소 검색 결과 ${totalCount}개`;
 
-  // 7. 렌더링
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto flex gap-6">
-        
-        {/* 좌측 필터 사이드바 */}
         <SearchFilterSidebar
-          excludeSoldOut={excludeSoldOut}
-          setExcludeSoldOut={setExcludeSoldOut}
-          selectedType={selectedType}
-          setSelectedType={setSelectedType}
-          minPrice={minPrice}
-          setMinPrice={setMinPrice}
-          maxPrice={maxPrice}
-          setMaxPrice={setMaxPrice}
-          selectedTags={selectedTags}
-          setSelectedTags={setSelectedTags}
-          selectedCommonFacilities={selectedCommonFacilities}
-          setSelectedCommonFacilities={setSelectedCommonFacilities}
-          selectedRoomFacilities={selectedRoomFacilities}
-          setSelectedRoomFacilities={setSelectedRoomFacilities}
-          toggleInSet={toggleInSet}
-          resetFilters={resetFilters}
+          excludeSoldOut={excludeSoldOut} setExcludeSoldOut={setExcludeSoldOut}
+          selectedType={selectedType} setSelectedType={setSelectedType}
+          minPrice={minPrice} setMinPrice={setMinPrice}
+          maxPrice={maxPrice} setMaxPrice={setMaxPrice}
+          selectedTags={selectedTags} setSelectedTags={setSelectedTags}
+          selectedCommonFacilities={selectedCommonFacilities} setSelectedCommonFacilities={setSelectedCommonFacilities}
+          selectedRoomFacilities={selectedRoomFacilities} setSelectedRoomFacilities={setSelectedRoomFacilities}
+          toggleInSet={toggleInSet} resetFilters={resetFilters}
         />
 
-        {/* 우측 검색 결과 영역 */}
         <section className="flex-1">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold">{titleText}</h1>
           </div>
-
           <div className="flex items-center justify-end -mt-11 mb-4">
-            <div className="relative inline-block text-sm">
+             <div className="relative inline-block text-sm">
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
@@ -176,26 +215,29 @@ export default function SearchResultPage() {
             </div>
           </div>
 
-          {displayResults.length === 0 ? (
+          {displayResults.length === 0 && !isLoading ? (
             <div className="p-6 bg-white rounded-xl shadow text-center text-gray-500">
               조건에 맞는 숙소가 없습니다.
             </div>
           ) : (
             <div className="space-y-3">
               {displayResults.map((p) => {
-                const accommodationId = Number(p.accommodationId);
-                const calculatedTotalPrice = calculatedPriceMap[accommodationId];
-                const displayPrice = (calculatedTotalPrice === 0) 
-                    ? "예약가능한 객실이 없습니다" 
-                    : calculatedTotalPrice;
+                const accId = Number(p.accommodationId);
+                const calculatedTotalPrice = calculatedPriceMap[accId];
+                const displayPrice = (calculatedTotalPrice === 0) ? "예약 마감" : calculatedTotalPrice;
+                const isFavorite = !!favoriteMap[accId];
+                const photoUrl = p.mainPhotoId
+                  ? ACCOMMODATION_PHOTO_ENDPOINTS.PHOTOS.GET_BLOB_DATA(p.mainPhotoId)
+                  : "/assets/default_hotel.png";
+
                 return (
                   <AccommodationCard
-                    key={accommodationId}
+                    key={accId}
                     data={p}
-                    photoUrl={photoUrlMap[accommodationId]}
-                    isFavorite={favoriteMap[accommodationId]}
-                    onToggleFavorite={(e) => toggleFavorite(e, accommodationId)}
-                    onClick={() => handleGoDetail(accommodationId)}
+                    photoUrl={photoUrl} 
+                    isFavorite={isFavorite}
+                    onToggleFavorite={(e) => handleToggleFavorite(e, accId)}
+                    onClick={() => handleGoDetail(accId)}
                     totalPrice={displayPrice}
                     checkIn={criteria.checkIn}
                     checkOut={criteria.checkOut}
@@ -203,6 +245,15 @@ export default function SearchResultPage() {
                 );
               })}
             </div>
+          )}
+
+          {!isLast && (
+            <div ref={observerRef} className="h-20 flex justify-center items-center mt-4">
+              {isLoading && <span className="text-gray-500">숙소를 불러오는 중...</span>}
+            </div>
+          )}
+          {isLast && displayResults.length > 0 && (
+             <div className="text-center text-gray-400 py-6 text-sm">모든 숙소를 확인했습니다.</div>
           )}
         </section>
       </div>

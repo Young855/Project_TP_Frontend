@@ -119,7 +119,7 @@ export const searchAccommodations = async (params) => {
   }
 };
 
-// 🌟 [Admin] 숙소 상태 일괄 변경 (연결 지점 수정)
+// 숙소 상태 일괄 변경 (연결 지점 수정)
 export const updateAccommodationStatuses = async (statusUpdates) => {
   // statusUpdates: { [id]: "CONFIRM", [id]: "DECLINED" ... }
   try {
@@ -128,6 +128,22 @@ export const updateAccommodationStatuses = async (statusUpdates) => {
     return response.data;
   } catch (error) {
     console.error("상태 업데이트 실패:", error);
+    throw error;
+  }
+};
+// 유저 검색 이후 숙소 리스트 가져오는것
+export const searchAccommodationsWithMainPhoto = async (searchParams, page = 0, size = 10) => {
+  try {
+    const response = await api.get(ACCOMMODATIONS_ENDPOINTS.ACCOMMODATIONS.SEARCH_WITH_MAIN_PHOTO, {
+      params: {
+        ...searchParams,
+        page: page,
+        size: size,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("숙소 검색(메인사진포함) 실패:", error);
     throw error;
   }
 };

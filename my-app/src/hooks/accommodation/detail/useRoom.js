@@ -1,95 +1,68 @@
-// src/hooks/accommodation/detail/useAccommodationPhoto.js
-// 숙소 사진 메타 + blob 로드 -> gallery images / topImages(최대 3장)
-import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+// src/hooks/accommodation/detail/useRoom.js
+// 특정 숙소(accommodationId)의 객실 목록을 불러오는 훅
+// ✅ AccommodationRoomDetail.jsx에서 `const { rooms, roomsLoading } = useRoom(id);` 형태로 사용됨
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
+import { useEffect, useState } from "react";
+import { getRoomsByAccommodation, getRoomByAccommodationIDWithMainPhoto } from "@/api/roomAPI";
 
 /**
- * ⚠️ 수정 포인트
- * - accommodationId 변경 시에만 1회 로드
- * - abort된 요청으로 setState 하지 않도록 보호
- * - 불필요한 초기화(setImages([]))로 인한 재렌더 최소화
+ * @param {string|number} accommodationId
+ * @param {{ withMainPhoto?: boolean, page?: number, size?: number }} [options]
  */
-export default function useAccommodationPhoto(accommodationId) {
-  const [images, setImages] = useState([]);
-  const [topImages, setTopImages] = useState([]);
+export default function useRoom(accommodationId, options = {}) {
+  const { withMainPhoto = true, page = 0, size = 50 } = options;
 
-  const createdUrlsRef = useRef([]);
+  const [rooms, setRooms] = useState([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
+  const [roomsError, setRoomsError] = useState(null);
 
   useEffect(() => {
-    if (!accommodationId) return;
+    if (!accommodationId) {
+      setRooms([]);
+      setRoomsLoading(false);
+      setRoomsError(null);
+      return;
+    }
 
-    const controller = new AbortController();
-    let mounted = true;
-
-    // objectURL 정리 (unmount 시에만)
-    createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-    createdUrlsRef.current = [];
-
-    const getOrder = (p) =>
-      p?.orderIndex ?? p?.sortOrder ?? p?.photoOrder ?? p?.seq ?? 0;
-
-    const getPhotoId = (p) => p?.photoId ?? p?.id ?? p?.accommodationPhotoId;
-
-    const getDirectUrl = (p) =>
-      p?.imageUrl ?? p?.url ?? p?.photoUrl ?? p?.thumbnailUrl ?? null;
+    let alive = true;
 
     (async () => {
       try {
-        const metaRes = await axios.get(
-          `${API_BASE}/partner/accommodations/photos/list/${accommodationId}`,
-          { signal: controller.signal }
-        );
-        const metaList = metaRes.data?.data ?? metaRes.data ?? [];
-        const list = Array.isArray(metaList) ? metaList : [];
+        setRoomsLoading(true);
+        setRoomsError(null);
 
-        const sorted = [...list].sort((a, b) => getOrder(a) - getOrder(b));
+        // 1) 메인사진까지 포함한 엔드포인트가 있으면 우선 사용
+        //    (응답이 페이징일 수도 있어서 content 처리)
+        const res = withMainPhoto
+          ? await getRoomByAccommodationIDWithMainPhoto(accommodationId, page, size)
+          : await getRoomsByAccommodation(accommodationId);
 
-        const urls = await Promise.all(
-          sorted.map(async (p) => {
-            const direct = getDirectUrl(p);
-            if (direct) return direct;
+        if (!alive) return;
 
-            const photoId = getPhotoId(p);
-            if (!photoId) return null;
+        const list = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.content)
+          ? res.content
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
 
-            try {
-              const blobRes = await axios.get(
-                `${API_BASE}/partner/accommodations/photos/${photoId}/data`,
-                { responseType: "blob", signal: controller.signal }
-              );
-              const objUrl = URL.createObjectURL(blobRes.data);
-              createdUrlsRef.current.push(objUrl);
-              return objUrl;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        if (!mounted) return;
-        const cleaned = urls.filter(Boolean);
-        setImages((prev) => (prev.length === cleaned.length ? prev : cleaned));
-        setTopImages((prev) =>
-          prev.length === cleaned.slice(0, 3).length
-            ? prev
-            : cleaned.slice(0, 3)
-        );
-      } catch {
-        if (!mounted || controller.signal.aborted) return;
-        setImages([]);
-        setTopImages([]);
+        setRooms(list);
+      } catch (e) {
+        if (!alive) return;
+        setRooms([]);
+        setRoomsError(e);
+        console.error("[useRoom] fetch failed:", e);
+      } finally {
+        if (!alive) return;
+        setRoomsLoading(false);
       }
     })();
 
     return () => {
-      mounted = false;
-      controller.abort();
-      createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-      createdUrlsRef.current = [];
+      alive = false;
     };
-  }, [accommodationId]);
+  }, [accommodationId, withMainPhoto, page, size]);
 
-  return { images, topImages };
+  return { rooms, roomsLoading, roomsError };
 }

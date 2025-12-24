@@ -46,8 +46,20 @@ export default function AccommodationRoomDetail({ userId }) {
   } = useAccommodationDetail(id);
 
   const { rooms, roomsLoading } = useRoom(id);
+
+  // ✅ 객실 대표사진(roomId -> url) / 객실 가격(roomId -> price)
   const roomPhotoUrlMap = useRoomMainPhoto(rooms);
   const roomPriceMap = useRoomPrice({ rooms, checkIn, checkOut });
+
+  // (선택) 객실 데이터 확인용 디버깅
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("숙소 id:", id);
+    // eslint-disable-next-line no-console
+    console.log("rooms:", rooms);
+    // eslint-disable-next-line no-console
+    console.log("rooms length:", rooms?.length);
+  }, [id, rooms]);
 
   const { images, topImages } = useAccommodationPhoto(id);
 
@@ -65,8 +77,6 @@ export default function AccommodationRoomDetail({ userId }) {
   // 서버 상태가 바뀌면(local null일 때) 동기화
   useEffect(() => {
     if (localFavorite === null) return;
-    // 서버에서 값이 따라오면 로컬 잠깐 값은 해제(동기화)
-    // (원하면 주석 처리해도 됨)
     setLocalFavorite(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFavorite]);
@@ -136,6 +146,7 @@ export default function AccommodationRoomDetail({ userId }) {
       // 실패하면 원복
       setLocalFavorite(before);
       alert("찜 처리 중 오류가 발생했습니다.");
+      // eslint-disable-next-line no-console
       console.error(err);
     }
   };
@@ -205,10 +216,8 @@ export default function AccommodationRoomDetail({ userId }) {
             typeLabel={typeLabel}
             rating={rating}
             reviewCount={reviewCount}
-            // ✅ 여기 중요: effectiveFavorite를 내려보냄
             isFavorite={effectiveFavorite}
             favLoading={favLoading}
-            // ✅ 여기 중요: handleToggleFavorite로 교체
             onToggleFavorite={handleToggleFavorite}
             onGoLocation={() => scrollToRef(locationTitleRef)}
             onGoReviews={() => scrollToRef(reviewsTitleRef)}
@@ -268,7 +277,7 @@ export default function AccommodationRoomDetail({ userId }) {
           sellerContact={accommodation.sellerContact}
         />
 
-        {/* 위치 (리뷰 위) */}
+        {/* 위치 */}
         <LocationSection
           locationRef={locationRef}
           locationTitleRef={locationTitleRef}
@@ -276,7 +285,7 @@ export default function AccommodationRoomDetail({ userId }) {
           city={accommodation.city}
         />
 
-        {/* 리뷰 (맨 아래) */}
+        {/* 리뷰 */}
         <section ref={reviewsRef} className="mt-6 space-y-3 px-1 scroll-mt-28">
           <h2
             ref={reviewsTitleRef}

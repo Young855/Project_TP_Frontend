@@ -1,72 +1,46 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'; // 🌟 이동을 위한 Hook
 import { MapPin, Search, Calendar, User, ChevronDown, ChevronUp } from 'lucide-react';
 import GuestCounter from '../components/GuestCounter';
 
-/**
- * 메인 페이지 (검색 바 포함)
- * @param {object} props
- * @param {function} props.onSearch - 검색 실행 함수
- */
-const MainPage = ({ onSearch }) => {
+const MainPage = () => {
+  const navigate = useNavigate(); // 🌟 페이지 이동 도구
+
+  // 상태 관리
   const [destination, setDestination] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [isGuestPickerOpen, setIsGuestPickerOpen] = useState(false);
   const guestPickerRef = useRef(null);
 
   const totalGuests = adults + children;
-
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const handleSearch = (e) => {
+  // 🌟 검색 버튼 활성화 조건 (날짜가 둘 다 있어야 함)
+  const isSearchable = checkIn && checkOut;
+
+  // 🌟 검색 버튼 클릭 시 실행 (API 호출 X -> 페이지 이동 O)
+  const handleSearchClick = (e) => {
     e.preventDefault();
 
-    // ✅ 유효성 검사: 날짜 입력 확인
-    if (!checkIn || !checkOut) {
-      alert('체크인/체크아웃 날짜를 선택하세요.');
-      return;
-    }
-    // ✅ 유효성 검사: 체크아웃 >= 체크인
-    if (checkOut < checkIn) {
-      alert('체크아웃 날짜는 체크인 날짜 이후여야 합니다.');
+    if (!isSearchable) {
+      alert("체크인과 체크아웃 날짜를 선택해주세요.");
       return;
     }
 
-    onSearch({ destination, checkIn, checkOut, guests: totalGuests });
+    // 1. 쿼리 파라미터 생성
+    const params = new URLSearchParams();
+    if (destination) params.set("keyword", destination); // destination -> keyword 매핑
+    params.set("checkIn", checkIn);
+    params.set("checkOut", checkOut);
+    params.set("guests", totalGuests);
+
+    // 2. 검색 결과 페이지로 이동 (데이터 로딩은 거기서 알아서 함)
+    navigate(`/search?${params.toString()}`);
   };
-
-          <div className="md:col-span-2 grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="checkin" className="form-label">
-                <Calendar size={16} className="inline-block mr-1" />
-                체크인
-              </label>
-              <input
-                type="date"
-                id="checkin"
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-                min={new Date().toISOString().split('T')[0]} 
-                className="form-input"
-              />
-            </div>
-            <div>
-              <label htmlFor="checkout" className="form-label">
-                <Calendar size={16} className="inline-block mr-1" />
-                체크아웃
-              </label>
-              <input
-                type="date"
-                id="checkout"
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                min={checkIn || new Date().toISOString().split('T')[0]}
-                className="form-input"
-              />
-            </div>
-          </div>
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-blue-50 flex flex-col items-center justify-center p-4">
@@ -80,7 +54,7 @@ const MainPage = ({ onSearch }) => {
       </div>
 
       <form
-        onSubmit={handleSearch}
+        onSubmit={handleSearchClick}
         className="w-full max-w-4xl bg-white rounded-lg shadow-xl p-4 md:p-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -114,10 +88,7 @@ const MainPage = ({ onSearch }) => {
                 onChange={(e) => {
                   const v = e.target.value;
                   setCheckIn(v);
-                  // ✅ 체크인 변경 시 체크아웃 보정
-                  if (checkOut && checkOut < v) {
-                    setCheckOut(v); // 동일 날짜까지 허용 (원하면 다음날로 강제 가능)
-                  }
+                  if (checkOut && checkOut < v) setCheckOut(v);
                 }}
                 min={todayStr}
                 className="form-input"
@@ -133,7 +104,6 @@ const MainPage = ({ onSearch }) => {
                 id="checkout"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                // ✅ 체크아웃 최소값을 체크인 또는 오늘로 연동
                 min={checkIn || todayStr}
                 className="form-input"
               />
@@ -152,7 +122,6 @@ const MainPage = ({ onSearch }) => {
               onClick={() => setIsGuestPickerOpen(!isGuestPickerOpen)}
               className="form-input w-full flex items-center justify-start px-3 py-2"
             >
-              {/* ✅ 총 n명' 오른쪽에 화살표 아이콘 */}
               <div className="flex items-center gap-2 text-gray-800">
                 <span>총 {totalGuests}명</span>
                 {isGuestPickerOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -169,7 +138,15 @@ const MainPage = ({ onSearch }) => {
         </div>
 
         <div className="mt-6">
-          <button type="submit" className="btn-primary w-full text-lg">
+          <button 
+            type="submit" 
+            disabled={!isSearchable} // 날짜 없으면 꺼짐
+            className={`w-full text-lg font-bold py-3 rounded-md transition-colors flex items-center justify-center
+              ${isSearchable 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer' // 활성 상태
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed' // 비활성 상태
+              }`}
+          >
             <Search size={20} className="inline-block mr-2" />
             검색하기
           </button>

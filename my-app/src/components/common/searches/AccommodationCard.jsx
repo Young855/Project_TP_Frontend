@@ -1,121 +1,106 @@
-export default function AccommodationCard({ 
-  data, 
-  photoUrl, 
-  isFavorite, 
-  onToggleFavorite, 
+import { useState, useEffect } from "react";
+import { FaStar, FaHeart, FaRegHeart } from "react-icons/fa";
+
+export default function AccommodationCard({
+  data,
+  photoUrl,
+  isFavorite,
+  onToggleFavorite,
   onClick,
-  totalPrice, 
-  checkIn, 
-  checkOut
+  totalPrice,
+  checkIn,
+  checkOut,
 }) {
-  const p = data;
+  const [imgSrc, setImgSrc] = useState(photoUrl);
+
+  useEffect(() => {
+    setImgSrc(photoUrl);
+  }, [photoUrl]);
+
+  const handleImgError = () => {
+    setImgSrc("/assets/default_hotel.png");
+  };
+
+  const formatPrice = (price) => {
+    if (price === "예약 마감") return "예약 마감";
+    return typeof price === "number"
+      ? `${price.toLocaleString()}원`
+      : price;
+  };
+
   return (
     <div
-      className="relative bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition cursor-pointer"
       onClick={onClick}
+      className="flex flex-col sm:flex-row bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer h-auto sm:h-48"
     >
-      <button
-        type="button"
-        onClick={onToggleFavorite}
-        className="absolute top-3 right-3 w-9 h-9 rounded-md bg-white border border-gray-300 flex items-center justify-center p-0 leading-none"
-        aria-label="찜 토글"
-      >
-        {isFavorite ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className="w-7 h-7"
-            fill="#ff4d4d"
-          >
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
-                    2 5.42 4.42 3 7.5 3
-                    c1.74 0 3.41.81 4.5 2.09
-                    C13.09 3.81 14.76 3 16.5 3
-                    19.58 3 22 5.42 22 8.5
-                    c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-          </svg>
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className="w-7 h-7"
-            fill="none"
-            stroke="#9ca3af"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.688 3.75 5.099 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-          </svg>
-        )}
-      </button>
-
-      <div className="w-full md:w-40 h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-        {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={p.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.src = "/placeholder-room.jpg";
-            }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-            이미지 없음
-          </div>
-        )}
+      {/* --- [좌측] 이미지 영역 --- */}
+      <div className="w-full sm:w-1/3 md:w-56 h-48 sm:h-full bg-gray-100 relative shrink-0">
+        <img
+          src={imgSrc || "/assets/default_hotel.png"}
+          alt={data.name}
+          onError={handleImgError}
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+        />
+        
+        
       </div>
 
-      <div className="flex-1 flex flex-col justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">{p.name}</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {p.address} {p.city ? `(${p.city})` : ""}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {p.accommodationType}
-            {p.checkinTime && p.checkoutTime
-              ? ` · 체크인 ${p.checkinTime} / 체크아웃 ${p.checkoutTime}`
-              : ""}
-          </p>
+      {/* --- [우측] 정보 영역 --- */}
+      <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between">
+        
+        {/* 상단: 이름 및 찜 버튼 */}
+        <div className="flex justify-between items-start gap-2">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 line-clamp-1">
+              {data.name}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+              {data.address}
+            </p>
+          </div>
+          
+          <button
+            onClick={onToggleFavorite}
+            className="text-2xl p-1 hover:scale-110 transition-transform focus:outline-none"
+          >
+            {isFavorite ? (
+              <FaHeart className="text-red-500 drop-shadow-sm" />
+            ) : (
+              <FaRegHeart className="text-gray-300 hover:text-gray-400" />
+            )}
+          </button>
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            {p.ratingAvg != null ? (
-              <span className="font-semibold text-yellow-600">
-                ★ {p.ratingAvg.toFixed ? p.ratingAvg.toFixed(1) : p.ratingAvg}
-              </span>
-            ) : (
-              <span className="text-gray-400">평점 없음</span>
-            )}
-          </div>
+        {/* 중단: 평점 및 기타 정보 */}
+        <div className="mt-2 flex items-center text-sm">
+          <FaStar className="text-yellow-400 mr-1" />
+          <span className="font-semibold text-gray-800">
+            {data.ratingAvg ? Number(data.ratingAvg).toFixed(1) : "0.0"}
+          </span>
+          <span className="text-gray-400 mx-2">|</span>
+          <span className="text-gray-500 text-xs truncate">
+            {/* 여기 텍스트로 나오는 타입 정보는 유지했습니다 (필요 없으면 data.accommodationType 지우셔도 됩니다) */}
+            {data.accommodationType} • 체크인 {data.checkinTime?.substring(0, 5)}
+          </span>
+        </div>
 
-         <div className="text-right">
-            {totalPrice === "예약가능한 객실이 없습니다" ? (
-              <span className="text-lg font-bold text-red-600">
-                예약가능한 객실이 없습니다
+        {/* 하단: 가격 정보 */}
+        <div className="mt-4 flex flex-col items-end justify-end pt-3 border-t border-gray-100 sm:border-none sm:pt-0">
+          {totalPrice === "예약 마감" ? (
+             <span className="text-lg font-bold text-gray-400">예약 마감</span>
+          ) : (
+            <>
+              <span className="text-xl font-bold text-blue-600">
+                {formatPrice(totalPrice)}
               </span>
-            ) : totalPrice ? (
-              <>
-                <span className="text-lg font-bold text-blue-600">
-                  {totalPrice.toLocaleString()}원
+              {checkIn && checkOut && (
+                <span className="text-xs text-gray-400 mt-1">
+                  {checkIn} ~ {checkOut} (총액)
                 </span>
-                <div className="text-xs text-gray-500">
-                  {checkIn}~{checkOut} (총액)
-                </div>
-              </>
-            ) : (
-              <>
-                <span className="text-lg font-bold text-gray-900">
-                  {(data.minPrice ?? data.price ?? 0).toLocaleString()}원
-                </span>
-                <span className="text-xs text-gray-500 ml-1">/ 1박</span>
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

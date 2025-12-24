@@ -49,13 +49,6 @@ const LoginSelectionPage = () => {
             icon={<Key size={20} />}
             onClick={() => handleApiLogin('Kakao')}
           />
-          <SocialLoginButton
-            provider="Naver"
-            bgColor="bg-[#03C75A]"
-            textColor="text-white"
-            icon={<User size={20} />}
-            onClick={() => handleApiLogin('Naver')}
-          />
         </div>
 
         {/* 구분선 */}

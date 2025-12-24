@@ -24,6 +24,34 @@ export async function getFavorites(userId) {
   return res.data ?? [];
 }
 
+export async function getFavoriteIdMap(userId) {
+  if (!userId) return {};
+
+  try {
+    // 상세 정보 조회 없이 찜 목록 테이블만 조회 (가벼운 요청)
+    const res = await client.get(FAVORITE_ENDPOINTS.FAVORITES.LIST, {
+      params: { userId },
+    });
+    
+    const favorites = res.data ?? [];
+    const idMap = {};
+
+    // 배열을 순회하며 Map(객체)으로 변환
+    favorites.forEach((fav) => {
+      // API 응답 구조에 따라 fav.accommodationId가 ID라고 가정
+      if (fav.accommodationId) {
+        idMap[fav.accommodationId] = true;
+      }
+    });
+
+    return idMap;
+  } catch (error) {
+    console.error("찜 목록 ID 조회 실패:", error);
+    return {};
+  }
+}
+
+
 // 찜 삭제
 export async function removeFavorite(userId, accommodationId) {
   return client.delete(FAVORITE_ENDPOINTS.FAVORITES.DELETE, {

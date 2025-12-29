@@ -27,7 +27,6 @@ import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
 
 // [수정] API 함수명 변경
-import { getAllAccommodations } from "./api/accommodationAPI"; 
 import FilterRouter from './routers/FilterRouter';
 import { searchResultRouter } from './routers/SearchResultRouter';
 import AdminLayout from './Layout/AdminLayout';
@@ -123,50 +122,26 @@ function UserLayout() {
     return true;``
   };
 
-  // 메인/헤더에서 공통으로 사용하는 검색 함수 / 메인 페이지든 헤더든 전부 이 handleSearch만 호출
-  const handleSearch = async ({ destination, checkIn, checkOut, guests }) => {
-    try {
-      const all = await getAllAccommodations(); // 전체 숙소 조회
-      const list = Array.isArray(all) ? all : all?.content || [];
-      const keyword = (destination || "").toLowerCase();
-
-      // 기본 검색: 숙소 이름 / 주소 / 도시
-      const filtered = keyword
-        ? list.filter((p) => {
-            const name = (p.name || "").toLowerCase();
-            const address = (p.address || "").toLowerCase();
-            const city = (p.city || "").toLowerCase();
-            return (
-              name.includes(keyword) ||
-              address.includes(keyword) ||
-              city.includes(keyword)
-            );
-          })
-        : list;
 
 
-      // 검색 결과 페이지로 이동
-      // navigate("/search-results", {
-    //   state: {
-    //     results: filtered,
-    //     criteria: { destination, checkIn, checkOut, guests },
-          navigate(
-            {
-              pathname: "/search-results",
-              search: `?userId=${userId}`,
-            },
-            {
-              state: {
-                results: filtered,
-                criteria: { destination, checkIn, checkOut, guests },
-              },
-            }
-          );
-        } catch (e) {
-          console.error("숙소 검색 오류:", e);
-          alert("숙소 검색 중 오류가 발생했습니다.");
-        }
-      };
+  const handleSearch = ({ destination, checkIn, checkOut, guests }) => {
+    if (!checkIn || !checkOut) {
+      alert("체크인/체크아웃 날짜를 선택해주세요.");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (destination) params.set("keyword", destination);
+    params.set("checkIn", checkIn);
+    params.set("checkOut", checkOut);
+    params.set("guests", String(guests ?? 2));
+
+    // ✅ 검색은 '이동'만. 실제 검색 API는 SearchResultPage가 URL 보고 수행
+    navigate(`/search-results?userId=${userId}&${params.toString()}`, {
+      state: { criteria: { destination, checkIn, checkOut, guests } },
+    });
+  };
+
 
   const appProps = {
     isLoggedIn,

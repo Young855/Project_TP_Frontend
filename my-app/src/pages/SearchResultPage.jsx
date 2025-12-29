@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useUrlUser } from "../hooks/useUrlUser";
 
@@ -20,62 +20,76 @@ import { searchAccommodationsWithMainPhoto } from "../api/accommodationAPI";
 export default function SearchResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useLocation();
+  const state = location.state;
   const { userId } = useUrlUser();
 
-  // 1. 초기 데이터 설정 (URL 파라미터를 최우선으로 사용)
+const criteria = useMemo(() => {
   const params = new URLSearchParams(location.search);
-  const initialCriteria = {
+  return {
     destination: params.get("keyword") || state?.criteria?.destination || "",
     checkIn: params.get("checkIn") || state?.criteria?.checkIn || "",
     checkOut: params.get("checkOut") || state?.criteria?.checkOut || "",
-    guests: params.get("guests") || state?.criteria?.guests || state?.criteria?.totalGuests || 2,
+    guests: params.get("guests") || state?.criteria?.guests || 2,
   };
+}, [location.search, state]);
 
-  const [criteria] = useState(initialCriteria);
+
 
   // 2. 데이터 상태 관리
-  const [results, setResults] = useState([]); 
-  const [page, setPage] = useState(0);        
-  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState([]);
+  const [page, setPage] = useState(0);       
   const [isLast, setIsLast] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
+
+  // ✅ criteria 변경 = 새 검색 → 상태 초기화
+  useEffect(() => {
+    setResults([]);
+    setPage(0);
+    setIsLast(false);
+    setTotalCount(0);
+    setCalculatedPriceMap({});
+  }, [
+    criteria.destination,
+    criteria.checkIn,
+    criteria.checkOut,
+    criteria.guests,
+  ]);
 
   // 3. 부가 정보 상태 관리
-  const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
   const [favoriteMap, setFavoriteMap] = useState({});
 
 
-  // -----------------------------------------------------------
-  // [Logic B] 데이터 페칭 (검색)
-  // -----------------------------------------------------------
+  // ✅ page 또는 criteria 변경 시 검색 API 호출
   useEffect(() => {
     const fetchAccommodations = async () => {
-      // 이미 로딩 중이거나, 마지막 페이지인데 또 부르려 하면 중단
-      if (isLoading) return; 
+      if (isLoading) return;
+      if (!criteria.checkIn || !criteria.checkOut) return;
 
       setIsLoading(true);
       try {
         const searchParams = {
-            keyword: criteria.destination || "", 
-            checkIn: criteria.checkIn,
-            checkOut: criteria.checkOut,
-            guests: criteria.guests,
+          keyword: criteria.destination || "",
+          checkIn: criteria.checkIn,
+          checkOut: criteria.checkOut,
+          guests: criteria.guests,
         };
 
-        const data = await searchAccommodationsWithMainPhoto(searchParams, page, 10);
-        
+        const data = await searchAccommodationsWithMainPhoto(
+          searchParams,
+          page,
+          10
+        );
+
         const newItems = data.content || [];
-        const isLastPage = data.last;
-        const total = data.totalElements;
 
-        setResults((prev) => {
-          return page === 0 ? newItems : [...prev, ...newItems];
-        });
-        
-        setIsLast(isLastPage);
-        if (page === 0) setTotalCount(total);
+        setResults((prev) =>
+          page === 0 ? newItems : [...prev, ...newItems]
+        );
 
+        setIsLast(!!data.last);
+        if (page === 0) setTotalCount(data.totalElements || 0);
       } catch (error) {
         console.error("숙소 리스트 로딩 실패:", error);
       } finally {
@@ -84,8 +98,14 @@ export default function SearchResultPage() {
     };
 
     fetchAccommodations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // 🌟 의존성에서 criteria 제거 (최초 로딩 및 페이지 변경 때만 실행)
+  }, [
+    page,
+    criteria.destination,
+    criteria.checkIn,
+    criteria.checkOut,
+    criteria.guests,
+  ]);
+
 
   // -----------------------------------------------------------
   // [Logic C] 필터링 Hook

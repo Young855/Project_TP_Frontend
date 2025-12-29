@@ -18,11 +18,32 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
    *    - navigate('/xxx', { state: { criteria } })로 들어왔을 때만 존재
    */
   const navCriteria = location.state?.criteria || null;
+  // ✅ URL 쿼리에서 criteria 복구 (/search-results?keyword=...&checkIn=...)
+  // state가 없어도 pill이 뜨게 함
+  const urlCriteria = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+
+    const destination = params.get("keyword") || "";
+    const checkIn = params.get("checkIn") || "";
+    const checkOut = params.get("checkOut") || "";
+    const guests = Number(params.get("guests") || 2);
+
+    if (!destination || !checkIn || !checkOut) return null;
+
+    return {
+      destination,
+      checkIn,
+      checkOut,
+      guests: Number.isFinite(guests) ? guests : 2,
+    };
+  }, [location.search]);
 
   /** 2) 현재 페이지가 pill을 보여줄 페이지인지 */
   const isSearchLikePage =
     location.pathname.startsWith("/search") ||
+    location.pathname.startsWith("/search-results") ||
     location.pathname.startsWith("/accommodation");
+
 
   /**
    * 3) 새로고침/직접 URL 진입 시 state가 날아가므로 localStorage에서 복구
@@ -49,8 +70,9 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
   /**
    * 4) 최종 criteria: state 우선, 없으면 storage fallback
-   */
-  const criteria = navCriteria || storageCriteria;
+    */
+  const criteria = navCriteria || urlCriteria || storageCriteria;
+
 
   /**
    * 5) criteria가 있으면 localStorage에 저장(상세로 넘어가도 유지)
@@ -135,20 +157,31 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     setIsPanelOpen((prev) => !prev);
   };
 
-  // 검색 버튼 눌렀을 때
-  const handleSearchClick = () => {
-    if (!onSubmitSearch) return;
 
-    // (중요) 새로고침/상세 진입 대비: 검색 실행 시에도 localStorage 저장
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchForm));
-    } catch {
-      // ignore
+  const STORAGE_KEY = "tp_search_criteria";
+
+  const handleSearchClick = () => {
+    if (!searchForm.checkIn || !searchForm.checkOut) {
+      alert("체크인/체크아웃 날짜를 선택해주세요.");
+      return;
     }
 
-    onSubmitSearch(searchForm);
+    // 새로고침/상세페이지 이동에도 pill 유지
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchForm));
+    } catch {}
+
+    const params = new URLSearchParams();
+    if (searchForm.destination) params.set("keyword", searchForm.destination);
+    params.set("checkIn", searchForm.checkIn);
+    params.set("checkOut", searchForm.checkOut);
+    params.set("guests", String(searchForm.guests || 2));
+
+    // ✅ API 호출 X, 이동만
+    navigate(`/search-results?${params.toString()}`);
     setIsPanelOpen(false);
   };
+
 
   /** 로그인/회원가입 */
   const handleAuthClick = () => {

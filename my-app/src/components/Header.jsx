@@ -1,32 +1,43 @@
-import { Menu } from "lucide-react";
+import { Menu, LogOut, User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-/**
- * Header 가운데 검색 pill(여행지 | 날짜 | 인원)
- * - 기존: /search + location.state.criteria 있을 때만 표시
- * - 개선: /search, /accommodation 계열에서 표시
- * - 개선: location.state가 없어도(localStorage fallback) 새로고침/직접진입에도 표시
- */
 const STORAGE_KEY = "tp_search_criteria";
 
-const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
+// 🌟 [수정] onLogout prop을 제거하고 내부에서 처리하도록 변경했습니다.
+const Header = ({ navigate, onOpenDrawer, onSubmitSearch }) => {
   const location = useLocation();
 
-  /**
-   * 1) 라우팅 state로 넘어온 criteria
-   *    - navigate('/xxx', { state: { criteria } })로 들어왔을 때만 존재
-   */
+  // 1. 로그인 여부 판단 (로컬 스토리지 기준)
+  const token = localStorage.getItem("accessToken");
+  const isLoggedIn = !!token; 
+  
+  // 2. 닉네임 가져오기
+  const nickname = localStorage.getItem("nickname") || "여행자";
+
+  // 🌟 [추가] 로그아웃 핸들러 함수
+  const handleLogout = () => {
+    // 1. 로컬 스토리지의 모든 인증 정보 삭제
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("nickname");
+    localStorage.removeItem("email");
+    
+    // (선택사항) 검색 조건 등도 초기화하고 싶다면 추가
+    // localStorage.removeItem(STORAGE_KEY);
+
+    alert("로그아웃 되었습니다.");
+
+    // 2. 메인 페이지로 이동하며 새로고침 (중요!)
+    // 새로고침을 해야 Header가 다시 렌더링되면서 isLoggedIn이 false로 바뀝니다.
+    window.location.href = "/";
+  };
+
   const navCriteria = location.state?.criteria || null;
 
-  /** 2) 현재 페이지가 pill을 보여줄 페이지인지 */
   const isSearchLikePage =
     location.pathname.startsWith("/search") ||
     location.pathname.startsWith("/accommodation");
 
-  /**
-   * 3) 새로고침/직접 URL 진입 시 state가 날아가므로 localStorage에서 복구
-   */
   const storageCriteria = useMemo(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,27 +58,18 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     }
   }, [location.key]);
 
-  /**
-   * 4) 최종 criteria: state 우선, 없으면 storage fallback
-   */
   const criteria = navCriteria || storageCriteria;
 
-  /**
-   * 5) criteria가 있으면 localStorage에 저장(상세로 넘어가도 유지)
-   */
   useEffect(() => {
     if (!criteria) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(criteria));
     } catch {
-      // storage 실패해도 UI는 동작하도록 무시
     }
   }, [criteria]);
 
-  /** 검색 패널 열림 상태 */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  /** 검색 패널 내부 폼 상태 */
   const [searchForm, setSearchForm] = useState({
     destination: criteria?.destination || "",
     checkIn: criteria?.checkIn || "",
@@ -75,14 +77,12 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     guests: criteria?.guests || 2,
   });
 
-  // 페이지 이동 시 자동 닫기
   useEffect(() => {
     if (!isSearchLikePage) {
       setIsPanelOpen(false);
     }
   }, [isSearchLikePage]);
 
-  // criteria가 바뀌면 검색폼도 항상 맞춤
   useEffect(() => {
     setSearchForm({
       destination: criteria?.destination || "",
@@ -92,25 +92,20 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     });
   }, [criteria]);
 
-  // onChange 핸들러 (input 공용)
   const handleChange = (field) => (e) => {
     const value = e.target.value;
 
     setSearchForm((prev) => {
-      // 체크인 날짜가 바뀔 때 체크아웃보다 늦으면 체크아웃도 같이 맞춰주기
       if (field === "checkIn") {
         const updated = {
           ...prev,
           checkIn: value,
         };
-
-        // checkOut이 설정되어있고, 기존 checkOut이 새 checkIn보다 이전이면 덮어쓰기
         if (prev.checkOut && prev.checkOut < value) {
           updated.checkOut = value;
         }
         return updated;
       }
-
       return {
         ...prev,
         [field]: field === "guests" ? Number(value) : value,
@@ -118,11 +113,8 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     });
   };
 
-  /* pill 클릭 시 패널 열기/닫기 */
   const handleTogglePanel = () => {
     if (!criteria) return;
-
-    // 열 때 현재 criteria 기준으로 초기화
     if (!isPanelOpen) {
       setSearchForm({
         destination: criteria.destination,
@@ -131,26 +123,19 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
         guests: criteria.guests,
       });
     }
-
     setIsPanelOpen((prev) => !prev);
   };
 
-  // 검색 버튼 눌렀을 때
   const handleSearchClick = () => {
     if (!onSubmitSearch) return;
-
-    // (중요) 새로고침/상세 진입 대비: 검색 실행 시에도 localStorage 저장
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(searchForm));
     } catch {
-      // ignore
     }
-
     onSubmitSearch(searchForm);
     setIsPanelOpen(false);
   };
 
-  /** 로그인/회원가입 */
   const handleAuthClick = () => {
     navigate("/login-selection");
   };
@@ -166,7 +151,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
             </Link>
           </div>
 
-          {/* 가운데 pill — 검색/상세 페이지에서 표시 */}
+          {/* 가운데 검색바 */}
           <div
            className="flex justify-center items-center w-1/3"
            style={{ transform: "translate(-40px, 12px)" }}
@@ -190,28 +175,43 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
           {/* 오른쪽 메뉴 */}
           <div className="flex items-center gap-2 w-1/3 justify-end">
-            {!isLoggedIn && (
+            {!isLoggedIn ? (
+              // 비로그인 상태
               <button
                 onClick={handleAuthClick}
                 className="btn-primary-outline px-4 py-2 rounded-lg text-sm font-semibold"
               >
                 로그인/회원가입
               </button>
+            ) : (
+              // 로그인 상태
+              <div className="flex items-center gap-4 mr-2">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                  <User size={18} />
+                  {nickname}님
+                </span>
+                {/* 🌟 [수정] 위에서 만든 handleLogout 함수 연결 */}
+                <button 
+                  onClick={handleLogout} 
+                  className="text-sm text-gray-500 hover:text-red-600 underline"
+                >
+                  로그아웃
+                </button>
+              </div>
             )}
 
-            <button onClick={onOpenDrawer} className="p-1">
+            <button onClick={onOpenDrawer} className="p-1 text-gray-600 hover:text-gray-900">
               <Menu size={28} />
             </button>
           </div>
         </div>
       </nav>
 
-      {/* 검색 패널 — 검색/상세 페이지 + 열림일 때만 표시 */}
+      {/* 검색 패널 (기존 코드 유지) */}
       {isSearchLikePage && isPanelOpen && (
         <div className="border-t border-gray-200 bg-white shadow-sm">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
-              {/* 여행지 */}
               <div className="flex-1">
                 <label className="block text-xs text-gray-500 mb-1">여행지</label>
                 <input
@@ -223,7 +223,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                 />
               </div>
 
-              {/* 체크인/체크아웃 */}
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">체크인</label>
@@ -248,7 +247,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                 </div>
               </div>
 
-              {/* 인원 */}
               <div className="w-full md:w-40">
                 <label className="block text-xs text-gray-500 mb-1">인원</label>
                 <input
@@ -260,7 +258,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                 />
               </div>
 
-              {/* 검색 버튼 */}
               <div className="w-full md:w-auto">
                 <button
                   type="button"

@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { 
   createUser, 
+  createSocialUser, // ★ 추가됨: 소셜 회원가입 API
   checkEmailDuplication, 
   checkNicknameDuplication,
 } from '../../api/userAPI';
@@ -9,22 +10,40 @@ import BirthDatePicker from '../../components/BirthDataPicker';
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation(); // ★ 추가됨: 이전 페이지에서 넘겨준 state 받기 위함
   const { showModal } = useOutletContext();
-  const [email, setEmail] = useState('');
+
+  // 1. 전달받은 state 확인 (소셜 로그인 정보)
+  const state = location.state || {};
+  const { signupType, email: verifiedEmail, nickname: socialNickname } = state;
+  
+  // 2. 소셜 모드 여부 판단 ('SOCIAL' vs 'NORMAL')
+  const isSocialMode = signupType === 'SOCIAL';
+
+  // 3. State 초기화 (소셜 정보가 있으면 초기값으로 설정)
+  const [email, setEmail] = useState(verifiedEmail || '');
+  const [nickname, setNickname] = useState(socialNickname || '');
+  
+  // 소셜이면 이미 인증된 것으로 간주(true), 아니면 false
+  const [isEmailVerified, setIsEmailVerified] = useState(isSocialMode); 
+  
+  // 비밀번호 (소셜은 입력 안 받음)
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [nickname, setNickname] = useState('');
+  
   const [phone, setPhone] = useState('');
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
+  
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
   const [nicknameError, setNicknameError] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false); 
+  
   const [isNicknameVerified, setIsNicknameVerified] = useState(false);
 
+  // --- 유효성 검사 함수들 ---
   const validateEmail = (currentEmail) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!currentEmail.trim()) {
@@ -70,7 +89,7 @@ export default function SignupPage() {
   };
 
   const validateNickname = (currentNickname) => {
-    if (!currentNickname.trim()) {
+    if (!currentNickname || !currentNickname.trim()) {
       setNicknameError('닉네임을 입력해주세요.');
       setIsNicknameVerified(false);
       return false;
@@ -80,6 +99,9 @@ export default function SignupPage() {
   };
 
   const handleEmailCheck = async () => {
+    // 소셜 모드면 중복 확인 불필요 (이미 잠금 상태)
+    if (isSocialMode) return; 
+
     if (!validateEmail(email)) {
       setIsEmailVerified(false); 
       return;
@@ -94,7 +116,6 @@ export default function SignupPage() {
         setIsEmailVerified(false);
         showModal('이메일 중복 확인', '이미 사용 중인 이메일입니다.', () => {});
       } else {
-        // [수정] 중복이 아니면 인증번호 발송이나 페이지 이동 없이, 사용 가능 상태로 변경
         setEmailError(''); 
         setIsEmailVerified(true); 
         showModal('이메일 중복 확인', '사용 가능한 이메일입니다.', () => {});
@@ -105,8 +126,6 @@ export default function SignupPage() {
       showModal('오류', '이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.', () => {});
     }
   };
-
-  // ❌ handleVerifyCode 함수 제거
 
   const handleNicknameCheck = async () => {
     if (!validateNickname(nickname)) {
@@ -134,26 +153,32 @@ export default function SignupPage() {
   };
 
   const onEmailChange = (e) => {
+    // 소셜 모드면 입력 방지
+    if (isSocialMode) return; 
     setEmail(e.target.value);
     setIsEmailVerified(false);
     setEmailError('');
   };
+  
   const onPasswordChange = (e) => {
     setPassword(e.target.value);
     if (passwordError) setPasswordError('');
     if (passwordConfirm.length > 0) validatePasswordConfirm(passwordConfirm); 
   };
+  
   const onPasswordConfirmChange = (e) => {
     setPasswordConfirm(e.target.value);
     if (passwordConfirmError) setPasswordConfirmError('');
     validatePasswordConfirm(e.target.value);
   };
+  
   const onNicknameChange = (e) => {
     setNickname(e.target.value);
     setIsNicknameVerified(false);
     setNicknameError('');
   };
 
+  // ★ handleSubmit 로직 분기 처리
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -162,28 +187,30 @@ export default function SignupPage() {
     const validationErrors = {};
 
     const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
-    const isPasswordConfirmValid = validatePasswordConfirm(passwordConfirm);
+    // 소셜 모드면 비밀번호 검사 건너뜀
+    const isPasswordValid = isSocialMode ? true : validatePassword(password);
+    const isPasswordConfirmValid = isSocialMode ? true : validatePasswordConfirm(passwordConfirm);
     const isNicknameInputValid = validateNickname(nickname);
-
     
-    // 1. 이메일 유효성 및 중복 확인 완료 여부
+    // 1. 이메일 확인
     if (!isEmailValid) {
       isValid = false;
       validationErrors['이메일 주소'] = emailError || '필수 입력';
     } else if (!isEmailVerified) {
       isValid = false;
-      requiredChecks.push('이메일 중복 확인'); // 인증 대신 중복 확인 요구
+      requiredChecks.push('이메일 중복 확인'); 
     }
 
-    // 2. 비밀번호 확인
-    if (!isPasswordValid) {
-      isValid = false;
-      validationErrors['비밀번호'] = passwordError || '필수 입력';
-    }
-    if (!isPasswordConfirmValid) {
-      isValid = false;
-      validationErrors['비밀번호 확인'] = passwordConfirmError || '필수 입력';
+    // 2. 비밀번호 확인 (일반 가입일 때만)
+    if (!isSocialMode) {
+        if (!isPasswordValid) {
+            isValid = false;
+            validationErrors['비밀번호'] = passwordError || '필수 입력';
+        }
+        if (!isPasswordConfirmValid) {
+            isValid = false;
+            validationErrors['비밀번호 확인'] = passwordConfirmError || '필수 입력';
+        }
     }
 
     // 3. 닉네임 확인
@@ -200,6 +227,7 @@ export default function SignupPage() {
        requiredChecks.push('생년월일');
     }
 
+    // --- 에러 처리 블록 ---
     if (!isValid) {
       let alertMessage = '회원가입에 실패했습니다. 다음 항목들을 확인해주세요:\n\n';
 
@@ -224,9 +252,9 @@ export default function SignupPage() {
       return;
     }
 
-    const userData = {
+    // --- 데이터 전송 (분기 처리) ---
+    const commonData = {
       email,
-      passwordHash: password,
       nickname,
       phone: phone.trim() || null,
       birthDate:
@@ -238,30 +266,56 @@ export default function SignupPage() {
     };
 
     try {
-      const createdUser = await createUser(userData);
+      let createdUser;
+
+      if (isSocialMode) {
+        // [A] 소셜 가입 API 호출 (비밀번호 없음)
+        createdUser = await createSocialUser(commonData);
+      } else {
+        // [B] 일반 가입 API 호출 (비밀번호 포함)
+        createdUser = await createUser({
+            ...commonData,
+            passwordHash: password
+        });
+      }
+
       console.log('회원가입 성공:', createdUser);
       
-      showModal('회원가입 성공', '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.', () => {
-        navigate('/user/login');
+      // 토큰이 있다면 저장 (자동 로그인)
+      if (createdUser && createdUser.accessToken) {
+          localStorage.setItem('accessToken', createdUser.accessToken);
+      }
+
+      showModal('가입 성공', isSocialMode 
+          ? '소셜 계정 연동이 완료되었습니다.' 
+          : '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.', 
+      () => {
+        // 소셜 가입이면 메인으로, 일반 가입이면 로그인 페이지로 (선택 사항)
+        navigate(isSocialMode ? '/' : '/user/login');
       });
 
     } catch (err) {
       const errorMessage = err.response?.data?.message || '회원가입 중 알 수 없는 오류가 발생했습니다.';
       console.error('회원가입 API 오류:', err);
-      showModal('회원가입 실패', `회원가입 실패: ${errorMessage}`, () => {});
+      showModal('회원가입 실패', `가입 실패: ${errorMessage}`, () => {});
     }
   };
   
   const checkEmailFormat = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return email.trim() && emailRegex.test(email);
+    return email && email.trim() && emailRegex.test(email);
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-lg bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">회원가입</h2>
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">
+            {isSocialMode ? '추가 정보 입력' : '회원가입'}
+        </h2>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* 1. 이메일 (소셜일 경우 수정 불가) */}
           <div>
             <label htmlFor="email" className="form-label">이메일 (아이디)</label>
             <div className="flex space-x-2">
@@ -271,64 +325,79 @@ export default function SignupPage() {
                 value={email}
                 onChange={onEmailChange}
                 onBlur={() => validateEmail(email)}
-                className={`form-input flex-1 ${emailError ? 'border-red-500' : ''} ${isEmailVerified ? 'border-green-500' : ''}`}
+                // 소셜 모드거나 이미 인증된 경우 잠금
+                className={`form-input flex-1 
+                    ${emailError ? 'border-red-500' : ''} 
+                    ${isEmailVerified ? 'border-green-500' : ''}
+                    ${isSocialMode ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}
+                `}
                 placeholder="예: example@travel.com"
                 required
-                disabled={isEmailVerified} 
+                readOnly={isSocialMode} // 소셜이면 읽기 전용
+                disabled={isEmailVerified && !isSocialMode} 
               />
-              <button 
-                type="button" 
-                onClick={handleEmailCheck} 
-                className="w-28 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={!checkEmailFormat(email) || isEmailVerified}
-              >
-                {isEmailVerified ? "확인 완료" : "중복 확인"}
-              </button>
+              
+              {/* 소셜 모드면 '인증됨' 배지 표시, 아니면 중복확인 버튼 */}
+              {isSocialMode ? (
+                  <span className="w-28 flex items-center justify-center bg-green-100 text-green-700 font-bold rounded-lg text-sm border border-green-200">
+                    인증됨
+                  </span>
+              ) : (
+                  <button 
+                    type="button" 
+                    onClick={handleEmailCheck} 
+                    className="w-28 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" 
+                    disabled={!checkEmailFormat(email) || isEmailVerified}
+                  >
+                    {isEmailVerified ? "확인 완료" : "중복 확인"}
+                  </button>
+              )}
             </div>
-            {emailError && (
-              <p className="text-sm mt-1 text-red-500">
-                {emailError}
-              </p>
-            )}
-            {isEmailVerified && !emailError && (
-                <p className="text-sm mt-1 text-green-500">
-                  사용 가능한 이메일입니다.
-                </p>
+            
+            {emailError && <p className="text-sm mt-1 text-red-500">{emailError}</p>}
+            
+            {/* 일반 가입에서 인증 완료 메시지 */}
+            {!isSocialMode && isEmailVerified && !emailError && (
+                <p className="text-sm mt-1 text-green-500">사용 가능한 이메일입니다.</p>
             )}
           </div>
 
-          {/* ❌ 인증번호 입력 필드 제거 */}
+          {/* 2. 비밀번호 (일반 가입일 때만 표시) */}
+          {!isSocialMode && (
+            <>
+              <div>
+                <label htmlFor="password" className="form-label">비밀번호</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={onPasswordChange}
+                  onBlur={() => validatePassword(password)}
+                  className={`form-input ${passwordError ? 'border-red-500' : ''}`}
+                  placeholder="영문, 숫자, 특수기호 포함 8~20자"
+                  required
+                />
+                {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+              </div>
 
-          <div>
-            <label htmlFor="password" className="form-label">비밀번호</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={onPasswordChange}
-              onBlur={() => validatePassword(password)}
-              className={`form-input ${passwordError ? 'border-red-500' : ''}`}
-              placeholder="영문, 숫자, 특수기호 포함 8~20자"
-              required
-            />
-            {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
-          </div>
+              <div>
+                <label htmlFor="passwordConfirm" className="form-label">비밀번호 확인</label>
+                <input
+                  id="passwordConfirm"
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={onPasswordConfirmChange}
+                  onBlur={() => validatePasswordConfirm(passwordConfirm)}
+                  className={`form-input ${passwordConfirmError ? 'border-red-500' : ''}`}
+                  placeholder="비밀번호를 다시 입력하세요"
+                  required
+                />
+                {passwordConfirmError && <p className="text-red-500 text-sm mt-1">{passwordConfirmError}</p>}
+              </div>
+            </>
+          )}
 
-          <div>
-            <label htmlFor="passwordConfirm" className="form-label">비밀번호 확인</label>
-            <input
-              id="passwordConfirm"
-              type="password"
-              value={passwordConfirm}
-              onChange={onPasswordConfirmChange}
-              onBlur={() => validatePasswordConfirm(passwordConfirm)}
-              className={`form-input ${passwordConfirmError ? 'border-red-500' : ''}`}
-              placeholder="비밀번호를 다시 입력하세요"
-              required
-            />
-            {passwordConfirmError && <p className="text-red-500 text-sm mt-1">{passwordConfirmError}</p>}
-          </div>
-
+          {/* 3. 닉네임 */}
           <div className="mb-4">
             <label htmlFor="nickname" className="form-label">닉네임</label>
             <div className="flex space-x-2">
@@ -347,7 +416,7 @@ export default function SignupPage() {
                 type="button" 
                 onClick={handleNicknameCheck} 
                 className="w-28 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={!nickname.trim() || isNicknameVerified}
+                disabled={!nickname || !nickname.trim() || isNicknameVerified}
               >
                 {isNicknameVerified ? "확인 완료" : "중복 확인"}
               </button>
@@ -363,6 +432,8 @@ export default function SignupPage() {
                 </p>
             )}
           </div>
+          
+          {/* 4. 전화번호 */}
           <div>
             <label htmlFor="phone" className="form-label">전화번호 (선택)</label>
             <input
@@ -374,6 +445,8 @@ export default function SignupPage() {
               placeholder="예: 010-1234-5678"
             />
           </div>
+          
+          {/* 5. 생년월일 */}
           <div>
             <label className="form-label">생년월일 (선택)</label>
             <BirthDatePicker
@@ -386,7 +459,9 @@ export default function SignupPage() {
             />
           </div>
 
-          <button type="submit" className="btn-primary w-full">회원가입</button>
+          <button type="submit" className="btn-primary w-full">
+            {isSocialMode ? '가입 완료' : '회원가입'}
+          </button>
         </form>
 
         <div className="mt-6 text-center">

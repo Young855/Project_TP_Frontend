@@ -1,45 +1,55 @@
+// src/pages/LoginPage.jsx
 import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Mail, Key} from 'lucide-react';
+import { Mail, Key } from 'lucide-react';
+// 🌟 [추가] API 함수 임포트 (경로 확인해주세요)
+import { loginUser } from '../../api/userAPI'; 
 
 const LoginPage = () => {
-  const { onLogin, showModal } = useOutletContext();
+  const { onLogin } = useOutletContext(); // App.js에서 내려준 로그인 상태 변경 함수
   const navigate = useNavigate();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!email || !password) {
-      alert('이메일과 비밀번호를 입력해주세요.');
+      setError('이메일과 비밀번호를 모두 입력해주세요.');
       return;
     }
-    console.log('일반 로그인 시도 (이메일:', email, ') - 기능 구현 예정');
-    showModal('로그인 준비', '일반 로그인 기능은 백엔드 Security 설정 후 구현될 예정입니다.', null);
+
+    try {
+      // 1. 백엔드로 로그인 요청
+      const data = await loginUser(email, password);
+      // 백엔드에서 { accessToken, nickname, email } 을 보내줍니다.
+      // 2. 받은 정보 로컬 스토리지에 저장
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('nickname', data.nickname || '여행자');
+      localStorage.setItem('email', data.email || '');
+
+      // 3. (선택) 앱 전역 상태 업데이트 (App.js의 isLoggedIn 갱신용)
+      if (onLogin) onLogin();
+
+      alert(`${data.nickname}님 환영합니다!`);
+
+      // 4. 메인으로 이동 (헤더 갱신을 위해 새로고침 이동 권장)
+      window.location.href = "/"; 
+
+    } catch (err) {
+      console.error("로그인 실패:", err);
+      // 백엔드 에러 메시지 표시 or 기본 메시지
+      setError('이메일 또는 비밀번호가 일치하지 않습니다.');
+    }
   };
-  const handleApiLogin = (provider) => {
-    console.log(`${provider} API 로그인 시도 - 기능 구현 예정`);
-    showModal('API 로그인 준비', `${provider}를 이용한 소셜 로그인 기능은 Security 설정 후 구현될 예정입니다.`, null);
-  };
-  const SocialLoginButton = ({ provider, bgColor, textColor, icon, onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center justify-center w-full py-3 px-4 rounded-xl font-semibold text-lg transition duration-200 border ${bgColor} ${textColor} hover:opacity-90 shadow-md`}
-      aria-label={`${provider}로 로그인`}
-    >
-      {icon}
-      <span className="ml-3">{provider} 로그인</span>
-    </button>
-  );
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">로그인</h2>
-
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
@@ -53,7 +63,7 @@ const LoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
-              className="form-input transition duration-200"
+              className="form-input transition duration-200 w-full p-2 border rounded-md"
               autoComplete="email"
               required
             />
@@ -68,22 +78,26 @@ const LoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
-              className="form-input transition duration-200"
+              className="form-input transition duration-200 w-full p-2 border rounded-md"
               autoComplete="current-password"
               required
             />
           </div>
+          
+          {/* 에러 메시지 영역 */}
           {error && (
             <div className="text-sm text-red-600 p-3 bg-red-50 border border-red-200 rounded-lg">
               {error}
             </div>
           )}
+
           <div>
-            <button type="submit" className="btn-primary w-full text-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200">
+            <button type="submit" className="btn-primary w-full py-3 text-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200 rounded-xl bg-blue-600 text-white font-bold">
               로그인
             </button>
           </div>
         </form>
+
         <div className="text-sm text-center text-gray-600 mt-8 flex justify-center space-x-6">
           <button 
             onClick={() => navigate('/find-password')} 
@@ -100,8 +114,6 @@ const LoginPage = () => {
           </button>
         </div>
       </div>
-
-      
     </div>
   );
 };

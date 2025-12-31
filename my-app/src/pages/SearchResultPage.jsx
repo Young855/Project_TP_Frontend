@@ -4,7 +4,8 @@ import { useUrlUser } from "../hooks/useUrlUser";
 
 // Hooks
 import { useAccommodationFilter } from "../hooks/useAccommodationFilter";
-import { useIntersectionObserver } from "../hooks/useIntersectionObserver"; 
+import { useIntersectionObserver } from "../hooks/useIntersectionObserver";
+import { useAccommodationPrices } from "../hooks/useAccommodationPrices"; // 🌟 새로 만든 Hook 임포트
 
 // Components
 import SearchFilterSidebar from "../components/common/searches/SearchFilterSidebar";
@@ -13,7 +14,6 @@ import AccommodationCard from "../components/common/searches/AccommodationCard";
 // Constants & API
 import { SORT_OPTIONS } from "../constants/SearchOption";
 import { ACCOMMODATION_PHOTO_ENDPOINTS } from "../config"; 
-import { calculateTotalPrices } from "../api/accommodationPriceAPI";
 import { getFavoriteIdMap, addFavorite, removeFavorite } from "../api/favoriteAPI"; 
 import { searchAccommodationsWithMainPhoto } from "../api/accommodationAPI"; 
 
@@ -41,10 +41,8 @@ export default function SearchResultPage() {
   const [isLast, setIsLast] = useState(false); 
   const [totalCount, setTotalCount] = useState(0);
 
-  // 3. 부가 정보 상태 관리
-  const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
+  // 3. 부가 정보 상태 관리 (찜)
   const [favoriteMap, setFavoriteMap] = useState({});
-
 
   // -----------------------------------------------------------
   // [Logic B] 데이터 페칭 (검색)
@@ -85,7 +83,7 @@ export default function SearchResultPage() {
 
     fetchAccommodations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // 🌟 의존성에서 criteria 제거 (최초 로딩 및 페이지 변경 때만 실행)
+  }, [page]); 
 
   // -----------------------------------------------------------
   // [Logic C] 필터링 Hook
@@ -108,29 +106,8 @@ export default function SearchResultPage() {
   // [Logic D] 가격 및 찜 로딩
   // -----------------------------------------------------------
   
-  // D-1. 가격 계산
-  useEffect(() => {
-    if (!criteria.checkIn || !criteria.checkOut || displayResults.length === 0) return;
-
-    // 이미 계산된 ID는 제외하고 새로 필요한 것만 요청 (API 호출 최적화)
-    const idsToCalculate = displayResults
-        .map(p => Number(p.accommodationId))
-        .filter(id => calculatedPriceMap[id] === undefined);
-
-    if (idsToCalculate.length === 0) return;
-
-    calculateTotalPrices(idsToCalculate, criteria.checkIn, criteria.checkOut)
-      .then((priceList) => {
-        setCalculatedPriceMap((prev) => {
-            const newMap = { ...prev };
-            priceList.forEach((item) => {
-                if (item.available) newMap[item.accommodationId] = item.totalPrice;
-            });
-            return newMap;
-        });
-      })
-      .catch((err) => console.error("가격 계산 실패:", err));
-  }, [displayResults, criteria.checkIn, criteria.checkOut]); // calculatedPriceMap 의존성 제거
+  // 🌟 [수정] 커스텀 Hook을 사용하여 가격 계산 로직을 한 줄로 처리
+  const calculatedPriceMap = useAccommodationPrices(displayResults, criteria.checkIn, criteria.checkOut);
 
   // D-2. 찜 목록 로딩
   useEffect(() => {
@@ -159,6 +136,7 @@ export default function SearchResultPage() {
     navigate(`/accommodation/${accommodationId}${qs ? `?${qs}` : ""}`);
   };
 
+  // 🌟 찜 토글 핸들러 (Alert 기능 포함)
   const handleToggleFavorite = async (e, accommodationId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -166,14 +144,27 @@ export default function SearchResultPage() {
       alert("로그인이 필요합니다.");
       return;
     }
-    const isFav = !!favoriteMap[accommodationId];
+
+    const isFav = !!favoriteMap[accommodationId]; // 누르기 전 상태
+
+    // 1. UI 낙관적 업데이트
     setFavoriteMap((prev) => ({ ...prev, [accommodationId]: !isFav }));
 
+    // 2. Alert 띄우기
+    if (isFav) {
+        alert("찜이 해제되었습니다.");
+    } else {
+        alert("찜을 추가했습니다.");
+    }
+
+    // 3. 서버 요청
     try {
       if (isFav) await removeFavorite(userId, accommodationId);
       else await addFavorite(userId, accommodationId);
     } catch (error) {
+      // 실패 시 롤백 및 에러 알림
       setFavoriteMap((prev) => ({ ...prev, [accommodationId]: isFav }));
+      alert("오류가 발생하여 찜 상태를 변경하지 못했습니다.");
     }
   };
 
@@ -184,6 +175,8 @@ export default function SearchResultPage() {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto flex gap-6">
+        
+        {/* 사이드바 */}
         <SearchFilterSidebar
           excludeSoldOut={excludeSoldOut} setExcludeSoldOut={setExcludeSoldOut}
           selectedType={selectedType} setSelectedType={setSelectedType}
@@ -195,6 +188,7 @@ export default function SearchResultPage() {
           toggleInSet={toggleInSet} resetFilters={resetFilters}
         />
 
+        {/* 메인 리스트 영역 */}
         <section className="flex-1">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold">{titleText}</h1>
@@ -224,8 +218,15 @@ export default function SearchResultPage() {
               {displayResults.map((p) => {
                 const accId = Number(p.accommodationId);
                 const calculatedTotalPrice = calculatedPriceMap[accId];
-                const displayPrice = (calculatedTotalPrice === 0) ? "예약 마감" : calculatedTotalPrice;
+                
+                // 🌟 가격이 0원(예약불가)일 때 메시지 처리
+                const displayPrice = (calculatedTotalPrice === 0) 
+                    ? "예약 가능한 방이 없습니다" 
+                    : calculatedTotalPrice;
+
                 const isFavorite = !!favoriteMap[accId];
+                
+                // 메인 사진 URL 생성 (Blob API 활용)
                 const photoUrl = p.mainPhotoId
                   ? ACCOMMODATION_PHOTO_ENDPOINTS.PHOTOS.GET_BLOB_DATA(p.mainPhotoId)
                   : "/assets/default_hotel.png";
@@ -247,6 +248,7 @@ export default function SearchResultPage() {
             </div>
           )}
 
+          {/* 무한 스크롤 옵저버 타겟 */}
           {!isLast && (
             <div ref={observerRef} className="h-20 flex justify-center items-center mt-4">
               {isLoading && <span className="text-gray-500">숙소를 불러오는 중...</span>}

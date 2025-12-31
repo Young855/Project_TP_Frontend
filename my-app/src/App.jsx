@@ -34,6 +34,7 @@ import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
 import AdminRouter from './routers/AdminRouter';
+import KakaoCallback from './pages/auth/KakaoCallback';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -227,7 +228,9 @@ const router = createBrowserRouter([
     path: '/',
     element: <UserLayout />,
     children: [
+      
       { index: true, element: <MainPageWithSearch /> },
+      { path:"/oauth/callback/kakao", element:<KakaoCallback />},
       { path: 'login-selection', element: <LoginSelectionPage /> },
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },

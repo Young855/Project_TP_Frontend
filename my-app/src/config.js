@@ -4,7 +4,8 @@ export const USER_ENDPOINTS = {
     USERS: {
         LIST: `${API_BASE_URL}/user`, 
         ADD : `${API_BASE_URL}/user/signup`, 
-        LOGIN : `${API_BASE_URL}/user/login`, 
+        LOGIN : `${API_BASE_URL}/api/auth/login`,
+        SOCIAL_ADD: `${API_BASE_URL}/user/social-signup`,
         CHECK_EMAIL : `${API_BASE_URL}/user/check-email`, 
         CHECK_NICKNAME : `${API_BASE_URL}/user/check-nickname`,
         SEND_VERIFICATION: `${API_BASE_URL}/user/send-verification`,

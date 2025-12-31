@@ -58,6 +58,7 @@ export const verifyEmailCode = async (email, code) => {
 export const loginUser = async (email, password) => {
   try {
     const response = await api.post(USER_ENDPOINTS.USERS.LOGIN, { email, password });
+    console.log("데이터: "+response.data.email);
     return response.data;
   } catch (error) {
     console.error("로그인 오류:", error);
@@ -85,12 +86,24 @@ export const getUser = async (id) => {
   }
 };
 
+// 회원가입
 export const createUser = async (userData) => {
   try {
     const response = await api.post(USER_ENDPOINTS.USERS.ADD, userData);
-    return response.data;
+    return response.data; 
   } catch (error) {
     console.error("유저 생성 오류:", error);
+    throw error;
+  }
+};
+
+// 소셜 회원가입
+export const createSocialUser = async (userData) => {
+  try {
+    const response = await api.post(USER_ENDPOINTS.USERS.SOCIAL_ADD, userData);
+    return response.data; 
+  } catch (error) {
+    console.error("소셜 유저 생성 오류:", error);
     throw error;
   }
 };

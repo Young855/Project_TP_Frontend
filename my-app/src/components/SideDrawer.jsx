@@ -1,46 +1,61 @@
-// SideDrawer.jsx
-
 import React from 'react';
-import { X, LogOut, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { X, LogOut, User, Calendar, MessageSquare, BookOpen, Heart } from 'lucide-react'; // 아이콘 추가
+import { Link, useNavigate } from 'react-router-dom'; // useNavigate 추가
 
-/**
- * 사이드 드로어 컴포넌트
- * @param {object} props
- * @param {boolean} props.isOpen - 드로어 열림 상태
- * @param {function} props.onClose - 드로어를 닫는 함수
- * @param {boolean} props.isLoggedIn - 로그인 여부
- * @param {function} props.onLogout - 로그아웃 처리 함수
- */
-const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
+const SideDrawer = ({ isOpen, onClose }) => {
+  const navigate = useNavigate(); // 페이지 이동을 위해 훅 사용
+
+  // 1. 로그인 상태 확인
+  const token = localStorage.getItem("accessToken");
+  const isLoggedIn = !!token;
+  const nickname = localStorage.getItem("nickname") || "여행자";
+
+  // 2. 로그아웃 처리
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("nickname");
+    localStorage.removeItem("email");
+    
+    alert("로그아웃 되었습니다.");
+    window.location.href = "/"; 
+  };
+
+  // 3. 🌟 [핵심] 로그인이 필요한 메뉴 클릭 시 처리 함수
+  const handleProtectedMove = (path) => {
+    if (!isLoggedIn) {
+      // 비로그인 상태면 알림 띄우고 로그인 페이지로 이동
+      alert("로그인이 필요한 서비스입니다.");
+      onClose(); // 드로어 닫기
+      navigate("/login-selection");
+    } else {
+      // 로그인 상태면 해당 페이지로 이동
+      onClose(); // 드로어 닫기
+      navigate(path);
+    }
+  };
 
   const handleLinkClick = () => {
-    // 링크 클릭 시 드로어 닫기
     onClose(); 
   };
   
-  // 드로어 열림 상태에 따라 CSS 클래스 결정
   const drawerClasses = `fixed top-0 right-0 h-full w-64 bg-white shadow-xl z-50 
     transform transition-transform duration-300 ease-in-out
     ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
   
-  // 오버레이 클릭 시 닫기
   const handleOverlayClick = () => {
     onClose();
   };
 
   const NavItem = ({ to, children, icon: Icon = null, onClick = null, isAuth = false }) => {
-    
-    // Auth 버튼(로그인/로그아웃/마이페이지)은 별도 스타일 적용
     const itemClass = isAuth 
-      ? "flex items-center text-white bg-blue-600 hover:bg-blue-700 font-semibold p-3 rounded-lg w-full text-base"
-      : "block p-3 text-gray-700 hover:bg-gray-100 rounded-md text-base";
+      ? "flex items-center text-white bg-blue-600 hover:bg-blue-700 font-semibold p-3 rounded-lg w-full text-base justify-center"
+      : "flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md text-base w-full text-left";
       
-    // onClick이 있으면 Link 대신 버튼 사용 (주로 로그아웃)
+    // onClick이 있으면(로그아웃, 보호된 메뉴 등) 버튼으로 렌더링
     if (onClick) {
       return (
         <button
-          onClick={() => { onClick(); handleLinkClick(); }}
+          onClick={onClick}
           className={itemClass}
         >
           {Icon && <Icon size={20} className="mr-3" />}
@@ -49,6 +64,7 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
       );
     }
 
+    // 일반 링크
     return (
       <Link 
         to={to} 
@@ -63,7 +79,6 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
   
   return (
     <>
-      {/* 오버레이 (드로어가 열렸을 때 뒷배경을 어둡게 만듭니다) */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black opacity-50 z-40" 
@@ -71,9 +86,8 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
         ></div>
       )}
 
-      {/* 사이드 드로어 본체 */}
       <div className={drawerClasses}>
-        <div className="p-4">
+        <div className="p-4 flex flex-col h-full">
           
           {/* 닫기 버튼 */}
           <div className="flex justify-end mb-4">
@@ -82,35 +96,61 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
             </button>
           </div>
           
-          {/* 로그인 상태에 따른 상단 버튼 */}
+          {/* 환영 문구 */}
+          {isLoggedIn && (
+            <div className="mb-6 px-2">
+              <p className="text-lg font-bold text-gray-800">환영합니다!</p>
+              <p className="text-blue-600 font-semibold text-xl">{nickname}님</p>
+            </div>
+          )}
+          
+          {/* 상단 인증 메뉴 (로그인/로그아웃/마이페이지) */}
           <div className="pb-4 border-b space-y-2">
             {isLoggedIn ? (
-              // 로그인 상태: 마이페이지 및 로그아웃
               <>
-                <NavItem to="/user/mypage" icon={User} isAuth={true}>마이페이지</NavItem>
-                {/* 로그아웃은 onLogout 함수를 사용하므로 버튼으로 처리 */}
-                <NavItem to="/" onClick={onLogout} icon={LogOut} isAuth={true}>로그아웃</NavItem>
+                <NavItem to="/user/mypage" icon={User} isAuth={true}>
+                  마이페이지
+                </NavItem>
+                <NavItem onClick={handleLogout} icon={LogOut} isAuth={true}>
+                  로그아웃
+                </NavItem>
               </>
             ) : (
-              // 비로그인 상태: 로그인/회원가입
-              <NavItem to="/loginSelection" icon={User} isAuth={true}>
+              <NavItem to="/login-selection" icon={User} isAuth={true}>
                 로그인/회원가입
               </NavItem>
             )}
-            
-           
-            
           </div>
           
-          {/* 일반 네비게이션 링크 (스크린샷 기반) */}
+          {/* 🌟 하단 메뉴: 클릭 시 handleProtectedMove 실행 */}
           <div className="mt-4 space-y-1">
-            <NavItem to="/itinerary">내 일정</NavItem>
-            <NavItem to="/community">커뮤니티</NavItem>
-            <NavItem to="/bookings">예약 내역</NavItem>
-            <NavItem to="/favorites">찜 목록</NavItem>
-          <div className="border-t my-2"></div> {/* 구분선 */}
-            
-            
+            <NavItem 
+              onClick={() => handleProtectedMove("/itinerary")} 
+              icon={Calendar}
+            >
+              내 일정
+            </NavItem>
+
+            <NavItem 
+              onClick={() => handleProtectedMove("/bookings")} 
+              icon={BookOpen}
+            >
+              예약 내역
+            </NavItem>
+
+            <NavItem 
+              onClick={() => handleProtectedMove("/favorites")} 
+              icon={Heart}
+            >
+              찜 목록
+            </NavItem>
+
+            <NavItem 
+              to="/community" // 커뮤니티는 보통 구경은 가능하므로 Link 유지 (필요 시 Protected로 변경 가능)
+              icon={MessageSquare}
+            >
+              커뮤니티
+            </NavItem>
           </div>
           
         </div>

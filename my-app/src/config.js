@@ -36,7 +36,9 @@ export const BOOKING_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/bookings/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/bookings/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/bookings/${id}`, 
-        GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`, 
+        GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`,
+        UPDATE_BOOKER: (id) => `${API_BASE_URL}/bookings/${id}/booker`,
+        CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,
     },
 }
 

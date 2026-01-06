@@ -1,87 +1,74 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { cancelBooking, getAllBookings } from "../../api/bookingAPI";
+import React, { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { getAllBookings, getBookingByUserId } from "../../api/bookingAPI";
 
-let allListErrorShown = false;
+function money(v) {
+  return Number(v || 0).toLocaleString();
+}
 
 export default function BookingList() {
-  const [rows, setRows] = useState([]);
+  const [params] = useSearchParams();
+  const userId = params.get("userId"); // /bookings?userId=1
+
+  const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      // createdAt 기준 내림차순 정렬이라고 가정
-      const res = await getAllBookings({ sort: "createdAt,desc" });
-      setRows(res?.content ?? res ?? []);
-
-    } catch (err) {
-      if (!!allListErrorShown) {
-        alert(err.message || "예약 목록을 불러오는 중 오류가 발생했습니다.");
-        setErrorShown(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    load();
-  }, []);
+    let mounted = true;
 
-  const onCancel = async (id) => {
-    if (!window.confirm("이 예약을 취소하겠습니까?")) return;
+    (async () => {
+      setLoading(true);
+      setErr("");
 
-    try {
-      await cancelBooking(id, "사용자 요청");
-      await load();
-    } catch (err) {
-      alert(err.message || "예약 취소 중 오류가 발생했습니다.");
-    }
-  };
+      try {
+        const res = userId ? await getBookingByUserId(userId) : await getAllBookings();
+        if (!mounted) return;
 
-  if (loading) {
-    return <p>예약 목록을 불러오는 중...</p>;
-  }
+        const arr = Array.isArray(res) ? res : (res?.content || res?.items || []);
+        setList(arr);
+      } catch (e) {
+        if (!mounted) return;
+        setErr(e?.response?.data?.message || e?.message || "목록 조회 실패");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
 
-  if (!loading && rows.length === 0) {
-    return <p>예약 내역이 없습니다.</p>;
-  }
+    return () => {
+      mounted = false;
+    };
+  }, [userId]);
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>숙소</th>
-          <th>체크인 - 체크아웃</th>
-          <th>상태</th>
-          <th>액션</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((b) => (
-          <tr key={b.id}>
-            <td>#{b.id}</td>
-            <td>
-              {/* 라우트는 /bookings/... 로 수정 */}
-              <Link to={`/bookings/${b.id}`}>
-                {b.propertyName ?? b.propertyId}
-              </Link>
-            </td>
-            <td>
-              {/* 필드명은 너 백엔드 DTO에 맞게 바꿔 */}
-              {b.checkIn ?? b.checkInDate ?? b.checkinDate} ~{" "}
-              {b.checkOut ?? b.checkOutDate ?? b.checkoutDate}
-            </td>
-            <td>{b.status}</td>
-            <td>
-              <Link to={`/bookings/${b.id}/edit`}>수정</Link>{" "}
-              <button onClick={() => onCancel(b.id)}>취소</button>
-            </td>
-          </tr>
+    <div className="max-w-3xl mx-auto p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">예약 목록</h1>
+        <Link to="/bookings/new" className="text-sm underline">
+          예약 생성
+        </Link>
+      </div>
+
+      {loading ? <div>로딩중...</div> : null}
+      {err ? <div className="rounded border p-3 text-sm">{err}</div> : null}
+
+      <div className="divide-y border rounded">
+        {list.map((b) => (
+          <Link
+            key={b?.bookingId ?? b?.id}
+            to={`/bookings/${b?.bookingId ?? b?.id}`}
+            className="block p-3 hover:bg-gray-50"
+          >
+            <div className="flex justify-between">
+              <div className="font-medium">예약 #{b?.bookingId ?? b?.id}</div>
+              <div className="text-sm">{money(b?.totalPrice)}원</div>
+            </div>
+            <div className="text-xs mt-1">
+              {b?.checkinDate} ~ {b?.checkoutDate}
+            </div>
+          </Link>
         ))}
-      </tbody>
-    </table>
+      </div>
+    </div>
   );
 }

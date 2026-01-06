@@ -1,4 +1,3 @@
-// src/pages/accommodation/AccommodationRoomDetail.jsx
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -49,17 +48,8 @@ export default function AccommodationRoomDetail({ userId }) {
 
   // ✅ 객실 대표사진(roomId -> url) / 객실 가격(roomId -> price)
   const roomPhotoUrlMap = useRoomMainPhoto(rooms);
-  const roomPriceMap = useRoomPrice({ rooms, checkIn, checkOut });
-
-  // (선택) 객실 데이터 확인용 디버깅
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("숙소 id:", id);
-    // eslint-disable-next-line no-console
-    console.log("rooms:", rooms);
-    // eslint-disable-next-line no-console
-    console.log("rooms length:", rooms?.length);
-  }, [id, rooms]);
+  const { roomPriceMap, loading: priceLoading } =
+    useRoomPrice({ rooms, checkIn, checkOut });
 
   const { images, topImages } = useAccommodationPhoto(id);
 
@@ -186,15 +176,24 @@ export default function AccommodationRoomDetail({ userId }) {
 
   // 객실 선택
   const handleSelectRoom = (room) => {
+    // 비로그인 처리 :alert만
+    if (!userId || Number(userId) <= 0) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
     const roomId = room?.roomId ?? room?.id;
     navigate(
-      `/booking?accommodationId=${numericAccommodationId}&roomId=${roomId}&checkIn=${encodeURIComponent(
-        checkIn
-      )}&checkOut=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(
-        guests
-      )}`
-    );
-  };
+      `/bookings/new?userId=${encodeURIComponent}(
+        userId
+    )}&roomId=${encodeURIComponent(
+      roomId
+    )}&checkinDate=${encodeURIComponent(
+      checkinDate
+    )}&checkoutDate=${encodeURIComponent(
+      checkout
+    )}&guests=${encodeURIComponent(guests)} `
+  );
+};
 
   return (
     <div className="min-h-screen bg-white">
@@ -250,6 +249,7 @@ export default function AccommodationRoomDetail({ userId }) {
           checkOut={checkOut}
           roomPhotoUrlMap={roomPhotoUrlMap}
           roomPriceMap={roomPriceMap}
+          priceLoading={priceLoading}
           onClickSelectRoom={handleSelectRoom}
         />
 

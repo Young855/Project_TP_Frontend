@@ -1,8 +1,4 @@
-// src/hooks/accommodation/detail/useRoomPrice.js
 // 객실 목록(rooms) + 체크인/체크아웃을 받아서 roomId -> 가격/예약가능 맵을 만든다.
-// ✅ RoomSection.jsx에서 기대하는 형태
-//   roomPriceMap[roomId] = { displayPrice, isBookable, reason }
-// ✅ 가격은 DailyRoomPolicy API(dailyRoomPolicyAPI.js)에서 불러온다.
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -16,6 +12,7 @@ import {
  */
 export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" } = {}) {
   const [roomPriceMap, setRoomPriceMap] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const hasDates = Boolean(checkIn) && Boolean(checkOut);
 
@@ -48,16 +45,19 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
     // 날짜 없으면: RoomSection에서 안내 문구를 띄우므로 맵은 비움
     if (!hasDates || nightsRequired === 0) {
       setRoomPriceMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setLoading(false);
       return;
     }
 
     const list = Array.isArray(rooms) ? rooms : [];
     if (list.length === 0) {
       setRoomPriceMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setLoading(false);
       return;
     }
 
     let alive = true;
+    setLoading(true); // 로딩 시작
 
     const getRoomId = (r) => r?.roomId ?? r?.id ?? null;
 
@@ -65,6 +65,7 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
       displayPrice: displayPrice ?? null,
       isBookable: Boolean(isBookable),
       reason: reason ?? "",
+
     });
 
     (async () => {
@@ -92,10 +93,24 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
               ];
             }
 
-            const evaluated = evaluatePoliciesForStay(policies, {
-              mode: "MIN_PER_NIGHT",
-              nightsRequired,
-            });
+            // ✅ [추가] 백엔드가 remainingStock 대신 stock(남은재고)을 주므로 키 정규화
+            const normalizedPolicies = policies.map((p) => ({
+              ...p,
+              remainingStock: p?.remainingStock ?? p?.stock, // stock이 남은 재고라면 이게 정답
+            }));
+
+
+            if (!Array.isArray(policies) || policies.length === 0) {
+              return [
+                String(roomId),
+                toInfo(null, false, "해당 기간의 가격 정책이 없습니다."),
+              ];
+            }
+            
+              const evaluated = evaluatePoliciesForStay(normalizedPolicies, {
+                mode: "MIN_PER_NIGHT",
+                nightsRequired,
+              });
 
             // 숙박일수만큼 정책이 없으면 -> 정책 누락
             if ((evaluated?.nights ?? 0) !== nightsRequired) {
@@ -108,22 +123,16 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
                 ),
               ];
             }
-
-            if (evaluated?.isBookable !== true) {
+              // ✅ 예약 가능한 경우
               return [
-                String(roomId),
-                toInfo(
-                  evaluated?.displayPrice ?? null,
-                  false,
-                  "해당 기간에 예약할 수 없습니다."
-                ),
-              ];
-            }
-
-            return [
               String(roomId),
-              toInfo(evaluated?.displayPrice ?? null, true, ""),
-            ];
+              toInfo(
+              evaluated?.displayPrice ?? null,
+              true,
+              ""
+              ),
+              ];
+              
           } catch (e) {
             return [String(roomId), toInfo(null, false, "다른 날짜 확인")];
           }
@@ -140,6 +149,7 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
       setRoomPriceMap((prev) =>
         JSON.stringify(prev) === JSON.stringify(next) ? prev : next
       );
+      setLoading(false); // 로딩 종료
     })();
 
     return () => {
@@ -147,5 +157,5 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
     };
   }, [roomIdsKey, checkIn, endDateForPolicy, hasDates, nightsRequired, rooms]);
 
-  return roomPriceMap;
+  return { roomPriceMap, loading };
 }

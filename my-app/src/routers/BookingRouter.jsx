@@ -1,9 +1,6 @@
-import { Children } from "react";
-import BookingList from "../booking/BookingList";
-import BookingCreate from "../booking/BookingCreate";
-import BookingDetail from "../booking/BookongDetail";
-import BookingEdit from "../booking/BookingEdit";
-
+import BookingList from "../pages/booking/BookingList";
+import BookingCreate from "../pages/booking/BookingCreate";
+import BookingDetail from "../pages/booking/BookingDetail";
 const BookingRouter = [
   {
     path: "boards",
@@ -13,17 +10,17 @@ const BookingRouter = [
         element: <BookingList />
       },
       {
-        path: "create",
+        path: "new",
         element: <BookingCreate />
       },
       {
         path: ":id",
         element: <BookingDetail />
       },
-      {
-        path: ":id/edit",
-        element: <BookingEdit />
-      }
+      // {
+      //   path: ":id/edit",
+      //   element: <BookingPage />
+      // }
     ]
   },
 ];

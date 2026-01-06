@@ -1,15 +1,17 @@
+// src/hooks/accommodation/detail/useAccommodationDetail.js
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
+import {
+  getAccommodation,
+  getAccommodationWithAllPhotos,
+} from "@/api/accommodationAPI";
 
 /**
  * 숙소 상세(기본정보) 로드
- * - (1) /partner/accommodations/{id}/with-all-photos 먼저 시도
- * - (2) 실패 시 /partner/accommodations/{id} 로 fallback
+ * - (1) /accommodations/{id}/with-all-photos 먼저 시도
+ * - (2) 실패 시 /accommodations/{id} 로 fallback
  *
- * ✅ 핵심 수정
- * - loading 초기값 true (처음 렌더에서 '오류 UI' 뜨는 것 방지)
+ * ✅ 유지
+ * - loading 초기값 true
  * - abort된 요청은 error로 처리하지 않음
  * - unmount 후 setState 방지
  */
@@ -19,7 +21,6 @@ export default function useAccommodationDetail(accommodationId) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // id 없으면 상태 정리
     if (!accommodationId) {
       setAccommodation(null);
       setError(null);
@@ -35,21 +36,27 @@ export default function useAccommodationDetail(accommodationId) {
 
     (async () => {
       try {
-        const res = await axios.get(
-          `${API_BASE}/partner/accommodations/${accommodationId}/with-all-photos`,
-          { signal: controller.signal }
-        );
-        const next = res.data?.data ?? res.data ?? null;
+        const res = await getAccommodationWithAllPhotos(accommodationId, {
+          signal: controller.signal,
+        });
+
+        console.log("detail raw (with-all-photos):", res);
+
+        const payload = res?.data ?? res;
+        const next = payload?.data ?? payload ?? null;
+
         if (mounted) setAccommodation(next);
       } catch (e1) {
         if (controller.signal.aborted) return;
 
         try {
-          const res2 = await axios.get(
-            `${API_BASE}/partner/accommodations/${accommodationId}`,
-            { signal: controller.signal }
-          );
-          const next2 = res2.data?.data ?? res2.data ?? null;
+          const res2 = await getAccommodation(accommodationId, {
+            signal: controller.signal,
+          });
+          console.log("detail raw (fallback):", res2);
+          const payload2 = res2?.data ?? res2;
+          const next2 = payload2?.data ?? payload2 ?? null;
+
           if (mounted) setAccommodation(next2);
         } catch (e2) {
           if (controller.signal.aborted) return;

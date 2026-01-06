@@ -11,12 +11,7 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
-import BookingPage from './pages/booking/BookingPage';
-import PaymentPage from './pages/PaymentPage';
-import WriteReviewPage from './pages/WriteReviewPage';
 import LoginSelectionPage from './pages/LoginSelection';
-import ItineraryPage from './pages/itinerary/ItineraryPage';
 
 
 import PartnerDashboard from './pages/partner/PartnerDashboard';
@@ -25,10 +20,9 @@ import partnerAccommodationRoutes from './routers/PartnerAccomodationRouter';
 import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
-
+import BookingRouter from './routers/BookingRouter';
 // [수정] API 함수명 변경
 import FilterRouter from './routers/FilterRouter';
-import { searchResultRouter } from './routers/SearchResultRouter';
 import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
@@ -207,10 +201,7 @@ const router = createBrowserRouter([
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },
       { path: 'accommodation/*', element:<AccommodationPage /> },
-      { path: 'bookings/*', element: <BookingPage /> },
-      { path: 'payment', element: <PaymentPage /> },
-      { path: 'itinerary', element: <ItineraryPage /> },
-      { path: 'write-review', element: <WriteReviewPage /> },
+      ...BookingRouter,
       ...FilterRouter,
       ...PartnerRouter,
       ...UserRouter,

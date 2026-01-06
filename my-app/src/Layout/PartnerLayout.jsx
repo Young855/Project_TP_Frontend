@@ -5,6 +5,7 @@ import {
     Building, ChevronDown, PlusCircle, Settings, MapPin, Lock 
 } from 'lucide-react';
 import { PartnerProvider, usePartner } from '../context/PartnerContext';
+import ScrollToTop from '../components/ScrollToTop';
 
 const PartnerLayoutContent = () => {
   const location = useLocation();
@@ -117,10 +118,10 @@ const PartnerLayoutContent = () => {
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {/* 각 링크에 onClick={handleNavigationGuard} 추가 */}
-          <Link to="/partner/dashboard" onClick={handleNavigationGuard} className={getLinkClass('/partner/dashboard')}>
+          {/* <Link to="/partner/dashboard" onClick={handleNavigationGuard} className={getLinkClass('/partner/dashboard')}>
             <LayoutDashboard size={20} />
             <span>대시보드</span>
-          </Link>
+          </Link> */}
           
           <Link to="/partner/accommodations" onClick={handleNavigationGuard} className={getLinkClass('/partner/accommodations')}>
             <Building size={20} />
@@ -141,10 +142,10 @@ const PartnerLayoutContent = () => {
             </div>
           </Link>
 
-          <Link to="/partner/reservations" onClick={handleNavigationGuard} className={getLinkClass('/partner/reservations')}>
+          {/* <Link to="/partner/reservations" onClick={handleNavigationGuard} className={getLinkClass('/partner/reservations')}>
             <List size={20} />
             <span>예약 목록</span>
-          </Link>
+          </Link> */}
 
           <div className="pt-6 mt-2">
              <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Accommodation</p>
@@ -215,7 +216,7 @@ const PartnerLayoutContent = () => {
                                 accommodations.map((acc) => (
                                     <button
                                         key={acc.accommodationId}
-                                        onClick={() => handleSwitchAccommodation(acc)} // [수정] 핸들러 교체
+                                        onClick={() => handleSwitchAccommodation(acc)}
                                         className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-l-4 ${
                                             currentAccommodation?.accommodationId === acc.accommodationId 
                                             ? 'border-blue-600 bg-blue-50/50' 
@@ -287,6 +288,7 @@ const PartnerLayoutContent = () => {
             )}
 
             <Outlet /> 
+            <ScrollToTop />
         </div>
       </main>
     </div>

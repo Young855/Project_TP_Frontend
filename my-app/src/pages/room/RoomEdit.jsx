@@ -40,7 +40,6 @@ const QuantityInput = ({ label, name, value, onChange, min = 0, max = 99 }) => {
             </label>
             
             <div className="flex items-end mt-0 !mt-0"> 
-                
                 <button
                     type="button"
                     onClick={handleDecrement}
@@ -123,7 +122,6 @@ const RoomEdit = () => {
     refundable: true,
   });
 
-
   const [errMsg, setErrMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -143,6 +141,7 @@ const RoomEdit = () => {
           return { ...prev, amenities: newList };
       });
    };
+
   const handleBedTypeChange = (type) => {
     setFormData(prev => {
         const current = prev.bedTypes;
@@ -196,7 +195,7 @@ const RoomEdit = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    const finalValue = ['standardCapacity', 'maxCapacity', 'roomCount', 'bathroomCount', 'livingRoomCount', 'areaSquareMeter'].includes(name) 
+    const finalValue = ['standardCapacity', 'maxCapacity', 'roomCount', 'bathroomCount', 'livingRoomCount', 'areaSquareMeter', 'totalStock'].includes(name) 
                             ? Number(value) : (type === 'checkbox' ? checked : value);
 
     setFormData(prev => ({
@@ -239,7 +238,10 @@ const RoomEdit = () => {
         pkgDesc = '기타: [입력란]'; 
       }
       
-      
+      // 🌟 [중요] 서버에서 온 문자열 배열 ["TV", "Wifi"]를 객체 배열 [{name:"TV"}, {name:"Wifi"}]로 변환
+      // 이렇게 해야 handleAmenityChange 함수와 호환됩니다.
+      const loadedAmenities = (data?.amenities || []).map(item => ({ name: item }));
+
       setFormData({
         accommodationId: data?.accommodationId ?? "",
         accommodationName: data?.accommodationName ?? "", 
@@ -255,7 +257,7 @@ const RoomEdit = () => {
         customPackageInput: customPkg, 
         bedTypes: presetBedTypes, 
         customBedType: customBedType, 
-        amenities: data?.amenities ?? [],
+        amenities: loadedAmenities, // 변환된 데이터 적용
         policies: data?.policies ?? [],
         newPolicyItem: '',
         refundable: Boolean(data?.refundable),
@@ -292,8 +294,11 @@ const RoomEdit = () => {
           finalPackageDescription = '해당사항 없음';
       }
 
+      // 🌟 [수정 핵심] 객체 배열 [{name: "TV"}]을 문자열 배열 ["TV"]로 변환하여 전송
+      // 백엔드는 List<String> 타입을 기대하므로 이 변환이 필수입니다.
+      const amenitiesList = formData.amenities.map(item => item.name);
+
       const body = {
-        // [변경] propertyId -> accommodationId
         accommodationId: Number(formData.accommodationId),
         name: formData.name.trim(),
         standardCapacity: Number(formData.standardCapacity),
@@ -306,7 +311,7 @@ const RoomEdit = () => {
         packageDescription: finalPackageDescription, 
         
         bedTypes: finalBedTypes,
-        amenities: formData.amenities || [],
+        amenities: amenitiesList, // 변환된 리스트 전송
         policies: formData.policies || [],
         
         refundable: Boolean(formData.refundable),
@@ -318,7 +323,7 @@ const RoomEdit = () => {
       navigate(`/partner/rooms`); 
     } catch (e) {
       console.error(e);
-      if (e?.response?.status === 400) setErrMsg(e?.response?.data?.message || "필드 검증에 실패했습니다.");
+      if (e?.response?.status === 400) setErrMsg(e?.response?.data?.message || "입력 형식이 올바르지 않습니다 (400 Bad Request).");
       else setErrMsg("객실 수정에 실패했습니다.");
     } finally {
       setSubmitting(false);
@@ -332,8 +337,7 @@ const RoomEdit = () => {
     try {
         await deleteRoom(id); 
         alert("객실이 성공적으로 삭제되었습니다.");
-        // [변경] 경로 내 properties -> accommodations
-        navigate(`/partner/accommodations/${formData.accommodationId}/rooms`); 
+        navigate(`/partner/rooms`); 
     } catch (error) {
         console.error("객실 삭제 실패:", error);
         alert("객실 삭제 중 오류가 발생했습니다.");
@@ -372,7 +376,6 @@ const RoomEdit = () => {
             </div>
         </div>
 
-        {/* ... (객실 정보, 침대 정보 등 UI 동일, 생략) ... */}
         <h2 className="text-lg font-semibold border-b pb-2">객실 정보 (필수)</h2>
         <div className="grid grid-cols-4 gap-4">
             <div>

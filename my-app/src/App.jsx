@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext, Navigate } from 'react-router-dom';
 import './index.css';
 import { useUrlUser } from './hooks/useUrlUser';
 
@@ -247,10 +247,9 @@ const router = createBrowserRouter([
     path: '/partner',
     element: <PartnerLayout />,
     children: [
-      { index: true, element: <PartnerDashboard /> },
-      {path : 'dashboard', element: <PartnerDashboard/>},
-      { path: 'accommodations', element: <Placeholder title="숙소 관리" /> }, 
-      { path: 'reservations', element: <Placeholder title="예약 관리" /> },
+      { index: true, element: <Navigate to="accommodations" replace /> },
+//      { index: true, element: <PartnerDashboard /> },
+     {path : 'dashboard', element: <PartnerDashboard/>},
       ...RoomRouter,
       ...partnerAccommodationRoutes, 
     ],
@@ -259,9 +258,9 @@ const router = createBrowserRouter([
     path: '/admin',
     element: <AdminLayout />, 
     children: [
-      { index: true, element: <AdminDashboard /> },
+      { index: true, element: <Navigate to="accounts" replace /> },
+     // { index: true, element: <AdminDashboard /> },
       { path: 'dashboard', element: <AdminDashboard /> },
-      { path: 'users', element: <Placeholder title="회원 관리" /> }, 
       ...AdminRouter,
     ],
   },

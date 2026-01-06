@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Building, LogOut, Shield } from 'lucide-react';
+import ScrollToTop from '../components/ScrollToTop';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -29,7 +30,7 @@ const AdminLayout = () => {
         
         {/* 사이드바 헤더 */}
         <div className="p-6 border-b border-gray-100">
-            <Link to="/admin/dashboard" className="block">
+            <Link to="/admin/accounts" className="block">
                 <div className="flex items-center gap-2 mb-1">
                     <Shield className="text-blue-600" size={24} />
                     <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">MASTER</span>
@@ -41,24 +42,18 @@ const AdminLayout = () => {
         {/* 네비게이션 메뉴 */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {/* 1. 대시보드 */}
-          <Link to="/admin/dashboard" className={getLinkClass('/admin/dashboard')}>
-            <LayoutDashboard size={20} />
-            <span>대시보드</span>
-          </Link>
           
           <Link to="/admin/accounts" className={getLinkClass('/admin/accounts')}>
             <Users size={20} />
             <span>회원(계정) 관리</span>
           </Link>
-          
-          {/* 3. 숙소 관리 */}
+
           <Link to="/admin/accommodations" className={getLinkClass('/admin/accommodations')}>
             <Building size={20} />
             <span>전체 숙소 관리</span>
           </Link>
         </nav>
-
-        {/* 하단 관리자 프로필 영역 */}
+      
         <div className="p-4 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3 mb-3 px-2">
                 <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-sm font-bold">
@@ -78,21 +73,17 @@ const AdminLayout = () => {
             </button>
         </div>
       </aside>
-
-      {/* ================= [메인 콘텐츠] ================= */}
       <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden bg-gray-50">
-        
-        {/* 상단 헤더 (관리자는 검색창이나 드롭다운이 필요 없다면 심플하게 구성) */}
         <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-end px-8 sticky top-0 z-20 shadow-sm shrink-0">
             <div className="text-sm text-gray-500">
                 Admin Control Panel
             </div>
         </header>
 
-        {/* 콘텐츠 영역 */}
-        <div className="flex-1 overflow-auto p-6 md:p-8">
-            <Outlet /> 
-        </div>
+       <div id="main-scroll-container" className="flex-1 overflow-y-auto p-4"> 
+          <Outlet /> {/* 여기에 AdminAccountList가 들어감 */}
+          <ScrollToTop />
+       </div>
       </main>
     </div>
   );

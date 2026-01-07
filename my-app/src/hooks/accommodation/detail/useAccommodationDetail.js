@@ -13,29 +13,21 @@ const useAccommodationDetail = (id, checkIn, checkOut, guests) => {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get(
-          `${API_BASE}/accommodations/${accommodationId}/with-all-photos`,
-          { signal: controller.signal }
-        );
-        const next = res.data?.data ?? res.data ?? null;
-        if (mounted) setAccommodation(next);
-      } catch (e1) {
-        if (controller.signal.aborted) return;
+        setLoading(true);
+        setError(null);
 
-        try {
-          const res2 = await axios.get(
-            `${API_BASE}/accommodations/${accommodationId}`,
-            { signal: controller.signal }
-          );
-          const next2 = res2.data?.data ?? res2.data ?? null;
-          if (mounted) setAccommodation(next2);
-        } catch (e2) {
-          if (controller.signal.aborted) return;
-          if (mounted) {
-            setError(e2);
-            setAccommodation(null);
-          }
-        }
+        // 🌟 [수정 3] 파라미터 전달
+        const params = { checkIn, checkOut, guests };
+
+        console.log("📡 [API 요청] 숙소 상세 조회 요청 파라미터:", params);
+        const data = await getAccommodationDetail(id, params);
+
+        console.log("📦 [API 응답] 백엔드에서 받은 데이터:", data);
+        
+        setAccommodation(data);
+      } catch (err) {
+        console.error("숙소 상세 정보 로딩 실패:", err);
+        setError(err);
       } finally {
         setLoading(false);
       }

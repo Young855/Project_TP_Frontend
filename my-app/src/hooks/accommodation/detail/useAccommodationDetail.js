@@ -1,39 +1,17 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+// 🌟 [수정 1] API 함수 변경 (단순 조회 -> 상세/정책 조회)
+import { getAccommodationDetail } from "@/api/accommodationAPI"; 
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
-
-/**
- * 숙소 상세(기본정보) 로드
- * - (1) /partner/accommodations/{id}/with-all-photos 먼저 시도
- * - (2) 실패 시 /partner/accommodations/{id} 로 fallback
- *
- * ✅ 핵심 수정
- * - loading 초기값 true (처음 렌더에서 '오류 UI' 뜨는 것 방지)
- * - abort된 요청은 error로 처리하지 않음
- * - unmount 후 setState 방지
- */
-export default function useAccommodationDetail(accommodationId) {
+// 🌟 [수정 2] 인자 추가 (날짜와 인원수)
+const useAccommodationDetail = (id, checkIn, checkOut, guests) => {
   const [accommodation, setAccommodation] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ 중요: true
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // id 없으면 상태 정리
-    if (!accommodationId) {
-      setAccommodation(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+    if (!id) return;
 
-    const controller = new AbortController();
-    let mounted = true;
-
-    setLoading(true);
-    setError(null);
-
-    (async () => {
+    const fetchData = async () => {
       try {
         const res = await axios.get(
           `${API_BASE}/accommodations/${accommodationId}/with-all-photos`,
@@ -59,15 +37,14 @@ export default function useAccommodationDetail(accommodationId) {
           }
         }
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
-    })();
-
-    return () => {
-      mounted = false;
-      controller.abort();
     };
-  }, [accommodationId]);
+
+    fetchData();
+  }, [id, checkIn, checkOut, guests]); // 🌟 [수정 4] 날짜가 바뀌면 다시 불러오게 설정
 
   return { accommodation, loading, error };
-}
+};
+
+export default useAccommodationDetail;

@@ -75,6 +75,7 @@ export const DAILY_POLICY_ENDPOINTS = {
 export const ACCOMMODATIONS_ENDPOINTS = {
     ACCOMMODATIONS: {
         LIST_ALL: `${API_BASE_URL}/accommodations`, 
+        GET_DETAIL: (id) => `${API_BASE_URL}/accommodations/${id}/detail`,
         LIST_BY_PARTNER: (partnerId) =>
              `${API_BASE_URL}/accommodations/by-partner/${partnerId}`, 
         LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
@@ -83,7 +84,6 @@ export const ACCOMMODATIONS_ENDPOINTS = {
         ADD: `${API_BASE_URL}/accommodations`, 
         GET: (id) => `${API_BASE_URL}/accommodations/${id}`,
         GET_WITH_ALL_PHOTOS: (id) => `${API_BASE_URL}/accommodations/${id}/with-all-photos`, 
-        
         MODIFY: (id) => `${API_BASE_URL}/accommodations/${id}`,
         DELETE: (id) => `${API_BASE_URL}/accommodations/${id}`,
     },

@@ -50,6 +50,7 @@ export default function SearchResultPage() {
   // [Logic B] 데이터 페칭 (검색)
   // -----------------------------------------------------------
   useEffect(() => {
+    
     const fetchAccommodations = async () => {
       // 이미 로딩 중이거나, 마지막 페이지인데 또 부르려 하면 중단
       if (isLoading) return; 
@@ -62,7 +63,7 @@ export default function SearchResultPage() {
             checkOut: criteria.checkOut,
             guests: criteria.guests,
         };
-
+        
         const data = await searchAccommodationsWithMainPhoto(searchParams, page, 10);
         
         const newItems = data.content || [];
@@ -75,7 +76,7 @@ export default function SearchResultPage() {
         
         setIsLast(isLastPage);
         if (page === 0) setTotalCount(total);
-
+        
       } catch (error) {
         console.error("숙소 리스트 로딩 실패:", error);
       } finally {
@@ -110,11 +111,13 @@ export default function SearchResultPage() {
   
   // D-1. 가격 계산
   useEffect(() => {
+    
     if (!criteria.checkIn || !criteria.checkOut || displayResults.length === 0) return;
 
-    // 이미 계산된 ID는 제외하고 새로 필요한 것만 요청 (API 호출 최적화)
     const idsToCalculate = displayResults
         .map(p => Number(p.accommodationId))
+        // ★ 아래 줄을 추가하여 NaN이나 0, null 같은 잘못된 값을 걸러내세요.
+        .filter(id => !isNaN(id) && id > 0) 
         .filter(id => calculatedPriceMap[id] === undefined);
 
     if (idsToCalculate.length === 0) return;

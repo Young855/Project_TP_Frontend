@@ -143,7 +143,7 @@ const MainPage = () => {
             disabled={!isSearchable} // 날짜 없으면 꺼짐
             className={`w-full text-lg font-bold py-3 rounded-md transition-colors flex items-center justify-center
               ${isSearchable 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer' // 활성 상태
+                ? 'bg-blue-600 hover:bg-blue-700 text-gray-700 cursor-pointer' // 활성 상태
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed' // 비활성 상태
               }`}
           >

@@ -173,13 +173,24 @@ export default function SearchResultPage() {
     setFavoriteMap((prev) => ({ ...prev, [accommodationId]: !isFav }));
 
     try {
-      if (isFav) await removeFavorite(userId, accommodationId);
-      else await addFavorite(userId, accommodationId);
+      if (isFav){
+        // 찜 해제 
+        await removeFavorite(userId, accommodationId);
+        alert("찜 목록에서 삭제되었습니다.");
+      } else {
+        // 찜 추가
+        await addFavorite(userId, accommodationId);
+        alert("찜 목록에 추가되었습니다.");
+      }
     } catch (error) {
-      setFavoriteMap((prev) => ({ ...prev, [accommodationId]: isFav }));
+      // 실패 시 원래 상태로 롤백
+      setFavoriteMap((prev) => ({
+        ...prev,
+        [accommodationId]: isFav,
+      }));
+      alert("찜 처리 중 오류가 발생했습니다. ");
     }
   };
-
   const titleText = criteria.destination
     ? `'${criteria.destination}' 검색 결과 ${totalCount}개`
     : `숙소 검색 결과 ${totalCount}개`;

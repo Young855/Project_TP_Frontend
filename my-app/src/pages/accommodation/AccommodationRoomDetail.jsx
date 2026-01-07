@@ -51,15 +51,6 @@ export default function AccommodationRoomDetail({ userId }) {
   const roomPhotoUrlMap = useRoomMainPhoto(rooms);
   const roomPriceMap = useRoomPrice({ rooms, checkIn, checkOut });
 
-  // (선택) 객실 데이터 확인용 디버깅
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("숙소 id:", id);
-    // eslint-disable-next-line no-console
-    console.log("rooms:", rooms);
-    // eslint-disable-next-line no-console
-    console.log("rooms length:", rooms?.length);
-  }, [id, rooms]);
 
   const { images, topImages } = useAccommodationPhoto(id);
 

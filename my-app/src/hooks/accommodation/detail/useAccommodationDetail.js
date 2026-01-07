@@ -36,7 +36,7 @@ export default function useAccommodationDetail(accommodationId) {
     (async () => {
       try {
         const res = await axios.get(
-          `${API_BASE}/partner/accommodations/${accommodationId}/with-all-photos`,
+          `${API_BASE}/accommodations/${accommodationId}/with-all-photos`,
           { signal: controller.signal }
         );
         const next = res.data?.data ?? res.data ?? null;
@@ -46,7 +46,7 @@ export default function useAccommodationDetail(accommodationId) {
 
         try {
           const res2 = await axios.get(
-            `${API_BASE}/partner/accommodations/${accommodationId}`,
+            `${API_BASE}/accommodations/${accommodationId}`,
             { signal: controller.signal }
           );
           const next2 = res2.data?.data ?? res2.data ?? null;

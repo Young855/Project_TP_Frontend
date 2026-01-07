@@ -11,8 +11,6 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
-import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import LoginSelectionPage from './pages/LoginSelection';
@@ -25,6 +23,7 @@ import partnerAccommodationRoutes from './routers/PartnerAccomodationRouter';
 import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
+import BookingRouter from './routers/BookingRouter';
 
 // [수정] API 함수명 변경
 import { getAllAccommodations } from "./api/accommodationAPI"; 
@@ -232,7 +231,6 @@ const router = createBrowserRouter([
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },
       { path: 'accommodation/*', element:<AccommodationPage /> },
-      { path: 'bookings/*', element: <BookingPage /> },
       { path: 'payment', element: <PaymentPage /> },
       { path: 'itinerary', element: <ItineraryPage /> },
       { path: 'write-review', element: <WriteReviewPage /> },
@@ -240,6 +238,7 @@ const router = createBrowserRouter([
       ...PartnerRouter,
       ...UserRouter,
       ...FavoriteRouter,
+      ...BookingRouter,
     ],
   },
 

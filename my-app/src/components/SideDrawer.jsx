@@ -104,8 +104,6 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
           
           {/* 일반 네비게이션 링크 (스크린샷 기반) */}
           <div className="mt-4 space-y-1">
-            <NavItem to="/itinerary">내 일정</NavItem>
-            <NavItem to="/community">커뮤니티</NavItem>
             <NavItem to="/bookings">예약 내역</NavItem>
             <NavItem to="/favorites">찜 목록</NavItem>
           <div className="border-t my-2"></div> {/* 구분선 */}

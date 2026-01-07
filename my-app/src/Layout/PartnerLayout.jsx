@@ -101,7 +101,7 @@ const PartnerLayoutContent = () => {
 
       switchAccommodation(acc);
       setIsDropdownOpen(false);
-      navigate('/partner/dashboard');
+      navigate('/partner/accommodations');
   };
 
   if (isLoading) return <div className="flex h-screen justify-center items-center text-gray-500">데이터를 불러오는 중입니다...</div>;
@@ -111,7 +111,7 @@ const PartnerLayoutContent = () => {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-50">
         <div className="p-6 border-b border-gray-100">
             {/* 로고 클릭 시에도 가드 적용 */}
-            <Link to="/partner/dashboard" onClick={handleNavigationGuard} className="block">
+            <Link to="/partner/accommodations" onClick={handleNavigationGuard} className="block">
                 <h1 className="text-2xl font-bold text-blue-600">숙박시설 <br/>관리 시스템</h1>
             </Link>
         </div>
@@ -273,7 +273,7 @@ const PartnerLayoutContent = () => {
 
         <div className="flex-1 overflow-auto p-6 md:p-8 relative z-0">
             
-            {!isLoading && accommodations.length === 0 && location.pathname === '/partner/dashboard' && (
+            {!isLoading && accommodations.length === 0 && location.pathname === '/partner/accoommodations' && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center mb-6 animate-in fade-in slide-in-from-bottom-4">
                     <h2 className="text-xl font-bold text-blue-800 mb-2">환영합니다, {partnerInfo.ceoName || '파트너'} 님!</h2>
                     <p className="text-blue-600 mb-6">아직 등록된 숙소가 없습니다. 첫 번째 숙소를 등록하고 예약을 받아보세요.</p>

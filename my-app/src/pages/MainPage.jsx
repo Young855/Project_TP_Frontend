@@ -1,12 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // 🌟 이동을 위한 Hook
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Search, Calendar, User, ChevronDown, ChevronUp } from 'lucide-react';
 import GuestCounter from '../components/GuestCounter';
 
 const MainPage = () => {
-  const navigate = useNavigate(); // 🌟 페이지 이동 도구
+  const navigate = useNavigate();
 
-  // 상태 관리
   const [destination, setDestination] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -19,26 +18,40 @@ const MainPage = () => {
   const totalGuests = adults + children;
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // 🌟 검색 버튼 활성화 조건 (날짜가 둘 다 있어야 함)
+  const getNextDay = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().split('T')[0];
+  };
+
   const isSearchable = checkIn && checkOut;
 
-  // 🌟 검색 버튼 클릭 시 실행 (API 호출 X -> 페이지 이동 O)
   const handleSearchClick = (e) => {
     e.preventDefault();
+
+    if (!destination.trim()) {
+      alert("여행지나 숙소 이름을 입력해주세요.");
+      document.getElementById("destination").focus();
+      return;
+    }
 
     if (!isSearchable) {
       alert("체크인과 체크아웃 날짜를 선택해주세요.");
       return;
     }
 
-    // 1. 쿼리 파라미터 생성
+    if (checkOut <= checkIn) {
+      alert("체크아웃 날짜는 체크인 날짜보다 하루 이상 뒤여야 합니다.");
+      return;
+    }
+
     const params = new URLSearchParams();
-    if (destination) params.set("keyword", destination); // destination -> keyword 매핑
+    params.set("keyword", destination);
     params.set("checkIn", checkIn);
     params.set("checkOut", checkOut);
     params.set("guests", totalGuests);
 
-    // 2. 검색 결과 페이지로 이동 (데이터 로딩은 거기서 알아서 함)
     navigate(`/search?${params.toString()}`);
   };
 
@@ -86,9 +99,11 @@ const MainPage = () => {
                 id="checkin"
                 value={checkIn}
                 onChange={(e) => {
-                  const v = e.target.value;
-                  setCheckIn(v);
-                  if (checkOut && checkOut < v) setCheckOut(v);
+                  const newCheckIn = e.target.value;
+                  setCheckIn(newCheckIn);
+                  if (checkOut && checkOut <= newCheckIn) {
+                    setCheckOut(getNextDay(newCheckIn));
+                  }
                 }}
                 min={todayStr}
                 className="form-input"
@@ -104,7 +119,7 @@ const MainPage = () => {
                 id="checkout"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                min={checkIn || todayStr}
+                min={checkIn ? getNextDay(checkIn) : todayStr}
                 className="form-input"
               />
             </div>
@@ -130,8 +145,22 @@ const MainPage = () => {
 
             {isGuestPickerOpen && (
               <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-2xl border z-10 p-4 space-y-4">
-                <GuestCounter count={adults} setCount={setAdults} label="성인" />
-                <GuestCounter count={children} setCount={setChildren} label="아동" />
+                <GuestCounter 
+                  count={adults} 
+                  setCount={(val) => {
+                    if (val < 1) return; // 1 미만이면 무시
+                    setAdults(val);
+                  }} 
+                  label="성인" 
+                />
+                <GuestCounter 
+                  count={children} 
+                  setCount={(val) => {
+                    if (val < 0) return; // 0 미만이면 무시
+                    setChildren(val);
+                  }} 
+                  label="아동" 
+                />
               </div>
             )}
           </div>
@@ -140,7 +169,7 @@ const MainPage = () => {
         <div className="mt-6">
           <button 
             type="submit" 
-            disabled={!isSearchable} // 날짜 없으면 꺼짐
+            disabled={!isSearchable} 
             className={`w-full text-lg font-bold py-3 rounded-md transition-colors flex items-center justify-center
               ${isSearchable 
                 ? 'bg-blue-600 hover:bg-blue-700 text-gray-700 cursor-pointer' // 활성 상태

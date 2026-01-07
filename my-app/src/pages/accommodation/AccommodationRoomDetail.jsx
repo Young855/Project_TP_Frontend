@@ -8,12 +8,12 @@ import GalleryModal from "@/components/GalleryModal";
 
 // API & Config
 import { getRoomPhotos } from "@/api/roomPhotoAPI"; 
+import { prepareBooking } from "@/api/bookingAPI"; // 🌟 [추가] 예약 토큰 발급 API
 import { ACCOMMODATION_PHOTO_ENDPOINTS, ROOM_PHOTO_ENDPOINTS } from "@/config"; 
 
 // hooks
 import useAccommodationDetail from "@/hooks/accommodation/detail/useAccommodationDetail";
 import useFavorite from "@/hooks/accommodation/detail/useFavorite";
-// import useRoom from "@/hooks/accommodation/detail/useRoom"; // ❌ [삭제] 더 이상 안 씁니다!
 
 export default function AccommodationRoomDetail({ userId }) {
   const { id } = useParams();
@@ -27,10 +27,9 @@ export default function AccommodationRoomDetail({ userId }) {
   const guests = searchParams.get("guests") || "2";
 
   // 1. 데이터 로딩
-  // 날짜 정보를 넘겨야 가격/재고가 계산되어 옴
   const { accommodation, loading: accLoading } = useAccommodationDetail(id, checkIn, checkOut, guests);
   
-  // 🌟 [핵심 수정 1] useRoom 대신 accommodation.rooms 사용 (여기에 재고/가격 정보가 들어있음)
+  // accommodation.rooms 사용 (통합 데이터)
   const rooms = accommodation?.rooms || [];
 
   // 2. 갤러리 로직
@@ -97,10 +96,39 @@ export default function AccommodationRoomDetail({ userId }) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
-
   const handleBooking = async (room) => {
-    // 예약 로직...
-    navigate(`/booking?roomId=${room.roomId}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`);
+    // 1. 로그인 체크 (필요 시 주석 해제)
+    /*
+    if (!userId) {
+        alert("로그인이 필요한 서비스입니다.");
+        // navigate("/login");
+        return;
+    }
+    */
+
+    try {
+        // 2. 백엔드에 예약 토큰 요청 (재고 확인 포함됨)
+        const response = await prepareBooking({
+            roomId: room.roomId,
+            checkinDate: checkIn,
+            checkoutDate: checkOut
+        });
+
+        // 3. 토큰을 Session Storage에 저장
+        if (response && response.token) {
+            sessionStorage.setItem("reservationToken", response.token);
+            
+            // 4. 예약 페이지로 이동 (토큰 기반으로 동작하므로 파라미터 최소화 가능)
+            // 필요하다면 쿼리 파라미터를 유지해도 됩니다.
+            navigate(`/booking/new`); 
+        } else {
+            alert("예약 정보를 불러오는 데 실패했습니다.");
+        }
+    } catch (error) {
+        console.error("예약 준비 에러:", error);
+        // 백엔드 BookingService에서 재고가 없으면 에러를 던지므로 여기서 잡힘
+        alert("선택하신 객실은 현재 예약할 수 없습니다. (재고 부족 등)");
+    }
   };
 
   if (accLoading) return <div className="p-10 text-center">불러오는 중...</div>;
@@ -192,7 +220,6 @@ export default function AccommodationRoomDetail({ userId }) {
                                 <div className="mt-2 text-sm text-gray-500 space-y-1">
                                     <p>기준 {room.standardCapacity}인 / 최대 {room.maxCapacity}인</p>
                                     
-                                    {/* 🌟 [핵심 수정 2] room.isAvailable -> room.available 로 변경 */}
                                     <p>
                                       {!room.available 
                                         ? <span className="text-red-500 font-bold">예약 마감 ({room.reason})</span> 
@@ -203,10 +230,8 @@ export default function AccommodationRoomDetail({ userId }) {
                         </div>
 
                         <div className="w-full md:w-1/4 border-l border-gray-100 p-6 flex flex-col justify-end items-end bg-gray-50">
-                        {/* 🌟 [핵심 수정 3] room.isAvailable -> room.available */}
                         {room.available ? (
                             <>
-                                {/* 🌟 재고 10개여도 보고 싶으시면 아래 조건을 (room.remainingStock >= 0) 등으로 바꾸세요. 지금은 5개 이하일 때만 보입니다. */}
                                 {room.remainingStock <= 5 && (
                                     <span className="text-red-500 text-xs font-bold mb-1 animate-pulse">
                                         남은 객실 {room.remainingStock}개

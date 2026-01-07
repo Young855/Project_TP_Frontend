@@ -41,11 +41,7 @@ export const BOOKING_ENDPOINTS = {
 
         // ✅ 유저별 예약 조회 (GET /bookings/user/{userId})
         GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`,
-
-        // ✅ 예약자 정보 저장 (PUT /bookings/{id}/booker)
         UPDATE_BOOKER: (id) => `${API_BASE_URL}/bookings/${id}/booker`,
-
-        // ✅ 결제 확정 (POST /bookings/{id}/payment/confirm)
         CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,
 
         GET : (id) => `${API_BASE_URL}/bookings/${id}`, 

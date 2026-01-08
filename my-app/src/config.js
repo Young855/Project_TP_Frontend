@@ -34,6 +34,12 @@ export const BOOKING_ENDPOINTS = {
         LIST: `${API_BASE_URL}/bookings`, 
         ADD : `${API_BASE_URL}/bookings`, 
         PREPARE: `${API_BASE_URL}/bookings/prepare`,
+        
+        // ✅ (추가) 예약 페이지에서 쓰는 이메일 인증 (기존 UserController 재사용)
+        SEND_EMAIL_VERIFICATION: `${API_BASE_URL}/user/send-verification`,
+        VERIFY_EMAIL_CODE: `${API_BASE_URL}/user/verify-code`,
+
+        // ✅ 유저별 예약 조회 (GET /bookings/user/{userId})
         GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`,
         UPDATE_BOOKER: (id) => `${API_BASE_URL}/bookings/${id}/booker`,
         CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,

@@ -172,8 +172,8 @@ const MainPage = () => {
             disabled={!isSearchable} 
             className={`w-full text-lg font-bold py-3 rounded-md transition-colors flex items-center justify-center
               ${isSearchable 
-                ? 'bg-blue-600 hover:bg-blue-700 text-blue cursor-pointer' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-blue-600 hover:bg-blue-700 text-gray-700 cursor-pointer' // 활성 상태
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed' // 비활성 상태
               }`}
           >
             <Search size={20} className="inline-block mr-2" />

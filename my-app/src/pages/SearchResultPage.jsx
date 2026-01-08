@@ -186,7 +186,6 @@ export default function SearchResultPage() {
       alert("요청 처리에 실패했습니다."); 
     }
   };
-
   const titleText = criteria.destination
     ? `'${criteria.destination}' 검색 결과 ${totalCount}개`
     : `숙소 검색 결과 ${totalCount}개`;

@@ -75,4 +75,30 @@ export const cancelBooking = async (bookingId) => {
   return res.data;
 };
 
+/**
+ * ✅ 예약 페이지: 이메일 인증코드 발송 (POST /user/send-verification)
+ * - 백엔드 EmailService 그대로 사용
+ */
+export const sendBookingVerificationEmail = async (email) => {
+  try {
+    await api.post(BOOKING_ENDPOINTS.BOOKINGS.SEND_EMAIL_VERIFICATION, { email });
+    return true;
+  } catch (error) {
+    console.error("예약 이메일 인증메일 발송 오류:", error);
+    throw error;
+  }
+};
 
+/**
+ * ✅ 예약 페이지: 이메일 인증코드 검증 (POST /user/verify-code)
+ * - 응답: { verified: boolean }
+ */
+export const verifyBookingEmailCode = async (email, code) => {
+  try {
+    const response = await api.post(BOOKING_ENDPOINTS.BOOKINGS.VERIFY_EMAIL_CODE, { email, code });
+    return response.data; // { verified: true/false }
+  } catch (error) {
+    console.error("예약 이메일 인증코드 확인 오류:", error);
+    throw error;
+  }
+};

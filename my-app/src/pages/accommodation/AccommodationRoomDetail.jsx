@@ -8,12 +8,67 @@ import GalleryModal from "@/components/GalleryModal";
 
 // API & Config
 import { getRoomPhotos } from "@/api/roomPhotoAPI"; 
-import { prepareBooking } from "@/api/bookingAPI"; // 🌟 [추가] 예약 토큰 발급 API
+import { prepareBooking } from "@/api/bookingAPI"; 
 import { ACCOMMODATION_PHOTO_ENDPOINTS, ROOM_PHOTO_ENDPOINTS } from "@/config"; 
 
 // hooks
 import useAccommodationDetail from "@/hooks/accommodation/detail/useAccommodationDetail";
 import useFavorite from "@/hooks/accommodation/detail/useFavorite";
+
+// -------------------------------------------------------------------------
+// [Component] 판매자 정보 모달 (추가됨)
+// -------------------------------------------------------------------------
+const SellerInfoModal = ({ sellerInfo, onClose }) => {
+    // 백엔드 데이터가 없을 경우를 대비한 기본값 처리
+    const info = sellerInfo || {};
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+            <div className="bg-white w-full max-w-md rounded-xl shadow-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b">
+                    <h3 className="font-bold text-lg">판매자 정보</h3>
+                    <button onClick={onClose} className="text-gray-500 hover:text-black">✕</button>
+                </div>
+                <div className="p-6 text-sm text-gray-700 space-y-4">
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">상호</span>
+                        <span>{info.bizName || "-"}</span>
+                    </div>
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">대표자명</span>
+                        <span>{info.ceoName || "-"}</span>
+                    </div>
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">주소</span>
+                        <span>{info.address || "-"}</span>
+                    </div>
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">전화번호</span>
+                        <span>{info.contactPhone || "-"}</span>
+                    </div>
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">이메일</span>
+                        <span>{info.contactEmail || "-"}</span>
+                    </div>
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">사업자 번호</span>
+                        <span>{info.bizRegNumber || "-"}</span>
+                    </div>
+                     {/* 통신판매업 번호가 있다면 표시 */}
+                    <div className="flex border-b border-gray-100 pb-3">
+                        <span className="w-32 text-gray-500 font-medium shrink-0">통신판매업번호</span>
+                        <span>{info.onlineBizNumber || "-"}</span>
+                    </div>
+                    
+                    <div className="mt-4 bg-gray-50 p-3 rounded text-xs text-gray-500 leading-relaxed">
+                        * 판매자 정보는 판매자의 명시적 동의 없이 영리 목적의 마케팅/광고 등에 활용할 수 없습니다.<br/>
+                        이를 어길 시 정보통신망법 등 관련 법령에 의거하여 과태료 부과 및 민형사상 책임을 지게 될 수 있습니다.
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function AccommodationRoomDetail({ userId }) {
   const { id } = useParams();
@@ -80,14 +135,26 @@ export default function AccommodationRoomDetail({ userId }) {
   const effectiveFavorite = localFavorite ?? isFavorite;
 
   const handleToggleFavorite = async () => {
-    const next = !effectiveFavorite;
-    setLocalFavorite(next);
-    try { await toggleFavorite(); } catch { setLocalFavorite(!next); }
+    const next = !effectiveFavorite; 
+    setLocalFavorite(next); 
+
+    try { 
+      await toggleFavorite(); 
+      if (next) {
+        alert("찜 목록에 추가되었습니다.");
+      } else {
+        alert("찜 목록에서 삭제되었습니다.");
+      }
+    } catch { 
+      setLocalFavorite(!next); 
+      alert("요청 처리에 실패했습니다.");
+    }
   };
 
   const roomsRef = useRef(null);
   const locationRef = useRef(null);
   const reviewsRef = useRef(null);
+  const infoRef = useRef(null); // [추가] 숙소 정보 섹션 참조
 
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -95,7 +162,9 @@ export default function AccommodationRoomDetail({ userId }) {
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
+  const [isSellerModalOpen, setIsSellerModalOpen] = useState(false); // [추가] 판매자 모달 상태
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
+
   const handleBooking = async (room) => {
     // 1. 로그인 체크 (필요 시 주석 해제)
     /*
@@ -117,16 +186,12 @@ export default function AccommodationRoomDetail({ userId }) {
         // 3. 토큰을 Session Storage에 저장
         if (response && response.token) {
             sessionStorage.setItem("reservationToken", response.token);
-            
-            // 4. 예약 페이지로 이동 (토큰 기반으로 동작하므로 파라미터 최소화 가능)
-            // 필요하다면 쿼리 파라미터를 유지해도 됩니다.
             navigate(`/booking/new`); 
         } else {
             alert("예약 정보를 불러오는 데 실패했습니다.");
         }
     } catch (error) {
         console.error("예약 준비 에러:", error);
-        // 백엔드 BookingService에서 재고가 없으면 에러를 던지므로 여기서 잡힘
         alert("선택하신 객실은 현재 예약할 수 없습니다. (재고 부족 등)");
     }
   };
@@ -157,7 +222,7 @@ export default function AccommodationRoomDetail({ userId }) {
           </div>
         </div>
 
-        {/* 숙소 정보 */}
+        {/* 숙소 정보 헤더 */}
         <div className="px-4 md:px-0 mt-4 mb-8">
            <div className="flex justify-between items-start">
               <div>
@@ -189,17 +254,24 @@ export default function AccommodationRoomDetail({ userId }) {
            </div>
         </div>
 
+        {/* [수정] 탭 메뉴에 '숙소 정보' 추가 */}
         <StickyTabs 
           activeTab="rooms" 
           onTabClick={(tab) => {
              if(tab === 'rooms') scrollToSection(roomsRef);
-             if(tab === 'amenities') setIsServiceOpen(true);
+             if(tab === 'info') scrollToSection(infoRef); // [추가]
              if(tab === 'location') scrollToSection(locationRef);
              if(tab === 'reviews') scrollToSection(reviewsRef);
           }}
+          // StickyTabs 컴포넌트가 tabs 배열 props를 지원한다면 아래와 같이 전달
+          tabs={[
+            { id: 'rooms', label: '객실안내/예약' },
+            { id: 'info', label: '숙소정보' },
+            { id: 'location', label: '위치/리뷰' }
+          ]}
         />
 
-        {/* 4. 객실 리스트 */}
+        {/* 4. 객실 리스트 (기존 코드 그대로 유지) */}
         <div ref={roomsRef} className="px-4 md:px-0 py-10 scroll-mt-16">
             <h2 className="text-xl font-bold mb-5">객실 선택</h2>
             <div className="space-y-6">
@@ -270,21 +342,86 @@ export default function AccommodationRoomDetail({ userId }) {
         
         <hr className="my-10 border-gray-100"/>
 
+        {/* 🌟 [추가] 숙소 정보 섹션 (소개, 규정, 판매자정보) */}
+        <div ref={infoRef} className="px-4 md:px-0 py-6 scroll-mt-20 space-y-12">
+            
+            {/* 숙소 소개 */}
+            <section>
+                <h2 className="text-xl font-bold mb-4">숙소 소개</h2>
+                <div className="text-gray-600 leading-7 whitespace-pre-line bg-gray-50 p-6 rounded-xl">
+                    {accommodation.description || "등록된 소개글이 없습니다."}
+                </div>
+            </section>
+
+            {/* 기본 정보 / 취소 규정 */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
+                    <h2 className="text-xl font-bold mb-4">확인사항 및 기타</h2>
+                    <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
+                        <li>위의 정보는 호텔의 사정에 따라 변경될 수 있습니다</li>
+                        <li>미성년자는 보호자 동반 없이 이용이 불가합니다</li>
+                        <li>이미지는 실제와 상이할 수 있습니다</li>
+                        <li>객실가는 세금, 봉사료가 포함된 금액입니다</li>
+                        <li>체크인 : {accommodation.checkinTime || "15:00"} | 체크아웃 : {accommodation.checkoutTime || "11:00"}</li>
+                    </ul>
+                </div>
+                <hr></hr>
+                <div>
+                     <h2 className="text-xl font-bold mb-4">취소 및 환불 규정</h2>
+                     <ul className="text-sm text-gray-600 space-y-2">
+                        <li className="flex justify-between"><span>체크인일 기준 5일 전</span> <span className="font-bold">100% 환불</span></li>
+                        <li className="flex justify-between"><span>체크인일 기준 4일 전</span> <span className="font-bold">70% 환불</span></li>
+                        <li className="flex justify-between"><span>체크인일 기준 3일 전</span> <span className="font-bold">50% 환불</span></li>
+                        <li className="flex justify-between"><span>체크인일 기준 2일 전</span> <span className="font-bold">30% 환불</span></li>
+                        <li className="flex justify-between"><span>체크인일 기준 1일 전~당일 및 No-show</span> <span className="font-bold text-red-500">환불 불가</span></li>
+                        <li className="text-xs text-gray-400 mt-2">* 취소, 환불 시 수수료가 발생할 수 있습니다.</li>
+                     </ul>
+                </div>
+            </section>
+
+            {/* 판매자 정보 */}
+            <section className="pt-6 border-t border-gray-100">
+                <h2 className="text-xl font-bold mb-4">판매자 정보</h2>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <button 
+                        onClick={() => setIsSellerModalOpen(true)}
+                        className="text-gray-600 underline hover:text-black flex items-center gap-1 font-medium"
+                    >
+                        {accommodation.sellerInfo?.bizName || "판매자 정보 보기"} 
+                        <span className="text-xs border border-gray-400 rounded-full w-4 h-4 flex items-center justify-center">i</span>
+                    </button>
+                    <span>|</span>
+                    <span>대표자: {accommodation.sellerInfo?.ceoName || "-"}</span>
+                </div>
+            </section>
+        </div>
+
+        <hr className="my-10 border-gray-100"/>
+
+        {/* 위치 정보 (주석 해제 및 활성화) */}
         <div ref={locationRef} className="px-4 md:px-0 py-6 scroll-mt-20">
            <h2 className="text-xl font-bold mb-4">위치 정보</h2>
            <div className="text-gray-600 mb-4">{accommodation.address}</div>
-           <div className="w-full h-64 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-               지도 API 연동 영역
+           {/* 지도 API 영역 Placeholder */}
+           <div className="w-full h-[400px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 border relative overflow-hidden">
+               {/* 실제 지도 연동 시 여기에 Map 컴포넌트 배치 */}
+               <div className="absolute inset-0 bg-gray-200 flex flex-col items-center justify-center">
+                    <span className="text-4xl mb-2">🗺️</span>
+                    <span>지도 API 영역</span>
+                    <span className="text-xs text-gray-500 mt-1">({accommodation.latitude}, {accommodation.longitude})</span>
+               </div>
            </div>
         </div>
 
+        {/* 리뷰 (주석 처리된 상태 유지하거나 필요시 해제) */}
+        {/*
         <div ref={reviewsRef} className="px-4 md:px-0 py-6 scroll-mt-20">
            <h2 className="text-xl font-bold mb-4">리뷰</h2>
            <div className="bg-gray-50 p-6 rounded-xl text-center text-gray-500">
               실제 투숙객들의 리뷰가 표시될 영역입니다.
            </div>
         </div>
-
+        */}
       </div>
 
       {isServiceOpen && (
@@ -300,6 +437,14 @@ export default function AccommodationRoomDetail({ userId }) {
             startIndex={galleryStartIndex}
             onClose={() => setIsGalleryOpen(false)}
         />
+      )}
+      
+      {/* 판매자 정보 모달 */}
+      {isSellerModalOpen && (
+          <SellerInfoModal 
+              sellerInfo={accommodation.sellerInfo} 
+              onClose={() => setIsSellerModalOpen(false)} 
+          />
       )}
     </div>
   );

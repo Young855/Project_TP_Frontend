@@ -173,10 +173,17 @@ export default function SearchResultPage() {
     setFavoriteMap((prev) => ({ ...prev, [accommodationId]: !isFav }));
 
     try {
-      if (isFav) await removeFavorite(userId, accommodationId);
-      else await addFavorite(userId, accommodationId);
+      if (isFav) {
+        await removeFavorite(userId, accommodationId);
+        alert("찜 목록에서 삭제되었습니다."); 
+      } else {
+        await addFavorite(userId, accommodationId);
+        alert("찜 목록에 추가되었습니다."); 
+      }
     } catch (error) {
       setFavoriteMap((prev) => ({ ...prev, [accommodationId]: isFav }));
+      console.error(error);
+      alert("요청 처리에 실패했습니다."); 
     }
   };
 

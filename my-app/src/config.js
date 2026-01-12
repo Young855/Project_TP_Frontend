@@ -4,8 +4,7 @@ export const USER_ENDPOINTS = {
     USERS: {
         LIST: `${API_BASE_URL}/user`, 
         ADD : `${API_BASE_URL}/user/signup`, 
-        LOGIN : `${API_BASE_URL}/api/auth/login`,
-        SOCIAL_ADD: `${API_BASE_URL}/user/social-signup`,
+        LOGIN : `${API_BASE_URL}/user/login`, 
         CHECK_EMAIL : `${API_BASE_URL}/user/check-email`, 
         CHECK_NICKNAME : `${API_BASE_URL}/user/check-nickname`,
         SEND_VERIFICATION: `${API_BASE_URL}/user/send-verification`,
@@ -34,6 +33,17 @@ export const BOOKING_ENDPOINTS = {
     BOOKINGS: {
         LIST: `${API_BASE_URL}/bookings`, 
         ADD : `${API_BASE_URL}/bookings`, 
+        PREPARE: `${API_BASE_URL}/bookings/prepare`,
+        
+        // ✅ (추가) 예약 페이지에서 쓰는 이메일 인증 (기존 UserController 재사용)
+        SEND_EMAIL_VERIFICATION: `${API_BASE_URL}/user/send-verification`,
+        VERIFY_EMAIL_CODE: `${API_BASE_URL}/user/verify-code`,
+
+        // ✅ 유저별 예약 조회 (GET /bookings/user/{userId})
+        GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`,
+        UPDATE_BOOKER: (id) => `${API_BASE_URL}/bookings/${id}/booker`,
+        CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,
+
         GET : (id) => `${API_BASE_URL}/bookings/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/bookings/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/bookings/${id}`, 
@@ -66,6 +76,7 @@ export const DAILY_POLICY_ENDPOINTS = {
 export const ACCOMMODATIONS_ENDPOINTS = {
     ACCOMMODATIONS: {
         LIST_ALL: `${API_BASE_URL}/accommodations`, 
+        GET_DETAIL: (id) => `${API_BASE_URL}/accommodations/${id}/detail`,
         LIST_BY_PARTNER: (partnerId) =>
              `${API_BASE_URL}/accommodations/by-partner/${partnerId}`, 
         LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
@@ -74,7 +85,6 @@ export const ACCOMMODATIONS_ENDPOINTS = {
         ADD: `${API_BASE_URL}/accommodations`, 
         GET: (id) => `${API_BASE_URL}/accommodations/${id}`,
         GET_WITH_ALL_PHOTOS: (id) => `${API_BASE_URL}/accommodations/${id}/with-all-photos`, 
-        
         MODIFY: (id) => `${API_BASE_URL}/accommodations/${id}`,
         DELETE: (id) => `${API_BASE_URL}/accommodations/${id}`,
     },
@@ -91,11 +101,11 @@ export const ACCOMMODATION_PHOTO_ENDPOINTS = {
 }
 export const ROOM_PHOTO_ENDPOINTS = {
     PHOTOS: {
-        ADD_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/${roomId}`,
-        DELETE: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}`,
-        GET_METADATA_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/list/${roomId}`,
-        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}/data`,
-        REORDER: (roomId) => `/partner/rooms/photos/${roomId}/reorder`, 
+        ADD_LIST: (roomId) => `${API_BASE_URL}/rooms/partner/photos/${roomId}`,
+        DELETE: (photoId) => `${API_BASE_URL}/rooms/partner/photos/${photoId}`,
+        GET_METADATA_LIST: (roomId) => `${API_BASE_URL}/rooms/photos/list/${roomId}`,
+        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/rooms/photos/${photoId}/data`,
+        REORDER: (roomId) => `/rooms/partner/photos/${roomId}/reorder`, 
     }
 }
 

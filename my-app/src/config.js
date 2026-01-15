@@ -14,6 +14,13 @@ export const USER_ENDPOINTS = {
         DELETE : (id) => `${API_BASE_URL}/user/${id}`, 
     },
 }
+export const AUTH_ENDPOINTS = {
+    LOGIN: `${API_BASE_URL}/auth/users/login`,          
+    PARTNER_LOGIN: `${API_BASE_URL}/auth/partners/login`, 
+    KAKAO_LOGIN: `${API_BASE_URL}/auth/api/kakao`, 
+    
+    REISSUE: `${API_BASE_URL}/auth/api/reissue`,          
+};
 
 export const PARTNER_ENDPOINTS = {
     PARTNERS: { 
@@ -159,9 +166,9 @@ export const HASHTAG_ENDPOINTS = {
 
 export const FAVORITE_ENDPOINTS = {
     FAVORITES: {
-        ADD: `${API_BASE_URL}/favorites/create`,
-        LIST:`${API_BASE_URL}/favorites/list`,
-        DELETE:`${API_BASE_URL}/favorites/delete`,
+        ADD: `${API_BASE_URL}/favorites`,
+        LIST:`${API_BASE_URL}/favorites`,
+        DELETE:`${API_BASE_URL}/favorites`,
     },
 }
 

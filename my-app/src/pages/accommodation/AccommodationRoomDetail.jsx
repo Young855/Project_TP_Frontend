@@ -8,7 +8,7 @@ import GalleryModal from "@/components/GalleryModal";
 
 // API & Config
 import { getRoomPhotos } from "@/api/roomPhotoAPI"; 
-import { prepareBooking } from "@/api/bookingAPI"; // 🌟 [추가] 예약 토큰 발급 API
+import { prepareBooking } from "@/api/bookingAPI"; 
 import { ACCOMMODATION_PHOTO_ENDPOINTS, ROOM_PHOTO_ENDPOINTS } from "@/config"; 
 
 // hooks
@@ -74,15 +74,36 @@ export default function AccommodationRoomDetail({ userId }) {
     fetchAllPhotos();
   }, [accommodation, rooms]);
 
-  // 찜하기, 스크롤, 모달 등
-  const { isFavorite, toggleFavorite } = useFavorite({ userId, accommodationId: id });
+  // ---------------------------------------------------------------
+  // [수정] 찜하기(Favorite) 로직 개선
+  // 토큰이 없으면 useFavorite 훅에 userId를 주지 않아 API 호출을 막습니다.
+  // ---------------------------------------------------------------
+  const token = localStorage.getItem("accessToken");
+  const validUserId = token ? userId : null; 
+
+  // useFavorite 내부에서 userId가 null이면 API를 호출하지 않도록 동작합니다.
+  const { isFavorite, toggleFavorite } = useFavorite({ userId: validUserId, accommodationId: id });
+  
   const [localFavorite, setLocalFavorite] = useState(null);
   const effectiveFavorite = localFavorite ?? isFavorite;
 
   const handleToggleFavorite = async () => {
+    // 버튼 클릭 시 토큰 재확인
+    if (!token) {
+        if (window.confirm("로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠습니까?")) {
+            navigate("/login-selection");
+        }
+        return;
+    }
+
     const next = !effectiveFavorite;
     setLocalFavorite(next);
-    try { await toggleFavorite(); } catch { setLocalFavorite(!next); }
+    try { 
+        await toggleFavorite(); 
+    } catch { 
+        setLocalFavorite(!next);
+        alert("오류가 발생했습니다."); 
+    }
   };
 
   const roomsRef = useRef(null);
@@ -96,37 +117,23 @@ export default function AccommodationRoomDetail({ userId }) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
-  const handleBooking = async (room) => {
-    // 1. 로그인 체크 (필요 시 주석 해제)
-    /*
-    if (!userId) {
-        alert("로그인이 필요한 서비스입니다.");
-        // navigate("/login");
-        return;
-    }
-    */
 
+  const handleBooking = async (room) => {
     try {
-        // 2. 백엔드에 예약 토큰 요청 (재고 확인 포함됨)
         const response = await prepareBooking({
             roomId: room.roomId,
             checkinDate: checkIn,
             checkoutDate: checkOut
         });
 
-        // 3. 토큰을 Session Storage에 저장
         if (response && response.token) {
             sessionStorage.setItem("reservationToken", response.token);
-            
-            // 4. 예약 페이지로 이동 (토큰 기반으로 동작하므로 파라미터 최소화 가능)
-            // 필요하다면 쿼리 파라미터를 유지해도 됩니다.
             navigate(`/booking/new`); 
         } else {
             alert("예약 정보를 불러오는 데 실패했습니다.");
         }
     } catch (error) {
         console.error("예약 준비 에러:", error);
-        // 백엔드 BookingService에서 재고가 없으면 에러를 던지므로 여기서 잡힘
         alert("선택하신 객실은 현재 예약할 수 없습니다. (재고 부족 등)");
     }
   };
@@ -135,7 +142,7 @@ export default function AccommodationRoomDetail({ userId }) {
   if (!accommodation) return <div>숙소 정보가 없습니다.</div>;
 
   const mainImage = allGalleryImages.find(img => img.type === 'accommodation') || allGalleryImages[0];
-
+  
   return (
     <div className="min-h-screen bg-white pb-20">
       <div className="max-w-6xl mx-auto">

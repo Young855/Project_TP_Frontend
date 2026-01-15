@@ -122,7 +122,6 @@ const SideDrawer = ({ isOpen, onClose }) => {
             )}
           </div>
           
-          {/* 🌟 하단 메뉴: 클릭 시 handleProtectedMove 실행 */}
           <div className="mt-4 space-y-1">
             <NavItem 
               onClick={() => handleProtectedMove("/itinerary")} 

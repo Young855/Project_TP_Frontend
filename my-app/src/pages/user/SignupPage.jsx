@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { 
   createUser, 
-  createSocialUser, // ★ 추가됨: 소셜 회원가입 API
+  createSocialUser, 
   checkEmailDuplication, 
   checkNicknameDuplication,
 } from '../../api/userAPI';
@@ -10,7 +10,7 @@ import BirthDatePicker from '../../components/BirthDataPicker';
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const location = useLocation(); // ★ 추가됨: 이전 페이지에서 넘겨준 state 받기 위함
+  const location = useLocation(); 
   const { showModal } = useOutletContext();
 
   // 1. 전달받은 state 확인 (소셜 로그인 정보)
@@ -20,14 +20,13 @@ export default function SignupPage() {
   // 2. 소셜 모드 여부 판단 ('SOCIAL' vs 'NORMAL')
   const isSocialMode = signupType === 'SOCIAL';
 
-  // 3. State 초기화 (소셜 정보가 있으면 초기값으로 설정)
+  // 3. State 초기화
   const [email, setEmail] = useState(verifiedEmail || '');
   const [nickname, setNickname] = useState(socialNickname || '');
   
   // 소셜이면 이미 인증된 것으로 간주(true), 아니면 false
   const [isEmailVerified, setIsEmailVerified] = useState(isSocialMode); 
   
-  // 비밀번호 (소셜은 입력 안 받음)
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   
@@ -42,6 +41,9 @@ export default function SignupPage() {
   const [nicknameError, setNicknameError] = useState('');
   
   const [isNicknameVerified, setIsNicknameVerified] = useState(false);
+
+  // 로딩 상태 추가 (중복 클릭 방지)
+  const [isLoading, setIsLoading] = useState(false);
 
   // --- 유효성 검사 함수들 ---
   const validateEmail = (currentEmail) => {
@@ -99,7 +101,6 @@ export default function SignupPage() {
   };
 
   const handleEmailCheck = async () => {
-    // 소셜 모드면 중복 확인 불필요 (이미 잠금 상태)
     if (isSocialMode) return; 
 
     if (!validateEmail(email)) {
@@ -153,7 +154,6 @@ export default function SignupPage() {
   };
 
   const onEmailChange = (e) => {
-    // 소셜 모드면 입력 방지
     if (isSocialMode) return; 
     setEmail(e.target.value);
     setIsEmailVerified(false);
@@ -178,16 +178,17 @@ export default function SignupPage() {
     setNicknameError('');
   };
 
-  // ★ handleSubmit 로직 분기 처리
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 로딩 중이면 실행 차단
+    if (isLoading) return;
 
     let isValid = true;
     const requiredChecks = [];
     const validationErrors = {};
 
     const isEmailValid = validateEmail(email);
-    // 소셜 모드면 비밀번호 검사 건너뜀
     const isPasswordValid = isSocialMode ? true : validatePassword(password);
     const isPasswordConfirmValid = isSocialMode ? true : validatePasswordConfirm(passwordConfirm);
     const isNicknameInputValid = validateNickname(nickname);
@@ -227,7 +228,6 @@ export default function SignupPage() {
        requiredChecks.push('생년월일');
     }
 
-    // --- 에러 처리 블록 ---
     if (!isValid) {
       let alertMessage = '회원가입에 실패했습니다. 다음 항목들을 확인해주세요:\n\n';
 
@@ -252,7 +252,7 @@ export default function SignupPage() {
       return;
     }
 
-    // --- 데이터 전송 (분기 처리) ---
+    // --- 데이터 전송 ---
     const commonData = {
       email,
       nickname,
@@ -266,35 +266,39 @@ export default function SignupPage() {
     };
 
     try {
+      setIsLoading(true); // 로딩 시작
+
       let createdUser;
 
       if (isSocialMode) {
-        // [A] 소셜 가입 API 호출 (비밀번호 없음)
         createdUser = await createSocialUser(commonData);
       } else {
-        // [B] 일반 가입 API 호출 (비밀번호 포함)
         createdUser = await createUser({
             ...commonData,
             passwordHash: password
         });
       }
 
-      console.log('회원가입 성공:', createdUser);
+      console.log('회원가입 결과:', createdUser);
       
-      // 토큰이 있다면 저장 (자동 로그인)
+      // 토큰이 있다면 저장 (소셜 가입 시 자동 로그인)
       if (createdUser && createdUser.accessToken) {
           localStorage.setItem('accessToken', createdUser.accessToken);
       }
+
+      setIsLoading(false); // 로딩 끝
 
       showModal('가입 성공', isSocialMode 
           ? '소셜 계정 연동이 완료되었습니다.' 
           : '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.', 
       () => {
-        // 소셜 가입이면 메인으로, 일반 가입이면 로그인 페이지로 (선택 사항)
-        navigate(isSocialMode ? '/' : '/user/login');
+        // 소셜은 메인으로, 일반 가입은 로그인 페이지로
+        const targetPath = (isSocialMode && createdUser?.accessToken) ? '/' : '/user/login';
+        navigate(targetPath);
       });
 
     } catch (err) {
+      setIsLoading(false); // 에러 발생 시에도 로딩 끝
       const errorMessage = err.response?.data?.message || '회원가입 중 알 수 없는 오류가 발생했습니다.';
       console.error('회원가입 API 오류:', err);
       showModal('회원가입 실패', `가입 실패: ${errorMessage}`, () => {});
@@ -315,7 +319,7 @@ export default function SignupPage() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* 1. 이메일 (소셜일 경우 수정 불가) */}
+          {/* 1. 이메일 */}
           <div>
             <label htmlFor="email" className="form-label">이메일 (아이디)</label>
             <div className="flex space-x-2">
@@ -325,7 +329,6 @@ export default function SignupPage() {
                 value={email}
                 onChange={onEmailChange}
                 onBlur={() => validateEmail(email)}
-                // 소셜 모드거나 이미 인증된 경우 잠금
                 className={`form-input flex-1 
                     ${emailError ? 'border-red-500' : ''} 
                     ${isEmailVerified ? 'border-green-500' : ''}
@@ -333,11 +336,10 @@ export default function SignupPage() {
                 `}
                 placeholder="예: example@travel.com"
                 required
-                readOnly={isSocialMode} // 소셜이면 읽기 전용
+                readOnly={isSocialMode} 
                 disabled={isEmailVerified && !isSocialMode} 
               />
               
-              {/* 소셜 모드면 '인증됨' 배지 표시, 아니면 중복확인 버튼 */}
               {isSocialMode ? (
                   <span className="w-28 flex items-center justify-center bg-green-100 text-green-700 font-bold rounded-lg text-sm border border-green-200">
                     인증됨
@@ -356,13 +358,12 @@ export default function SignupPage() {
             
             {emailError && <p className="text-sm mt-1 text-red-500">{emailError}</p>}
             
-            {/* 일반 가입에서 인증 완료 메시지 */}
             {!isSocialMode && isEmailVerified && !emailError && (
                 <p className="text-sm mt-1 text-green-500">사용 가능한 이메일입니다.</p>
             )}
           </div>
 
-          {/* 2. 비밀번호 (일반 가입일 때만 표시) */}
+          {/* 2. 비밀번호 (일반 가입만) */}
           {!isSocialMode && (
             <>
               <div>
@@ -459,8 +460,19 @@ export default function SignupPage() {
             />
           </div>
 
-          <button type="submit" className="btn-primary w-full">
-            {isSocialMode ? '가입 완료' : '회원가입'}
+          <button 
+            type="submit" 
+            disabled={isLoading} 
+            className={`w-full py-3 px-4 rounded-lg text-white font-bold transition duration-200
+                ${isLoading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+                }`}
+          >
+            {isLoading 
+                ? '처리 중입니다...' 
+                : (isSocialMode ? '가입 완료' : '회원가입')
+            }
           </button>
         </form>
 

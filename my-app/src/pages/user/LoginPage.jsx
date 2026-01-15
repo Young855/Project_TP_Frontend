@@ -2,11 +2,10 @@
 import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Mail, Key } from 'lucide-react';
-// 🌟 [추가] API 함수 임포트 (경로 확인해주세요)
-import { loginUser } from '../../api/userAPI'; 
+import { loginUser } from '../../api/loginAPI'; // [주의] 경로가 api/loginAPI.js 인지 확인
 
 const LoginPage = () => {
-  const { onLogin } = useOutletContext(); // App.js에서 내려준 로그인 상태 변경 함수
+  const { onLogin } = useOutletContext(); // App.js의 로그인 상태 갱신 함수
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
@@ -23,26 +22,39 @@ const LoginPage = () => {
     }
 
     try {
-      // 1. 백엔드로 로그인 요청
+      // 1. API 호출
       const data = await loginUser(email, password);
-      // 백엔드에서 { accessToken, nickname, email } 을 보내줍니다.
-      // 2. 받은 정보 로컬 스토리지에 저장
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('nickname', data.nickname || '여행자');
-      localStorage.setItem('email', data.email || '');
+      
+      // 2. 응답 데이터 구조 분해 (백엔드 LoginResponseDTO 구조 참고)
+      const { tokenDTO, nickname, email, accountId, role } = data;
 
-      // 3. (선택) 앱 전역 상태 업데이트 (App.js의 isLoggedIn 갱신용)
+      // 3. 토큰 및 유저 정보 저장
+      if (tokenDTO) {
+          localStorage.setItem('accessToken', tokenDTO.accessToken);
+          localStorage.setItem('refreshToken', tokenDTO.refreshToken);
+      }
+      
+      localStorage.setItem('nickname', nickname || '여행자');
+      localStorage.setItem('email', email);
+      localStorage.setItem('accountId', accountId);
+      localStorage.setItem('role', role);
+
+      // 4. 전역 상태 업데이트 및 이동
       if (onLogin) onLogin();
-
-      alert(`${data.nickname}님 환영합니다!`);
-
-      // 4. 메인으로 이동 (헤더 갱신을 위해 새로고침 이동 권장)
-      window.location.href = "/"; 
-
+      
+      alert(`${nickname || '회원'}님 환영합니다!`);
+      
+      // 관리자인 경우 관리자 페이지로, 아니면 메인으로
+     if (role === ROLE_ID.ADMIN) { // 또는 if (role === 1)
+        window.location.href = "/admin";
+    } else {
+        window.location.href = "/";
+    }
     } catch (err) {
       console.error("로그인 실패:", err);
-      // 백엔드 에러 메시지 표시 or 기본 메시지
-      setError('이메일 또는 비밀번호가 일치하지 않습니다.');
+      // 백엔드 에러 메시지가 있다면 보여줌, 없으면 기본 메시지
+      const msg = err.response?.data?.message || '이메일 또는 비밀번호가 일치하지 않습니다.';
+      setError(msg);
     }
   };
 
@@ -52,7 +64,6 @@ const LoginPage = () => {
         <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">로그인</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
           <div>
             <label htmlFor="email" className="form-label flex items-center">
               <Mail size={16} className="mr-2 text-gray-400" /> 이메일
@@ -84,7 +95,6 @@ const LoginPage = () => {
             />
           </div>
           
-          {/* 에러 메시지 영역 */}
           {error && (
             <div className="text-sm text-red-600 p-3 bg-red-50 border border-red-200 rounded-lg">
               {error}
@@ -99,19 +109,9 @@ const LoginPage = () => {
         </form>
 
         <div className="text-sm text-center text-gray-600 mt-8 flex justify-center space-x-6">
-          <button 
-            onClick={() => navigate('/find-password')} 
-            className="hover:text-blue-600 transition-colors font-medium"
-          >
-            비밀번호 찾기
-          </button>
+          <button onClick={() => navigate('/find-password')} className="hover:text-blue-600 transition-colors font-medium">비밀번호 찾기</button>
           <span className="text-gray-300">|</span>
-          <button 
-            onClick={() => navigate('/user/email-verification')} 
-            className="hover:text-blue-600 transition-colors font-medium"
-          >
-            회원가입
-          </button>
+          <button onClick={() => navigate('/user/email-verification')} className="hover:text-blue-600 transition-colors font-medium">회원가입</button>
         </div>
       </div>
     </div>

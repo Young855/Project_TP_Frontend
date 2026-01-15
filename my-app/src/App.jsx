@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext, Navigate } from 'react-router-dom';
 import './index.css';
 import { useUrlUser } from './hooks/useUrlUser';
 
@@ -11,8 +11,6 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
-import AccommodationDetailPage from './pages/AccommodationDetailPage'; // 기존 파일명 유지 (유저사이드)
-import BookingPage from './pages/booking/BookingPage';
 import PaymentPage from './pages/PaymentPage';
 import WriteReviewPage from './pages/WriteReviewPage';
 import LoginSelectionPage from './pages/LoginSelection';
@@ -25,6 +23,7 @@ import partnerAccommodationRoutes from './routers/PartnerAccomodationRouter';
 import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
+import BookingRouter from './routers/BookingRouter';
 
 // [수정] API 함수명 변경
 import { getAllAccommodations } from "./api/accommodationAPI"; 
@@ -235,7 +234,6 @@ const router = createBrowserRouter([
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },
       { path: 'accommodation/*', element:<AccommodationPage /> },
-      { path: 'bookings/*', element: <BookingPage /> },
       { path: 'payment', element: <PaymentPage /> },
       { path: 'itinerary', element: <ItineraryPage /> },
       { path: 'write-review', element: <WriteReviewPage /> },
@@ -243,6 +241,7 @@ const router = createBrowserRouter([
       ...PartnerRouter,
       ...UserRouter,
       ...FavoriteRouter,
+      ...BookingRouter,
     ],
   },
 
@@ -250,10 +249,9 @@ const router = createBrowserRouter([
     path: '/partner',
     element: <PartnerLayout />,
     children: [
-      { index: true, element: <PartnerDashboard /> },
-      {path : 'dashboard', element: <PartnerDashboard/>},
-      { path: 'accommodations', element: <Placeholder title="숙소 관리" /> }, 
-      { path: 'reservations', element: <Placeholder title="예약 관리" /> },
+      { index: true, element: <Navigate to="accommodations" replace /> },
+//      { index: true, element: <PartnerDashboard /> },
+     {path : 'dashboard', element: <PartnerDashboard/>},
       ...RoomRouter,
       ...partnerAccommodationRoutes, 
     ],
@@ -262,9 +260,9 @@ const router = createBrowserRouter([
     path: '/admin',
     element: <AdminLayout />, 
     children: [
-      { index: true, element: <AdminDashboard /> },
+      { index: true, element: <Navigate to="accounts" replace /> },
+     // { index: true, element: <AdminDashboard /> },
       { path: 'dashboard', element: <AdminDashboard /> },
-      { path: 'users', element: <Placeholder title="회원 관리" /> }, 
       ...AdminRouter,
     ],
   },

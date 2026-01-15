@@ -3,6 +3,7 @@
 
 import { useEffect } from "react";
 import { getRoomPhotos } from "@/api/roomPhotoAPI";
+import { prepareBooking } from "../../../api/bookingAPI";
 
 export default function RoomSection({
   
@@ -113,7 +114,7 @@ export default function RoomSection({
                       flex items-center justify-center self-end mb-[2px] ${
                         isBookable
                           ? "bg-blue-600 text-gray-700 hover:bg-blue-500"
-                          : "bg-white border border-gray-300 text-gray-400 cursor-not-allowed"
+                          : "bg-blue-700 border border-gray-300 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     선택

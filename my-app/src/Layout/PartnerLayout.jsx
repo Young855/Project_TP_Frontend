@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-    LayoutDashboard, Calendar, List, LogOut, User, 
+     Calendar,  LogOut, User, 
     Building, ChevronDown, PlusCircle, Settings, MapPin, Lock 
 } from 'lucide-react';
 import { PartnerProvider, usePartner } from '../context/PartnerContext';
@@ -11,18 +11,30 @@ const PartnerLayoutContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const { 
-      accommodations, 
-      currentAccommodation, 
-      switchAccommodation, 
-      partnerInfo, 
-      isLoading, 
-  } = usePartner();
+  const { partnerInfo, isLoading, accommodations, currentAccommodation } = usePartner();
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+      const token = localStorage.getItem('accessToken');
+      const role = localStorage.getItem('role'); // 로그인 시 저장했다고 가정 (없으면 토큰만 검사)
+
+      // 1. 토큰(로그인 정보)이 아예 없는 경우
+      if (!token) {
+          alert("로그인이 필요한 서비스입니다.");
+          navigate('/', { replace: true }); // 메인으로 강제 이동 (뒤로가기 방지)
+          return;
+      }
+
+      // 2. (선택사항) 토큰은 있는데 '파트너' 권한이 아닌 경우 (예: 일반 유저가 들어옴)
+      // role 저장을 안 하고 있다면 이 부분은 생략하거나 API 에러로 처리됩니다.
+      if (role && role !== '5') {
+          alert("접근 권한이 없습니다 (파트너 전용).");
+          localStorage.clear();
+          navigate('/', { replace: true });
+          return;
+      }
     const handleClickOutside = (event) => {
       if (isDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -50,15 +62,14 @@ const PartnerLayoutContent = () => {
     }`;
   };
 
-  // 🌟 [추가] 페이지 이동 방지 가드 (Guard)
   // URL에 'new'나 'edit'이 포함되어 있으면 작성 중인 것으로 간주하고 경고창을 띄웁니다.
   const handleNavigationGuard = (e) => {
       const isFormPage = /\/(new|edit)(\/|$|\?)/.test(location.pathname);
       
       if (isFormPage) {
           if (!window.confirm("작성 중인 내용이 저장되지 않았습니다. 정말 이동하시겠습니까?")) {
-              e?.preventDefault(); // 이동 취소
-              return false;       // 진행 막기
+              e?.preventDefault(); 
+              return false;
           }
       }
       return true; // 이동 허용
@@ -67,7 +78,7 @@ const PartnerLayoutContent = () => {
   const handleLogout = (e) => {
     if (!handleNavigationGuard(e)) return;
 
-    localStorage.removeItem('partnerId'); 
+    localStorage.clear();
     navigate('/');
   };
   

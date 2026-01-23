@@ -20,16 +20,7 @@ const Header = ({ navigate, onOpenDrawer, onSubmitSearch }) => {
 
   // 🌟 [추가] 로그아웃 핸들러 함수
   const handleLogout = () => {
-    // 1. 로컬 스토리지의 모든 인증 정보 삭제
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("nickname");
-    localStorage.removeItem("email");
-    localStorage.removeItem("accountId");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("role");
-    
-    // (선택사항) 검색 조건 등도 초기화하고 싶다면 추가
-    // localStorage.removeItem(STORAGE_KEY);
+    localStorage.clear();
 
     alert("로그아웃 되었습니다.");
 

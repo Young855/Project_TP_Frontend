@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, LogOut, Shield } from 'lucide-react';
+import {  Users, Building, LogOut, Shield } from 'lucide-react';
+import { useEffect } from 'react';
 import ScrollToTop from '../components/ScrollToTop';
 
 const AdminLayout = () => {
@@ -12,6 +13,26 @@ const AdminLayout = () => {
     navigate('/');
   };
 
+  useEffect(() => {
+      const token = localStorage.getItem('accessToken');
+      const role = localStorage.getItem('role'); // 로그인 시 저장했다고 가정 (없으면 토큰만 검사)
+
+      // 1. 토큰(로그인 정보)이 아예 없는 경우
+      if (!token) {
+          alert("로그인이 필요한 서비스입니다.");
+          navigate('/', { replace: true }); // 메인으로 강제 이동 (뒤로가기 방지)
+          return;
+      }
+
+      // 2. (선택사항) 토큰은 있는데 '파트너' 권한이 아닌 경우 (예: 일반 유저가 들어옴)
+      // role 저장을 안 하고 있다면 이 부분은 생략하거나 API 에러로 처리됩니다.
+      if (role && role !== '1' && role !== '2') {
+          alert("접근 권한이 없습니다 (관리자 전용).");
+          navigate('/', { replace: true });
+          return;
+      }
+
+  }, [navigate]);
   // PartnerLayout과 동일한 링크 스타일 함수
   const getLinkClass = (path) => {
     // 현재 경로가 해당 path와 일치하거나 하위 경로일 때 활성화

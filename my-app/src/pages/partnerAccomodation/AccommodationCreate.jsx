@@ -1,6 +1,6 @@
 import axios from "axios"; 
-import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom"; // [수정] Form 제거, 일반 form 사용
+import  { useState } from "react";
+import { useNavigate } from "react-router-dom"; // [수정] Form 제거, 일반 form 사용
 import AmenitySelector from "../../components/AmenitySelector"; 
 
 // [추가] API 함수와 Context Hook 임포트
@@ -11,10 +11,9 @@ const ACCOMMODATION_TYPES = ["HOTEL", "PENSION", "GUESTHOUSE", "RESORT"];
 
 const AccommodationCreate = () => { 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams(); 
     const { refreshPartnerData } = usePartner();
 
-    const partnerId = searchParams.get('partnerId') || 1;
+    const partnerId = localStorage.getItem('partnerId');
     const [addressFull, setAddressFull] = useState("");
     const [city, setCity] = useState("");
     const [latitude, setLatitude] = useState("");
@@ -102,7 +101,7 @@ const AccommodationCreate = () => {
         // 백엔드로 보낼 데이터 객체 생성
         // 주의: 백엔드 DTO 필드명과 일치해야 합니다.
         const accommodationData = {
-            partnerId: parseInt(formData.get("partnerId")),
+            partnerId: parseInt(partnerId),
             name: formData.get("name"),
             accommodationType: formData.get("accommodationType"),
             address: formData.get("address"),
@@ -145,7 +144,7 @@ const AccommodationCreate = () => {
                 onSubmit={handleSubmit}
                 className="bg-white shadow-md rounded-lg p-6 space-y-4"
             >
-                <input type="hidden" name="partnerId" defaultValue={partnerId} />
+                <input type="hidden" name="partnerId" value={partnerId || ''} />
                 
                 <div>
                     <label className="form-label" htmlFor="name">숙박 시설명</label>

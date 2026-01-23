@@ -7,27 +7,38 @@ const PartnerContext = createContext();
 export const PartnerProvider = ({ children }) => {
   const [accommodations, setAccommodations] = useState([]); 
   const [currentAccommodation, setCurrentAccommodation] = useState(null); 
-  const [partnerInfo, setPartnerInfo] = useState({ 
-      partnerId: null, 
-      bizName: '', 
-      ceoName: '' 
-  });
   const [isLoading, setIsLoading] = useState(true);
 
-  // 데이터 로드 함수
+  const partnerInfo = {
+      get partnerId() { return localStorage.getItem('partnerId'); },
+      get bizName() { return localStorage.getItem('bizName') || ''; },
+      get ceoName() { return localStorage.getItem('ceoName')}, 
+      get email() { return localStorage.getItem('email') || ''; }
+  };
+
   const loadPartnerData = async () => {
-    const storedPartnerId =  1; //localStorage.getItem('partnerId') ||
+    const storedPartnerId = localStorage.getItem('partnerId');
+    if (!storedPartnerId) {
+        setIsLoading(false);
+        return;
+    }
 
     try {
       setIsLoading(true);
 
-      // 1. 파트너 정보와 숙소 목록을 병렬로 조회
+      // 1. 병렬 조회
       const [pInfo, pList] = await Promise.all([
           getPartner(storedPartnerId),
           getAccommodationsByPartnerId(storedPartnerId)
       ]);
 
-      setPartnerInfo(pInfo);
+      // ✅ [핵심 변경] State에 저장하는 대신 localStorage에 저장
+      if (pInfo) {
+          localStorage.setItem('bizName', pInfo.bizName);
+          localStorage.setItem('ceoName', pInfo.ceoName); // 혹은 nickname 키 사용
+          // partnerId는 이미 있으므로 생략 가능하나 확실히 하기 위해 저장
+          localStorage.setItem('partnerId', pInfo.partnerId);
+      }
       
       const safeList = Array.isArray(pList) ? pList : [];
       setAccommodations(safeList);
@@ -38,9 +49,7 @@ export const PartnerProvider = ({ children }) => {
           localStorage.removeItem('lastSelectedAccommodationId'); 
       } else {
           const savedId = localStorage.getItem('lastSelectedAccommodationId');
-          
           const target = safeList.find(p => p.accommodationId === Number(savedId)) || safeList[0];
-          
           setCurrentAccommodation(target);
           localStorage.setItem('lastSelectedAccommodationId', target.accommodationId);
       }
@@ -70,7 +79,7 @@ export const PartnerProvider = ({ children }) => {
         accommodations,      
         currentAccommodation,
         switchAccommodation, 
-        partnerInfo,
+        partnerInfo, // 이제 State가 아니라 위에서 정의한 Getter 객체가 넘어갑니다.
         isLoading,
         refreshPartnerData: loadPartnerData 
     }}>

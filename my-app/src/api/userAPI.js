@@ -1,10 +1,8 @@
-import axios from "axios";
+import api from "./AxiosInstance"; 
 import { 
     USER_ENDPOINTS, 
-    axiosConfig
 } from "../config";
 
-const api = axios.create(axiosConfig);
 
 export const checkEmailDuplication = async (email) => {
   try {
@@ -124,6 +122,18 @@ export const deleteUser = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`유저 ${id} 삭제 오류:`, error);
+    throw error;
+  }
+};
+
+export const getUserByAccount = async (accountId) => {
+  try {
+    // 엔드포인트 경로를 직접 지정하거나 config에 추가해서 사용
+    // 예: /users/account/1
+    const response = await api.get(USER_ENDPOINTS.USERS.INFO(accountId));
+    return response.data;
+  } catch (error) {
+    console.error(`Account ID ${accountId} 로 유저 조회 오류:`, error);
     throw error;
   }
 };

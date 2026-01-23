@@ -1,9 +1,7 @@
-import axios from "axios";
+import api from "./AxiosInstance"; 
 import { ACCOMMODATIONS_ENDPOINTS, axiosConfig, ADMIN_ENDPOINTS } from "../config";
 
-const api = axios.create(axiosConfig);
 
-// 모든 숙소 조회 (GET /accommodations)
 export const getAllAccommodations = async () => {
   try {
     const response = await api.get(ACCOMMODATIONS_ENDPOINTS.ACCOMMODATIONS.LIST_ALL);
@@ -26,6 +24,7 @@ export const getAccommodationsByPartnerId = async (partnerId) => {
     throw error;
   }
 };
+
 
 // 🌟 [핵심] 숙소 목록 조회 (이미지 통합 + 페이징 지원)
 export const getAccommodationsByPartnerIdWithMainPhoto = async (partnerId, page = 0, size = 5) => {
@@ -157,5 +156,17 @@ export const getAccommodationDetail = async (id, params) => {
   } catch (error) {
     console.error(`숙소 ${id} 상세 통합 조회 오류:`, error);
     throw error;
+  }
+};
+export const getAccommodationSummaries = async (ids) => {
+  try {
+    // ids 배열을 콤마로 구분된 문자열로 변환 (예: "1,2,3")
+    const response = await api.get(`${ACCOMMODATIONS_ENDPOINTS.ACCOMMODATIONS.LIST_ALL}/summaries`, {
+        params: { ids: ids.join(',') }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`추천 숙소 목록 조회 오류:`, error);
+    return []; 
   }
 };

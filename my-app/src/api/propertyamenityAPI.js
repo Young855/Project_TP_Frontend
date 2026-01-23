@@ -1,7 +1,6 @@
-import axios from "axios";
-import { PROPERTY_AMENITY_ENDPOINTS, axiosConfig } from "../config";
+import api from "./AxiosInstance"; 
+import { PROPERTY_AMENITY_ENDPOINTS } from "../config";
 
-const api = axios.create(axiosConfig);
 
 export const updatePropertyAmenities = async (propertyId, amenityIdList) => {
   try {

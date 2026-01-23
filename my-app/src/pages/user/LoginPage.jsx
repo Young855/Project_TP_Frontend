@@ -1,11 +1,12 @@
 // src/pages/LoginPage.jsx
+
 import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Mail, Key } from 'lucide-react';
-import { loginUser } from '../../api/loginAPI'; // [주의] 경로가 api/loginAPI.js 인지 확인
+import { loginUser } from '../../api/loginAPI'; 
 
 const LoginPage = () => {
-  const { onLogin } = useOutletContext(); // App.js의 로그인 상태 갱신 함수
+  const { onLogin } = useOutletContext(); 
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
@@ -22,37 +23,53 @@ const LoginPage = () => {
     }
 
     try {
-      // 1. API 호출
       const data = await loginUser(email, password);
       
-      // 2. 응답 데이터 구조 분해 (백엔드 LoginResponseDTO 구조 참고)
-      const { tokenDTO, nickname, email, accountId, role } = data;
+      const { 
+        tokenDTO, 
+        nickname, 
+        email: userEmail, 
+        accountId, 
+        role: userRole 
+      } = data;
+      const roleId = Number(userRole);
 
-      // 3. 토큰 및 유저 정보 저장
+      if (roleId === 5) {
+          alert("파트너 회원은 '파트너 전용 로그인' 페이지를 이용해주세요.");
+          navigate('/partner/login'); 
+          return; 
+      }
+
       if (tokenDTO) {
           localStorage.setItem('accessToken', tokenDTO.accessToken);
           localStorage.setItem('refreshToken', tokenDTO.refreshToken);
       }
       
-      localStorage.setItem('nickname', nickname || '여행자');
-      localStorage.setItem('email', email);
-      localStorage.setItem('accountId', accountId);
-      localStorage.setItem('role', role);
+      let displayNickname = nickname;
+      if (!displayNickname) {
+          if (roleId === 1 || roleId === 2) {
+              displayNickname = '관리자';
+          } else {
+              displayNickname = '여행자';
+          }
+      }
 
-      // 4. 전역 상태 업데이트 및 이동
+      localStorage.setItem('nickname', displayNickname);
+      localStorage.setItem('email', userEmail);
+      localStorage.setItem('accountId', accountId);
+      localStorage.setItem('role', roleId); 
       if (onLogin) onLogin();
       
-      alert(`${nickname || '회원'}님 환영합니다!`);
+      alert(`${displayNickname}님 환영합니다!`);
       
-      // 관리자인 경우 관리자 페이지로, 아니면 메인으로
-     if (role === ROLE_ID.ADMIN) { // 또는 if (role === 1)
-        window.location.href = "/admin";
-    } else {
-        window.location.href = "/";
-    }
+      if (roleId === 1 || roleId === 2) {
+          window.location.href = "/admin";
+      } else {
+          window.location.href = "/";
+      }
+
     } catch (err) {
       console.error("로그인 실패:", err);
-      // 백엔드 에러 메시지가 있다면 보여줌, 없으면 기본 메시지
       const msg = err.response?.data?.message || '이메일 또는 비밀번호가 일치하지 않습니다.';
       setError(msg);
     }

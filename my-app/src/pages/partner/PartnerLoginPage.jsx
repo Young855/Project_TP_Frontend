@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Mail, Key } from 'lucide-react';
-import { loginPartner } from '../../api/loginAPI'; // [주의] 경로 확인
+import { loginPartner } from '../../api/loginAPI'; 
+import { getPartnerByAccountId } from '../../api/partnerAPI';
 
 const PartnerLoginPage = () => {
   const { onLogin, showModal } = useOutletContext(); 
   const navigate = useNavigate();
 
+  // [1] 여기서 이미 'email'이라는 상태 변수를 선언했습니다.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,33 +29,39 @@ const PartnerLoginPage = () => {
     setIsLoading(true);
     
     try {
-        // 1. 파트너 로그인 API 호출
+        // [2] 여기서 상태 변수 'email'을 사용합니다.
         const data = await loginPartner(email, password);
+        const { 
+            tokenDTO, 
+            nickname, 
+            email: partnerEmail,
+            accountId, 
+            role 
+        } = data;
+        const partnerData = await getPartnerByAccountId(accountId);
+            
+            // partnerId 저장 (이제 다른 페이지에서 꺼내 쓸 수 있음)
+            localStorage.setItem('partnerId', partnerData.partnerId);
+        // [3] 수정 포인트: 백엔드에서 온 'email'을 'partnerEmail'로 이름 바꿔서 받기 (충돌 방지)
         
-        // 2. 데이터 구조 분해
-        const { tokenDTO, nickname, email, accountId, role } = data;
 
-        // 3. 토큰 저장
         if (tokenDTO) {
             localStorage.setItem('accessToken', tokenDTO.accessToken);
             localStorage.setItem('refreshToken', tokenDTO.refreshToken);
         }
 
-        // 4. 정보 저장 (닉네임 자리에 CEO 이름이 옴)
         localStorage.setItem('nickname', nickname || '파트너');
-        localStorage.setItem('email',  email);
-        localStorage.setItem('accountId', accountId);
         
-        // 파트너임을 구분하기 위해 role 저장 권장
+        // [4] 이름 바꾼 변수 사용
+        localStorage.setItem('email', partnerEmail);
+        
+        localStorage.setItem('accountId', accountId);
         localStorage.setItem('role', role); 
         
-        // 5. 전역 상태 갱신
         if (onLogin) onLogin();
 
         alert(`파트너 ${nickname}님 환영합니다!`);
-        
-        // 6. 파트너 메인 페이지로 이동 (없으면 기본 메인으로)
-        window.location.href = "/partner"; // 혹은 "/"
+        window.location.href = "/partner/dashboard"; // 파트너 메인으로 이동
 
     } catch (err) {
         console.error('파트너 로그인 오류:', err);
@@ -80,7 +88,7 @@ const PartnerLoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="partner@business.com"
-              className="form-input w-full p-2 border rounded-md"
+              className="form-input transition duration-200 w-full p-2 border rounded-md"
               autoComplete="email"
               required
               disabled={isLoading}
@@ -97,7 +105,7 @@ const PartnerLoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
-              className="form-input w-full p-2 border rounded-md"
+              className="form-input transition duration-200 w-full p-2 border rounded-md"
               autoComplete="current-password"
               required
               disabled={isLoading}

@@ -1,14 +1,5 @@
 import axios from "axios";
 import { 
-    USER_ENDPOINTS, 
-    BOOKING_ENDPOINTS, 
-    ROOM_ENDPOINTS, 
-    PROPERTIES_ENDPOINTS, 
-    AMENITIES_ENDPOINTS, 
-    ITINERARY_ENDPOINTS,
-    ITINERARY_ITEM_ENDPOINTS,
-    HASHTAG_ENDPOINTS,
-    FAVORITE_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
     axiosConfig // 공통 설정 객체
 } from "../config"; // config 파일 경로를 맞춰주세요.

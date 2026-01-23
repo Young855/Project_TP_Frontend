@@ -25,9 +25,6 @@ const LoginSelectionPage = () => {
       return;
     }
 
-    // Google 등 다른 소셜은 아직 미구현
-    console.log(`${provider} API 로그인 시도 - 기능 구현 예정`);
-    showModal('API 로그인 준비', `${provider}를 이용한 소셜 로그인 기능은 추후 구현될 예정입니다.`, null);
   };
   
   // 소셜 로그인 버튼 컴포넌트
@@ -50,13 +47,6 @@ const LoginSelectionPage = () => {
 
         {/* 소셜 로그인 섹션 */}
         <div className="space-y-4 mb-8">
-          <SocialLoginButton
-            provider="Google"
-            bgColor="bg-white"
-            textColor="text-gray-700"
-            icon={<Globe size={20} className="text-red-500" />}
-            onClick={() => handleApiLogin('Google')}
-          />
           {/* Kakao 버튼 클릭 시 handleApiLogin('Kakao') 실행됨 */}
           <SocialLoginButton
             provider="Kakao"

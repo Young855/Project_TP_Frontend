@@ -1,10 +1,8 @@
-import axios from "axios";
 import { 
     PARTNER_ENDPOINTS, 
-    axiosConfig 
 } from "../config"; 
+import api from "./AxiosInstance"; 
 
-const api = axios.create(axiosConfig);
 
 export const partnerLogin = async (email, password) => {
   try {
@@ -80,6 +78,18 @@ export const getPartner = async (id) => {
     console.error(`파트너 ${id} 조회 오류:`, error);
     throw error;
   }
+};
+
+export const getPartnerByAccountId = async (accountId) => {
+    try {
+        const response = await api.get(
+            PARTNER_ENDPOINTS.PARTNERS.GET_BY_ACCOUNT(accountId)
+        );
+        return response.data; // 여기서 partnerId가 포함된 DTO가 반환됨
+    } catch (error) {
+        console.error("파트너 정보 조회 실패:", error);
+        throw error;
+    }
 };
 
 export const updatePartner = async (id, partnerData) => {

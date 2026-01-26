@@ -77,6 +77,28 @@ export default function SignupPage() {
     return true;
   };
 
+  const formatPhoneNumber = (value) => {
+    if (!value) return "";
+    const phoneNumber = value.replace(/[^\d]/g, "");
+
+    // 4자리 미만: 그대로
+    if (phoneNumber.length < 4) return phoneNumber;
+    // 7자리 미만: 000-000
+    if (phoneNumber.length < 8) {
+      return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3)}`;
+    }
+    // 11자리 이하: 000-0000-0000
+    return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 7)}-${phoneNumber.slice(7, 11)}`;
+  };
+
+  const handlePhoneChange = (e) => {
+    const rawValue = e.target.value;
+    const onlyNumbers = rawValue.replace(/[^\d]/g, ""); // 숫자 이외 제거
+
+    if (onlyNumbers.length <= 11) {
+      setPhone(onlyNumbers); // state에는 하이픈 없는 순수 숫자만 저장
+    }
+  };
   const handleNicknameCheck = async () => {
     if (!validateNickname(nickname)) return;
 
@@ -249,7 +271,7 @@ export default function SignupPage() {
               <button 
                 type="button" 
                 onClick={handleNicknameCheck} 
-                className="w-28 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-sm transition"
+                className="w-28 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-black text-sm transition"
                 disabled={!nickname.trim()}
               >
                 {isNicknameVerified ? "사용 가능" : "중복 확인"}
@@ -264,8 +286,8 @@ export default function SignupPage() {
             <label className="form-label">전화번호 (선택)</label>
             <input
               type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              value={formatPhoneNumber(phone)}
+              onChange={handlePhoneChange}
               className="form-input"
               placeholder="010-1234-5678"
             />

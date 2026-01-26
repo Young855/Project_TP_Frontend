@@ -138,7 +138,7 @@ const PartnerLoginPage = () => {
           </button>
           <span className="text-gray-300">|</span>
           <button 
-            onClick={() => navigate('/partner/email-verification')} 
+            onClick={() => navigate('/partner/email-verification', { state: { signupType: 'PARTNER'}})} 
             className="hover:text-blue-600 transition-colors font-medium"
           >
             파트너 등록

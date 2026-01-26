@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCheck, ShoppingBag, Map, Star, Settings, Edit3, Save, Check, Quote } from 'lucide-react';
+import { UserCheck, Settings, Edit3, Save, Check, Quote } from 'lucide-react';
 import { getUserPreference, saveUserPreference } from '../../api/userPrefAPI';
 import { getUserByAccount } from '../../api/userAPI'; 
 
@@ -73,7 +73,7 @@ const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
         maxBudget: Number(formData.maxBudget),
         preferredStayNights: Number(formData.preferredStayNights),
       };
-
+      console.log("취향 데이터 ",payload);
       await saveUserPreference(userId, payload);
       alert('취향 정보가 저장되었습니다.');
       onSaveSuccess(); 

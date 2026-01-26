@@ -1,4 +1,4 @@
-import { axiosConfig, FAVORITE_ENDPOINTS } from "../config";
+import {  FAVORITE_ENDPOINTS } from "../config";
 // AxiosInstance에서 만든 'api'는 이미 interceptor가 설정된 상태입니다.
 import api from "./AxiosInstance"; 
 

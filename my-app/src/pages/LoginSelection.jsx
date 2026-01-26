@@ -43,7 +43,9 @@ const LoginSelectionPage = () => {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
-        <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">로그인</h2>
+        <div className="flex justify-center mb-8">
+          <img src="/images/logo_travel_people.png" alt="Travel People" className="h-40 w-auto" />
+        </div>
 
         {/* 소셜 로그인 섹션 */}
         <div className="space-y-4 mb-8">

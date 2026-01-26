@@ -205,8 +205,8 @@ const Header = ({ navigate, onOpenDrawer, onSubmitSearch }) => {
         <div className="flex items-center h-16 w-full">
           {/* 1. 로고 */}
           <div className="flex items-center w-1/3">
-            <Link to="/" className="text-2xl font-bold text-blue-600 cursor-pointer">
-              TP
+            <Link to="/" className="cursor-pointer">
+              <img src="/images/logo_travel_people.png" alt="Travel People" className="h-12 w-auto" />
             </Link>
           </div>
 

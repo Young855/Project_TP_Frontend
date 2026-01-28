@@ -15,7 +15,8 @@ import { ACCOMMODATION_PHOTO_ENDPOINTS, ROOM_PHOTO_ENDPOINTS } from "@/config";
 import useAccommodationDetail from "@/hooks/accommodation/detail/useAccommodationDetail";
 import useFavorite from "@/hooks/accommodation/detail/useFavorite";
 
-export default function AccommodationRoomDetail({ userId }) {
+// [변경] props에서 userId를 받는 대신 내부에서 직접 확인하므로, props에서 userId 삭제 가능
+export default function AccommodationRoomDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -75,20 +76,20 @@ export default function AccommodationRoomDetail({ userId }) {
   }, [accommodation, rooms]);
 
   // ---------------------------------------------------------------
-  // [수정] 찜하기(Favorite) 로직 개선
-  // 토큰이 없으면 useFavorite 훅에 userId를 주지 않아 API 호출을 막습니다.
+  // [수정] userId를 props가 아닌 localStorage에서 직접 조회
   // ---------------------------------------------------------------
   const token = localStorage.getItem("accessToken");
-  const validUserId = token ? userId : null; 
+  const storedUserId = localStorage.getItem("userId");
+  
+  // 로그인되어 있고 userId가 있으면 숫자로 변환하여 사용
+  const validUserId = (token && storedUserId) ? Number(storedUserId) : null; 
 
-  // useFavorite 내부에서 userId가 null이면 API를 호출하지 않도록 동작합니다.
   const { isFavorite, toggleFavorite } = useFavorite({ userId: validUserId, accommodationId: id });
   
   const [localFavorite, setLocalFavorite] = useState(null);
   const effectiveFavorite = localFavorite ?? isFavorite;
 
   const handleToggleFavorite = async () => {
-    // 버튼 클릭 시 토큰 재확인
     if (!token) {
         if (window.confirm("로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠습니까?")) {
             navigate("/login-selection");

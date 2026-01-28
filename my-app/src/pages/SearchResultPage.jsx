@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-// import { useUrlUser } from "../hooks/useUrlUser"; // (사용 안 함)
 
 // Hooks
 import { useAccommodationFilter } from "../hooks/useAccommodationFilter";
@@ -12,17 +11,13 @@ import AccommodationCard from "../components/common/searches/AccommodationCard";
 
 // Constants & API
 import { SORT_OPTIONS } from "../constants/SearchOption";
-// [삭제] config 직접 import 대신 API 함수 사용
-// import { ACCOMMODATION_PHOTO_ENDPOINTS } from "../config"; 
 import { calculateTotalPrices } from "../api/accommodationPriceAPI";
 import { getFavoriteIdMap, addFavorite, removeFavorite } from "../api/favoriteAPI"; 
 import { searchAccommodationsWithMainPhoto, getAccommodationSummaries } from "../api/accommodationAPI"; 
-
-// [추가] 이미지 URL 생성 API 함수 Import (깔끔한 코드의 핵심!)
 import { getAccommodationPhotoBlobUrl } from "../api/accommodationPhotoAPI"; 
 
-// [추가] 유저 정보 조회 API
-import { getUserByAccount } from "../api/userAPI";
+// [변경] getUserByAccount 제거
+// import { getUserByAccount } from "../api/userAPI"; 
 
 // AI & User Preference API
 import { getAiRecommendations } from "../api/recommendationAPI";
@@ -33,8 +28,12 @@ export default function SearchResultPage() {
   const location = useLocation();
   const { state } = useLocation();
   
-  // [변경] 진짜 userId를 관리할 State
-  const [realUserId, setRealUserId] = useState(null);
+  // [변경] localStorage에서 userId를 바로 읽어와 초기값 설정 (동기 처리)
+  // 이제 "확인 중" 단계가 없으므로 AI 추천이 깜빡임 없이 바로 실행됩니다.
+  const [realUserId] = useState(() => {
+    const savedId = localStorage.getItem("userId");
+    return savedId ? Number(savedId) : null;
+  });
 
   // 1. 초기 데이터 설정
   const params = new URLSearchParams(location.search);
@@ -62,36 +61,13 @@ export default function SearchResultPage() {
   const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
   const [favoriteMap, setFavoriteMap] = useState({});
 
-  // -----------------------------------------------------------
-  // [Logic 0] 진짜 User ID 가져오기 (AccountId -> UserId 변환)
-  // -----------------------------------------------------------
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      const storedAccountId = localStorage.getItem("accountId"); // 예: 로컬스토리지 키 확인 필요
-      if (!storedAccountId) {
-        setRealUserId(null);
-        return;
-      }
-
-      try {
-        // userAPI.js에 있는 함수 사용하여 ID 변환
-        const userData = await getUserByAccount(storedAccountId);
-        if (userData && userData.userId) {
-          console.log("로그인된 유저 ID 확인:", userData.userId);
-          setRealUserId(userData.userId);
-        }
-      } catch (error) {
-        console.error("유저 정보 조회 실패:", error);
-      }
-    };
-
-    fetchUserInfo();
-  }, []);
+  // [삭제] AccountId로 User를 조회하던 useEffect 제거
+  /* useEffect(() => { ... }, []); */
 
   // -----------------------------------------------------------
   // [Logic A] AI 추천 로직
   // -----------------------------------------------------------
-  useEffect(() => {
+useEffect(() => {
     if (!criteria.destination) return;
 
     const fetchAiData = async () => {
@@ -99,13 +75,26 @@ export default function SearchResultPage() {
       setAiDisplayItems([]); 
 
       let userPreferenceText = "";
+      // 추가 옵션 객체 초기화
+      let searchOptions = {
+        accommodationType: null,
+        minPrice: 0,
+        maxPrice: 0
+      };
 
-      // [수정] realUserId 사용
       if (realUserId) {
         try {
           const prefData = await getUserPreference(realUserId);
-          if (prefData && prefData.preferenceText) {
-            userPreferenceText = prefData.preferenceText;
+          if (prefData) {
+            // 1. 취향 텍스트 설정
+            userPreferenceText = prefData.preferenceText || "";
+            
+            // 2. 추가 데이터(타입, 예산) 설정
+            searchOptions = {
+                accommodationType: prefData.accommodationType || null,
+                minPrice: prefData.minBudget || 0,
+                maxPrice: prefData.maxBudget || 0
+            };
           }
         } catch (prefError) {
           console.warn("유저 취향 정보 없음 (기본 추천 모드로 진행)");
@@ -113,11 +102,22 @@ export default function SearchResultPage() {
       }
 
       try {
-        const recommendedIds = await getAiRecommendations(criteria.destination, userPreferenceText);
+        // 3. 변경된 API 호출 (옵션 전달)
+        const recommendedIds = await getAiRecommendations(
+            criteria.destination, 
+            userPreferenceText,
+            searchOptions // 옵션 객체 전달
+        );
+
         if (recommendedIds && recommendedIds.length > 0) {
-           const summaries = await getAccommodationSummaries(recommendedIds);
-           setAiDisplayItems(summaries);
-        } 
+            const idsToQuery = recommendedIds.map(item => {
+                return typeof item === 'object' ? (item.accommodationId || item.id) : item;
+            });
+            console.log("AI 추천 ID 목록 변환:", idsToQuery);
+
+            const summaries = await getAccommodationSummaries(idsToQuery);
+            setAiDisplayItems(summaries);
+        }
       } catch (error) {
         console.error("AI 추천 로직 실패:", error);
       } finally {
@@ -125,12 +125,8 @@ export default function SearchResultPage() {
       }
     };
 
-    // realUserId가 로드된 후 실행되도록 의존성 추가
-    if (realUserId !== undefined) { 
-        fetchAiData();
-    }
-  }, [criteria.destination, realUserId]); 
-
+    fetchAiData();
+  }, [criteria.destination, realUserId]);
 
   // -----------------------------------------------------------
   // [Logic B] 기본 숙소 검색 데이터 페칭 (기존 동일)
@@ -203,7 +199,7 @@ export default function SearchResultPage() {
       .catch((err) => console.error("가격 계산 실패:", err));
   }, [displayResults, aiDisplayItems, criteria.checkIn, criteria.checkOut]);
 
-  // [수정] realUserId가 있을 때만 찜 목록 조회
+  // 찜 목록 조회
   useEffect(() => {
     if (realUserId) {
       getFavoriteIdMap(realUserId).then(setFavoriteMap);
@@ -232,7 +228,6 @@ export default function SearchResultPage() {
     navigate(`/accommodation/${accommodationId}${qs ? `?${qs}` : ""}`);
   };
 
-  // [수정] 찜 버튼 핸들러
   const handleToggleFavorite = async (e, accommodationId) => {
     e.preventDefault(); e.stopPropagation();
     
@@ -261,16 +256,12 @@ export default function SearchResultPage() {
     }
   };
 
-  // 🌟 [핵심] 카드 렌더링 로직 (API 함수 활용)
   const renderCard = (p) => {
     const accId = Number(p.accommodationId);
     const calculatedTotalPrice = calculatedPriceMap[accId];
     const displayPrice = (calculatedTotalPrice === 0) ? "예약 마감" : (calculatedTotalPrice || "요금 확인 중");
     const isFavorite = !!favoriteMap[accId];
 
-    // ✅ 여기서 API 함수를 사용해 깔끔하게 URL을 생성합니다.
-    // getAccommodationPhotoBlobUrl은 config.js의 설정을 참고하여 완성된 URL 문자열을 반환합니다.
-    // 예: "http://localhost:9090/partner/accommodations/photos/123/data"
     const photoUrl = p.mainPhotoId
       ? getAccommodationPhotoBlobUrl(p.mainPhotoId)
       : "/assets/default_hotel.png";
@@ -279,10 +270,7 @@ export default function SearchResultPage() {
       <AccommodationCard
         key={`acc-${accId}`}
         data={p}
-        
-        // 브라우저가 이 URL을 보고 비동기로 이미지를 로딩합니다.
         photoUrl={photoUrl} 
-
         isFavorite={isFavorite}
         onToggleFavorite={(e) => handleToggleFavorite(e, accId)}
         onClick={() => handleGoDetail(accId)}

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserCheck, Settings, Edit3, Save, Check, Quote } from 'lucide-react';
 import { getUserPreference, saveUserPreference } from '../../api/userPrefAPI';
-import { getUserByAccount } from '../../api/userAPI'; 
+// [변경] accountId 조회 함수 대신 ID로 유저 찾는 함수 사용
+import { getUser } from '../../api/userAPI'; 
 
 const KEYWORD_CATEGORIES = {
   "분위기 & 감성": [
@@ -27,8 +28,7 @@ const KEYWORD_CATEGORIES = {
   ]
 };
 
-/** * [컴포넌트] 여행 취향 입력/수정 폼 
- */
+/** * [컴포넌트] 여행 취향 입력/수정 폼 */
 const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
   const [selectedKeywords, setSelectedKeywords] = useState(() => {
     if (initialData?.preferenceText) {
@@ -73,7 +73,7 @@ const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
         maxBudget: Number(formData.maxBudget),
         preferredStayNights: Number(formData.preferredStayNights),
       };
-      console.log("취향 데이터 ",payload);
+      console.log("취향 데이터 ", payload);
       await saveUserPreference(userId, payload);
       alert('취향 정보가 저장되었습니다.');
       onSaveSuccess(); 
@@ -131,7 +131,7 @@ const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
           ))}
         </div>
 
-        {/* [수정] 실시간 문장 미리보기 섹션: 문맥이 자연스럽도록 수정 */}
+        {/* 문장 미리보기 */}
         <div className="mt-6 p-5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-3 shadow-sm">
            <Quote className="text-indigo-500 flex-shrink-0 mt-1" size={24} fill="currentColor" fillOpacity={0.2} />
            <div className="flex-1">
@@ -142,7 +142,6 @@ const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
                    " 저는 <span className="font-bold text-indigo-700 bg-indigo-100 px-1 rounded mx-1 decoration-clone">
                      {selectedKeywords.join(', ')}
                    </span> 
-                   {/* '분위기의' 대신 더 포괄적인 표현 사용 */}
                    숙소를 가장 선호해요! "
                  </>
                ) : (
@@ -237,12 +236,9 @@ const PreferenceForm = ({ userId, initialData, onCancel, onSaveSuccess }) => {
   );
 };
 
-/** * [컴포넌트] 여행 취향 상세 보기 
- */
+/** * [컴포넌트] 여행 취향 상세 보기 */
 const PreferenceDetail = ({ data, onEdit }) => {
   if (!data) return null;
-
-  const keywords = data.preferenceText ? data.preferenceText.split(',').map(k => k.trim()) : [];
 
   return (
     <div className="border p-8 rounded-xl shadow-sm bg-white">
@@ -253,12 +249,10 @@ const PreferenceDetail = ({ data, onEdit }) => {
         </button>
       </div>
       
-      {/* 상세 보기 상단에도 생성된 문장 보여주기 */}
       <div className="mb-8 p-5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-3">
          <Quote className="text-indigo-500 flex-shrink-0 mt-1" size={24} fill="currentColor" fillOpacity={0.2} />
          <div>
             <p className="text-gray-800 text-lg font-medium leading-relaxed">
-               {/* '분위기' 단어 제거하고 자연스러운 문장으로 수정 */}
                " 저는 <span className="font-bold text-indigo-700">{data.preferenceText}</span> 숙소를 가장 선호해요! "
             </p>
          </div>
@@ -286,8 +280,7 @@ const PreferenceDetail = ({ data, onEdit }) => {
   );
 };
 
-/** * [컴포넌트] 내 정보 보기 
- */
+/** * [컴포넌트] 내 정보 보기 */
 const MyInfo = ({ user }) => {
   return (
     <div>
@@ -318,12 +311,13 @@ const MyPage = ({ subPage, setPage }) => {
   const [isEditingPreference, setIsEditingPreference] = useState(false);
   const [loadingPref, setLoadingPref] = useState(false);
 
-  // 1. 유저 정보 조회
+  // 1. 유저 정보 조회 (이 부분이 변경되었습니다)
   useEffect(() => {
     const fetchUser = async () => {
-      const storedAccountId = localStorage.getItem('accountId');
+      // [변경] accountId 대신 localStorage에 저장된 userId를 바로 사용
+      const storedUserId = localStorage.getItem('userId');
 
-      if (!storedAccountId) {
+      if (!storedUserId) {
         alert("로그인이 필요한 서비스입니다.");
         navigate('/user/login');
         return;
@@ -331,7 +325,8 @@ const MyPage = ({ subPage, setPage }) => {
 
       try {
         setIsLoadingUser(true);
-        const userData = await getUserByAccount(storedAccountId);
+        // [변경] getUserByAccount -> getUser(ID로 직접 조회)
+        const userData = await getUser(storedUserId);
         setUser(userData);
       } catch (error) {
         console.error("유저 정보 조회 실패:", error);
@@ -388,7 +383,6 @@ const MyPage = ({ subPage, setPage }) => {
       case 'info':
         return <MyInfo user={user} />;
 
-    
       case 'preferences':
         return (
           <div>

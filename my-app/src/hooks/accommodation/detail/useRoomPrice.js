@@ -112,7 +112,7 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
                 nightsRequired,
               });
 
-            // 숙박일수만큼 정책이 없으면 -> 정책 누락
+            // 숙박일수 불일치
             if ((evaluated?.nights ?? 0) !== nightsRequired) {
               return [
                 String(roomId),
@@ -123,6 +123,7 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
                 ),
               ];
             }
+<<<<<<< HEAD
               // ✅ 예약 가능한 경우
               return [
               String(roomId),
@@ -133,6 +134,30 @@ export default function useRoomPrice({ rooms = [], checkIn = "", checkOut = "" }
               ),
               ];
               
+=======
+
+            // 예약 불가
+            if (evaluated?.isBookable !== true) {
+              return [
+                String(roomId),
+                toInfo(
+                  evaluated?.displayPrice ?? null,
+                  false,
+                  "해당 기간에 예약할 수 없습니다."
+                ),
+              ];
+            }
+
+            // 예약 가능
+            return [
+              String(roomId),
+              {
+                displayPrice: evaluated?.displayPrice ?? null,
+                isBookable: true,
+                reason: null,
+              },
+            ];
+>>>>>>> otherwork
           } catch (e) {
             return [String(roomId), toInfo(null, false, "다른 날짜 확인")];
           }

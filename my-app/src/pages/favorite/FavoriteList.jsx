@@ -1,11 +1,20 @@
+// src/pages/favorite/FavoriteList.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { getFavorites, removeFavorite } from "../../api/favoriteAPI";
 import { getAccommodationPhotoBlobUrl } from "../../api/accommodationPhotoAPI";
+import { calculateTotalPrices } from "../../api/accommodationPriceAPI";
 
-// ✅ 찜 목록 대표사진 src 결정
+// ✅ 검색결과 카드 컴포넌트 재사용 (모양/위치 동일하게)
+import AccommodationCard from "../../components/common/searches/AccommodationCard"; 
+// ⚠️ 위 import 경로는 네 프로젝트 구조에 따라 다를 수 있음.
+// SearchResultPage 기준 경로가 "./components/common/searches/AccommodationCard" 였으니까,
+// FavoriteList가 있는 위치에 맞게 경로 맞춰줘.
+
+
+// ✅ 찜 목록 대표사진 src 결정 (기존 로직 유지)
 function resolveFavoriteThumbnailSrc(fav) {
-  // 1) photoId 계열(대표 → 메인 → 썸네일 우선)
   const photoId =
     fav?.representPhotoId ??
     fav?.mainPhotoId ??
@@ -19,7 +28,6 @@ function resolveFavoriteThumbnailSrc(fav) {
     return getAccommodationPhotoBlobUrl(photoId);
   }
 
-  // 2) url 계열(문자열 URL이 내려오는 경우)
   const url =
     fav?.thumbnailUrl ??
     fav?.thumbnailImageUrl ??
@@ -32,14 +40,17 @@ function resolveFavoriteThumbnailSrc(fav) {
     return url;
   }
 
-  return null;
+  return "/assets/default_hotel.png";
 }
 
-export default function FavoriteList({ userId }) {
+export default function FavoriteList({ userId, checkIn, checkOut, guests }) {
   const navigate = useNavigate();
 
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ 총액 맵 (accommodationId -> totalPrice)
+  const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
 
   const fetchFavorites = async () => {
     setLoading(true);
@@ -61,7 +72,37 @@ export default function FavoriteList({ userId }) {
     fetchFavorites();
   }, [userId]);
 
-  const handleUnfavorite = async (favorite) => {
+  // ✅ A안: checkIn/checkOut 있을 때만 검색결과와 동일한 총액 계산
+  useEffect(() => {
+    if (!checkIn || !checkOut) return;
+    if (!favorites || favorites.length === 0) return;
+
+    const idsToCalculate = favorites
+      .map((f) => Number(f.accommodationId))
+      .filter((id) => !isNaN(id) && id > 0)
+      .filter((id) => calculatedPriceMap[id] === undefined);
+
+    if (idsToCalculate.length === 0) return;
+
+    calculateTotalPrices(idsToCalculate, checkIn, checkOut)
+      .then((priceList) => {
+        setCalculatedPriceMap((prev) => {
+          const next = { ...prev };
+          priceList.forEach((item) => {
+            // SearchResultPage랑 동일: available이면 totalPrice, 아니면 0(예약마감 처리용)
+            next[item.accommodationId] = item.available ? item.totalPrice : 0;
+          });
+          return next;
+        });
+      })
+      .catch((err) => console.error("가격 계산 실패:", err));
+  }, [favorites, checkIn, checkOut]); // calculatedPriceMap은 의존성에 넣지 않음(검색결과와 동일)
+
+  const handleUnfavorite = async (e, favorite) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // optimistic
     setFavorites((prev) =>
       prev.map((f) =>
         f.favoriteId === favorite.favoriteId ? { ...f, isActive: false } : f
@@ -82,110 +123,57 @@ export default function FavoriteList({ userId }) {
     }
   };
 
+  const handleGoDetail = (accommodationId) => {
+    const qs = new URLSearchParams();
+    if (userId) qs.set("userId", String(userId));
+    if (checkIn) qs.set("checkIn", checkIn);
+    if (checkOut) qs.set("checkOut", checkOut);
+    if (guests) qs.set("guests", String(guests));
+
+    const query = qs.toString();
+    navigate(`/accommodation/${accommodationId}${query ? `?${query}` : ""}`);
+  };
+
   if (loading) return <p>찜 목록을 불러오는 중...</p>;
   if (!loading && favorites.length === 0) return <p>찜한 숙소가 없습니다.</p>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {favorites.map((fav) => {
-        const name =
-          fav.accommodationName || fav.name || `숙소 #${fav.accommodationId}`;
-        const address = fav.address || "주소 정보 없음";
-        const reviewScore = fav.reviewScore;
-        const reviewCount = fav.reviewCount;
-        const minPrice = fav.minPrice;
-        const isActive = fav.isActive !== false;
+        const accId = Number(fav.accommodationId);
 
-        const thumbSrc = resolveFavoriteThumbnailSrc(fav);
+        // ✅ AccommodationCard가 기대하는 data 형태로 normalize
+        const data = {
+          accommodationId: accId,
+          name: fav.accommodationName || fav.name || `숙소 #${accId}`,
+          address: fav.address || "주소 정보 없음",
+          ratingAvg: fav.ratingAvg ?? fav.reviewScore ?? 0,
+          accommodationType: fav.accommodationType ?? fav.type ?? "PENSION",
+          checkinTime: fav.checkinTime ?? "15:00:00",
+        };
+
+        const photoUrl = resolveFavoriteThumbnailSrc(fav);
+
+        // ✅ 총액 표시 (검색결과와 동일한 룰)
+        const calculatedTotalPrice = calculatedPriceMap[accId];
+        const displayPrice =
+          calculatedTotalPrice === 0 ? "예약 마감" : calculatedTotalPrice;
+
+        const isActive = fav.isActive !== false;
+        if (!isActive) return null; // 삭제중이면 숨김 (기존 UX 유지)
 
         return (
-          <div
-            key={fav.favoriteId}
-            className={`flex gap-4 p-4 border border-gray-200 rounded-xl bg-gray-100 hover:bg-gray-200 hover:shadow-md transition-all ${
-              isActive ? "" : "opacity-70"
-            }`}
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              if (fav.accommodationId != null) {
-                navigate(`/accommodation/${fav.accommodationId}?userId=${userId}`);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                if (fav.accommodationId != null) {
-                  navigate(`/accommodation/${fav.accommodationId}?userId=${userId}`);
-                }
-              }
-            }}
-          >
-            {/* 썸네일 */}
-            <div className="w-32 h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-              {thumbSrc ? (
-                <img
-                  src={thumbSrc}
-                  alt={name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentAccommodation.src = "/placeholder-room.jpg";
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                  이미지 없음
-                </div>
-              )}
-            </div>
-
-            {/* 내용 */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex flex-col items-start">
-                  <h2 className="text-lg font-semibold text-gray-900">{name}</h2>
-                  <p className="mt-1 text-sm text-gray-600">{address}</p>
-
-                  {reviewScore != null && (
-                    <div className="mt-2 flex items-center text-sm text-gray-700">
-                      <span className="mr-1">★</span>
-                      <span className="font-medium mr-1">{reviewScore}</span>
-                      {reviewCount != null && (
-                        <span className="text-gray-500">({reviewCount})</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* 하트 */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnfavorite(fav);
-                  }}
-                  aria-label={isActive ? "찜 해제" : "이미 해제된 찜"}
-                  className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-300 hover:border-red-400 hover:bg-red-50 bg-white"
-                >
-                  <span className={`text-xl ${isActive ? "text-red-500" : "text-gray-400"}`}>
-                    {isActive ? "❤" : "♡"}
-                  </span>
-                </button>
-              </div>
-
-              <div className="mt-4 flex justify-end items-center text-sm text-gray-700">
-                {minPrice != null ? (
-                  <span>
-                    1박 최저가
-                    <span className="ml-2 font-semibold">
-                      {minPrice.toLocaleString()}원
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-gray-500">가격 정보 없음</span>
-                )}
-              </div>
-            </div>
-          </div>
+          <AccommodationCard
+            key={fav.favoriteId ?? accId}
+            data={data}
+            photoUrl={photoUrl}
+            isFavorite={true}
+            onToggleFavorite={(e) => handleUnfavorite(e, fav)}
+            onClick={() => handleGoDetail(accId)}
+            totalPrice={checkIn && checkOut ? displayPrice : "가격 정보 없음"}
+            checkIn={checkIn}
+            checkOut={checkOut}
+          />
         );
       })}
     </div>

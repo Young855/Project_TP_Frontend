@@ -1,11 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getBooking } from "../../api/bookingAPI";
+<<<<<<< HEAD
 import { updateBookerInfo, confirmPayment } from "../../api/bookingAPI";
 
 function money(v) {
   return Number(v || 0).toLocaleString();
 }
+=======
+import { useParams } from "react-router-dom"; // 추가 
+
+
+export default function BookingDetail(){
+    const { id } = useParams();
+    const [data, setData] = useState(null);
+    const [note, setNote] = useState("");
+    const [busy, setBusy] = useState(false);
+>>>>>>> otherwork
 
 export default function BookingDetail() {
   const { bookingId } = useParams();
@@ -106,7 +117,36 @@ export default function BookingDetail() {
 
       <section className="rounded border p-4 text-sm space-y-1">
         <div>
+<<<<<<< HEAD
           bookingId: <b>{data?.bookingId ?? bookingId}</b>
+=======
+            <h2>예약 #{data.id}</h2>
+            <div>숙소: {data.propertyName ?? data.propertyId}</div>
+            <div>객실: {data.roomName ?? data.roonId}</div>
+            <div>기간: {data.checkIn} ~ {data.checkout}</div>
+            <div>인원: {data.guests}</div>
+            <div>상태: {data.status}</div>
+
+            <p>
+                <Link to={`/booking/${id}/edit`}>수정</Link>{" "}
+                <button disabled={busy} onClick={doCheckIn}>체크인</button>{" "}
+                <button disabled={busy} onClick={doCheckIn}>체크아웃</button>
+            </p>
+
+            <h3>메모</h3>
+            <input 
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="메모 입력"
+            />
+            <button disabled={busy} onClick={onAddNote}>추가</button>
+
+            {Array.isArray(data.notes) && data.notes.length > 0 && (
+                <ul>
+                    {data.notes.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+            )}
+>>>>>>> otherwork
         </div>
         <div>
           userId: <b>{data?.userId ?? data?.user?.userId ?? "-"}</b>

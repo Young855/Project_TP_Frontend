@@ -63,6 +63,7 @@ const criteria = useMemo(() => {
 
   // ✅ page 또는 criteria 변경 시 검색 API 호출
   useEffect(() => {
+    
     const fetchAccommodations = async () => {
       if (isLoading) return;
       if (!criteria.checkIn || !criteria.checkOut) return;
@@ -75,13 +76,9 @@ const criteria = useMemo(() => {
           checkOut: criteria.checkOut,
           guests: criteria.guests,
         };
-
-        const data = await searchAccommodationsWithMainPhoto(
-          searchParams,
-          page,
-          10
-        );
-
+        
+        const data = await searchAccommodationsWithMainPhoto(searchParams, page, 10);
+        
         const newItems = data.content || [];
 
         setResults((prev) =>
@@ -130,11 +127,13 @@ const criteria = useMemo(() => {
   
   // D-1. 가격 계산
   useEffect(() => {
+    
     if (!criteria.checkIn || !criteria.checkOut || displayResults.length === 0) return;
 
-    // 이미 계산된 ID는 제외하고 새로 필요한 것만 요청 (API 호출 최적화)
     const idsToCalculate = displayResults
         .map(p => Number(p.accommodationId))
+        // ★ 아래 줄을 추가하여 NaN이나 0, null 같은 잘못된 값을 걸러내세요.
+        .filter(id => !isNaN(id) && id > 0) 
         .filter(id => calculatedPriceMap[id] === undefined);
 
     if (idsToCalculate.length === 0) return;
@@ -190,13 +189,19 @@ const criteria = useMemo(() => {
     setFavoriteMap((prev) => ({ ...prev, [accommodationId]: !isFav }));
 
     try {
-      if (isFav) await removeFavorite(userId, accommodationId);
-      else await addFavorite(userId, accommodationId);
+      if (isFav) {
+        await removeFavorite(userId, accommodationId);
+        alert("찜 목록에서 삭제되었습니다."); 
+      } else {
+        await addFavorite(userId, accommodationId);
+        alert("찜 목록에 추가되었습니다."); 
+      }
     } catch (error) {
       setFavoriteMap((prev) => ({ ...prev, [accommodationId]: isFav }));
+      console.error(error);
+      alert("요청 처리에 실패했습니다."); 
     }
   };
-
   const titleText = criteria.destination
     ? `'${criteria.destination}' 검색 결과 ${totalCount}개`
     : `숙소 검색 결과 ${totalCount}개`;
@@ -224,7 +229,9 @@ const criteria = useMemo(() => {
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="appearance-none border border-gray-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-gray-700 hover:border-gray-400 cursor-pointer"
+                className="appearance-none border
+                border-gray-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-gray-700 
+                hover:border-gray-400 cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>

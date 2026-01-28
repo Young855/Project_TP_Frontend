@@ -147,3 +147,15 @@ export const searchAccommodationsWithMainPhoto = async (searchParams, page = 0, 
     throw error;
   }
 };
+export const getAccommodationDetail = async (id, params) => {
+  // params: { checkIn, checkOut, guests }
+  try {
+    const response = await api.get(ACCOMMODATIONS_ENDPOINTS.ACCOMMODATIONS.GET_DETAIL(id), {
+      params: params
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`숙소 ${id} 상세 통합 조회 오류:`, error);
+    throw error;
+  }
+};

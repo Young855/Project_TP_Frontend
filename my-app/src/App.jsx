@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext, Navigate } from 'react-router-dom';
 import './index.css';
 import { useUrlUser } from './hooks/useUrlUser';
 
@@ -11,6 +11,8 @@ import PartnerLayout from './Layout/PartnerLayout';
 import MainPage from './pages/MainPage';
 import FindPasswordPage from './pages/user/FindPasswordPage';
 import SearchResultPage from './pages/SearchResultPage';
+import PaymentPage from './pages/PaymentPage';
+import WriteReviewPage from './pages/WriteReviewPage';
 import LoginSelectionPage from './pages/LoginSelection';
 
 
@@ -21,12 +23,16 @@ import FavoriteRouter from './routers/FavoriteRouter';
 import PartnerRouter from './routers/PartnerRouter';
 import RoomRouter from './routers/RoomRouter';
 import BookingRouter from './routers/BookingRouter';
+
 // [수정] API 함수명 변경
 import FilterRouter from './routers/FilterRouter';
 import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
 import AdminRouter from './routers/AdminRouter';
+import PartnerBookingPage from "./pages/booking/PartnerBookingPage";
+
+import ChatWidget from "./components/ChatWidget";
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -109,11 +115,11 @@ function UserLayout() {
     if (protectedPaths.includes(path) && !isLoggedIn) {
       showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
         localStorage.setItem('nextPath', path);
-        navigate('/login');
+        navigate('/login-section');       // section 추가
       });
       return false;
     }
-    return true;``
+    return true;
   };
 
 
@@ -181,6 +187,9 @@ function UserLayout() {
       >
         <p>{modal.content}</p>
       </Modal>
+
+      {/* ✅ (추가) 유저 화면 어디서든 챗봇 사용 가능 */}
+      <ChatWidget />
     </div>
   );
 }
@@ -206,6 +215,7 @@ const router = createBrowserRouter([
       ...PartnerRouter,
       ...UserRouter,
       ...FavoriteRouter,
+      ...BookingRouter,
     ],
   },
 
@@ -213,10 +223,10 @@ const router = createBrowserRouter([
     path: '/partner',
     element: <PartnerLayout />,
     children: [
-      { index: true, element: <PartnerDashboard /> },
-      {path : 'dashboard', element: <PartnerDashboard/>},
-      { path: 'accommodations', element: <Placeholder title="숙소 관리" /> }, 
-      { path: 'reservations', element: <Placeholder title="예약 관리" /> },
+      { index: true, element: <Navigate to="accommodations" replace /> },
+//      { index: true, element: <PartnerDashboard /> },
+     {path : 'dashboard', element: <PartnerDashboard/>},
+     {path : "booking-check",  element: <PartnerBookingPage /> },
       ...RoomRouter,
       ...partnerAccommodationRoutes, 
     ],
@@ -225,9 +235,9 @@ const router = createBrowserRouter([
     path: '/admin',
     element: <AdminLayout />, 
     children: [
-      { index: true, element: <AdminDashboard /> },
+      { index: true, element: <Navigate to="accounts" replace /> },
+     // { index: true, element: <AdminDashboard /> },
       { path: 'dashboard', element: <AdminDashboard /> },
-      { path: 'users', element: <Placeholder title="회원 관리" /> }, 
       ...AdminRouter,
     ],
   },

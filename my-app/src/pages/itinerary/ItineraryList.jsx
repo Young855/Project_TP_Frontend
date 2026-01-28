@@ -1,7 +1,12 @@
 // // src/pages/itinerary/ItineraryList.jsx
 
+<<<<<<< HEAD
 // import { useEffect, useState } from "react";
 // import { Link } from "react-router-dom";
+=======
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+>>>>>>> otherwork
 // import { getAllBookings } from "../../api/bookingAPI";
 
 // export default function ItineraryList({ userId }) {
@@ -19,6 +24,7 @@
 //         sort: "checkIn,asc",
 //       };
 
+<<<<<<< HEAD
 //       const res = await getAllBookings(params);
 //       const list = res?.content ?? res ?? [];
 //       setItems(list);
@@ -29,6 +35,18 @@
 //       setLoading(false);
 //     }
 //   };
+=======
+      // const res = await getAllBookings(params);
+      const list = res?.content ?? res ?? [];
+      setItems(list);
+    } catch (e) {
+      console.error(e);
+      setErr(e.response?.data?.message || e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+>>>>>>> otherwork
 
 //   useEffect(() => {
 //     load();

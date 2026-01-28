@@ -1,4 +1,4 @@
-import List from "../pages/admin/accommodation/List";
+import List from "../pages/admin/AdminAccommodationLIst";
 import AdminAccountList from "../pages/admin/AdminAccountList";
 
 

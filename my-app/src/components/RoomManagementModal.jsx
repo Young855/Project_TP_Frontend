@@ -18,9 +18,6 @@ const deleteRoomAPI = async (roomId) => {
   console.log("Deleting room:", roomId);
   return true; // 성공 가정
 };
-// --- End Mock API Functions ---
-
-// (아이콘 SVG: PartnerPropertiesPage에서 복사)
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-7.96 7.96a2 2 0 01-1.414.586H5.5a1 1 0 01-1-1v-2.5a2 2 0 01.586-1.414l7.96-7.96z" /><path fillRule="evenodd" d="M15 5l-2.086-2.086a2 2 0 00-2.828 0L3 10.086V14h3.914l7.086-7.086a2 2 0 000-2.828L15 5z" clipRule="evenodd" /></svg>
 );

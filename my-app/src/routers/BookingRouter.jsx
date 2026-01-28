@@ -3,7 +3,7 @@ import BookingCreate from "../pages/booking/BookingCreate";
 import BookingDetail from "../pages/booking/BookingDetail";
 const BookingRouter = [
   {
-    path: "boards",
+    path: "booking",
     children: [
       {
         index: true,

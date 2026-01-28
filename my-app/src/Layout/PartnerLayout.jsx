@@ -5,6 +5,7 @@ import {
     Building, ChevronDown, PlusCircle, Settings, MapPin, Lock 
 } from 'lucide-react';
 import { PartnerProvider, usePartner } from '../context/PartnerContext';
+import ScrollToTop from '../components/ScrollToTop';
 
 const PartnerLayoutContent = () => {
   const location = useLocation();
@@ -100,7 +101,7 @@ const PartnerLayoutContent = () => {
 
       switchAccommodation(acc);
       setIsDropdownOpen(false);
-      navigate('/partner/dashboard');
+      navigate('/partner/accommodations');
   };
 
   if (isLoading) return <div className="flex h-screen justify-center items-center text-gray-500">데이터를 불러오는 중입니다...</div>;
@@ -110,17 +111,17 @@ const PartnerLayoutContent = () => {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-50">
         <div className="p-6 border-b border-gray-100">
             {/* 로고 클릭 시에도 가드 적용 */}
-            <Link to="/partner/dashboard" onClick={handleNavigationGuard} className="block">
+            <Link to="/partner/accommodations" onClick={handleNavigationGuard} className="block">
                 <h1 className="text-2xl font-bold text-blue-600">숙박시설 <br/>관리 시스템</h1>
             </Link>
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {/* 각 링크에 onClick={handleNavigationGuard} 추가 */}
-          <Link to="/partner/dashboard" onClick={handleNavigationGuard} className={getLinkClass('/partner/dashboard')}>
+          {/* <Link to="/partner/dashboard" onClick={handleNavigationGuard} className={getLinkClass('/partner/dashboard')}>
             <LayoutDashboard size={20} />
             <span>대시보드</span>
-          </Link>
+          </Link> */}
           
           <Link to="/partner/accommodations" onClick={handleNavigationGuard} className={getLinkClass('/partner/accommodations')}>
             <Building size={20} />
@@ -141,11 +142,11 @@ const PartnerLayoutContent = () => {
             </div>
           </Link>
 
-          <Link to="/partner/reservations" onClick={handleNavigationGuard} className={getLinkClass('/partner/reservations')}>
+          <Link to="/partner/booking-check" onClick={handleNavigationGuard} className={getLinkClass('/partner/booking-check')}>
             <List size={20} />
-            <span>예약 목록</span>
+            <span>예약 관리</span>
           </Link>
-
+          
           <div className="pt-6 mt-2">
              <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Accommodation</p>
              {currentAccommodation ? (
@@ -215,7 +216,7 @@ const PartnerLayoutContent = () => {
                                 accommodations.map((acc) => (
                                     <button
                                         key={acc.accommodationId}
-                                        onClick={() => handleSwitchAccommodation(acc)} // [수정] 핸들러 교체
+                                        onClick={() => handleSwitchAccommodation(acc)}
                                         className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-l-4 ${
                                             currentAccommodation?.accommodationId === acc.accommodationId 
                                             ? 'border-blue-600 bg-blue-50/50' 
@@ -272,7 +273,7 @@ const PartnerLayoutContent = () => {
 
         <div className="flex-1 overflow-auto p-6 md:p-8 relative z-0">
             
-            {!isLoading && accommodations.length === 0 && location.pathname === '/partner/dashboard' && (
+            {!isLoading && accommodations.length === 0 && location.pathname === '/partner/accoommodations' && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center mb-6 animate-in fade-in slide-in-from-bottom-4">
                     <h2 className="text-xl font-bold text-blue-800 mb-2">환영합니다, {partnerInfo.ceoName || '파트너'} 님!</h2>
                     <p className="text-blue-600 mb-6">아직 등록된 숙소가 없습니다. 첫 번째 숙소를 등록하고 예약을 받아보세요.</p>
@@ -287,6 +288,7 @@ const PartnerLayoutContent = () => {
             )}
 
             <Outlet /> 
+            <ScrollToTop />
         </div>
       </main>
     </div>

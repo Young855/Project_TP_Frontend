@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom'; // 🌟 [추가] Portal 사용
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Upload, X, Check, Image as ImageIcon, Lock, Loader2 } from 'lucide-react';
+import { Upload, X, Check, Image as ImageIcon, Lock, Loader2, AlertCircle } from 'lucide-react'; // AlertCircle 추가
 
 // --- API Imports (숙소용) ---
 import { saveAccommodationPhotos, getAccommodationPhotos } from '../../api/accommodationPhotoAPI';
@@ -14,7 +14,11 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
     const params = useParams();
     const navigate = useNavigate();
     
+    // 🌟 [설정] 제한 상수 정의
     const MAX_IMAGES = 10;
+    const MAX_SIZE_MB = 10; // 10MB 제한
+    const MAX_FILE_SIZE = MAX_SIZE_MB * 1024 * 1024; 
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']; // 허용 타입
 
     const { targetId, api, label } = useMemo(() => {
         if (type === 'ROOM') {
@@ -54,32 +58,58 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
         fetchExistingInfo();
     }, [targetId, api]);
 
+    // 🌟 [수정] 파일 처리 로직에 유효성 검사 추가
     const processFiles = useCallback((files) => {
         if (!files || files.length === 0) return;
+
+        // 1. 개수 제한 체크
         const currentTotal = existingCount + selectedFiles.length;
-        
         if (currentTotal + files.length > MAX_IMAGES) {
             const available = MAX_IMAGES - currentTotal;
             alert(`사진은 ${label}당 최대 ${MAX_IMAGES}장까지만 등록 가능합니다.\n추가 가능: ${available > 0 ? available : 0}장`);
             return;
         }
 
-        const newFiles = files.map(file => ({
-            file, 
-            previewUrl: URL.createObjectURL(file),
-            fileName: '', 
-            isMain: false,
-            sortOrder: 0 
-        }));
+        const validFiles = [];
+        let errorMsg = '';
+
+        files.forEach(file => {
+            // 2. 파일 타입 체크
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                errorMsg += `[${file.name}] 지원하지 않는 형식입니다. (JPG, PNG, WEBP, GIF만 가능)\n`;
+                return;
+            }
+            // 3. 용량 체크
+            if (file.size > MAX_FILE_SIZE) {
+                errorMsg += `[${file.name}] 용량이 너무 큽니다. (최대 ${MAX_SIZE_MB}MB)\n`;
+                return;
+            }
+            
+            validFiles.push({
+                file, 
+                previewUrl: URL.createObjectURL(file),
+                fileName: '', 
+                isMain: false,
+                sortOrder: 0 
+            });
+        });
+
+        // 에러가 있으면 알림
+        if (errorMsg) {
+            alert("일부 파일이 등록되지 않았습니다:\n\n" + errorMsg);
+        }
+
+        // 유효한 파일이 없으면 중단
+        if (validFiles.length === 0) return;
 
         setSelectedFiles(prev => {
-            const updated = [...prev, ...newFiles];
+            const updated = [...prev, ...validFiles];
             if (!hasExistingMain && updated.length > 0 && !updated.find(f => f.isMain)) {
                 updated[0].isMain = true;
             }
             return updated;
         });
-    }, [selectedFiles.length, existingCount, hasExistingMain, label]);
+    }, [selectedFiles.length, existingCount, hasExistingMain, label, MAX_FILE_SIZE]); // 의존성 추가
 
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
@@ -166,7 +196,6 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
 
     return (
         <div className="container mx-auto p-6 max-w-5xl relative">
-            {/* 🌟 [수정] createPortal을 사용하여 body 바로 아래에 렌더링 (사이드바 덮기용) */}
             {isLoading && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-wait">
                     <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 animate-in fade-in zoom-in duration-200">
@@ -179,7 +208,7 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
                         </div>
                     </div>
                 </div>,
-                document.body // Portal Target
+                document.body 
             )}
 
             <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -198,7 +227,7 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200
+                    className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200
                         ${existingCount + selectedFiles.length >= MAX_IMAGES 
                             ? 'border-gray-200 bg-gray-100 cursor-not-allowed' 
                             : isDragging 
@@ -215,22 +244,40 @@ const PhotoCreate = ({ type = 'ACCOMMODATION' }) => {
                                 <span className="font-semibold">클릭하여 업로드</span> 또는 드래그 앤 드롭
                             </p>
                         )}
-                        <p className="text-xs text-gray-400">최대 {MAX_IMAGES}장까지 업로드 가능</p>
+                        {/* 🌟 [수정] 제한 사항 안내 문구 추가 */}
+                        <div className="flex flex-col items-center gap-1 mt-1">
+                            <p className="text-xs text-gray-500 font-medium">
+                                최대 {MAX_IMAGES}장 / 장당 {MAX_SIZE_MB}MB 이하
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                                지원 형식: JPG, PNG, WEBP, GIF
+                            </p>
+                        </div>
                     </div>
                     <input 
                         id="file-upload" 
                         type="file" 
                         className="hidden" 
                         multiple 
-                        accept="image/*"
+                        accept="image/jpeg, image/png, image/webp, image/gif" // accept 구체화
                         onChange={handleFileSelect}
                         disabled={isLoading || existingCount + selectedFiles.length >= MAX_IMAGES} 
                     />
                 </label>
+                
+                {/* 🌟 [추가] 주의사항 경고 박스 */}
+                <div className="mt-3 flex items-start gap-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                    <div>
+                        <p className="font-semibold">이미지 등록 시 주의사항</p>
+                        <p className="text-blue-600/80 mt-0.5">고화질 사진은 로딩 속도에 영향을 줄 수 있으므로, 장당 {MAX_SIZE_MB}MB 이하의 최적화된 이미지를 권장합니다.</p>
+                    </div>
+                </div>
             </div>
 
             {selectedFiles.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                    {/* ... (기존 미리보기 코드는 동일) ... */}
                     {selectedFiles.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2">
                             <div className="relative group rounded-lg overflow-hidden shadow-sm border border-gray-200 aspect-square">

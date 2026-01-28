@@ -1,7 +1,6 @@
-import axios from "axios";
+import api from "./AxiosInstance"; 
 import { ROOM_PHOTO_ENDPOINTS, axiosConfig } from "../config";
 
-const api = axios.create(axiosConfig);
 
 // 1. [저장] 객실 이미지 리스트 업로드
 export const saveRoomPhotos = async (roomId, photosData) => {

@@ -1,7 +1,7 @@
-import axios from "axios";
-import { ACCOMMODATION_PHOTO_ENDPOINTS, axiosConfig } from "../config";
+import api from "./AxiosInstance"; 
+import { ACCOMMODATION_PHOTO_ENDPOINTS } from "../config";
 
-const api = axios.create(axiosConfig);
+
 
 // 1. [저장] 이미지 리스트 업로드
 export const saveAccommodationPhotos = async (accommodationId, photosData) => {

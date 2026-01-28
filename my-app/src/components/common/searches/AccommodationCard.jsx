@@ -22,7 +22,8 @@ export default function AccommodationCard({
   };
 
   const formatPrice = (price) => {
-    if (price === "예약 마감") return "예약 마감";
+    // 🌟 [수정] 문자열이 그대로 넘어오면 그냥 반환
+    if (typeof price === "string") return price;
     return typeof price === "number"
       ? `${price.toLocaleString()}원`
       : price;
@@ -33,7 +34,7 @@ export default function AccommodationCard({
       onClick={onClick}
       className="flex flex-col sm:flex-row bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer h-auto sm:h-48"
     >
-      {/* --- [좌측] 이미지 영역 --- */}
+      {/* [좌측] 이미지 영역 */}
       <div className="w-full sm:w-1/3 md:w-56 h-48 sm:h-full bg-gray-100 relative shrink-0">
         <img
           src={imgSrc || "/assets/default_hotel.png"}
@@ -42,11 +43,9 @@ export default function AccommodationCard({
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105"
         />
-        
-        
       </div>
 
-      {/* --- [우측] 정보 영역 --- */}
+      {/* [우측] 정보 영역 */}
       <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between">
         
         {/* 상단: 이름 및 찜 버튼 */}
@@ -80,15 +79,17 @@ export default function AccommodationCard({
           </span>
           <span className="text-gray-400 mx-2">|</span>
           <span className="text-gray-500 text-xs truncate">
-            {/* 여기 텍스트로 나오는 타입 정보는 유지했습니다 (필요 없으면 data.accommodationType 지우셔도 됩니다) */}
             {data.accommodationType} • 체크인 {data.checkinTime?.substring(0, 5)}
           </span>
         </div>
 
         {/* 하단: 가격 정보 */}
         <div className="mt-4 flex flex-col items-end justify-end pt-3 border-t border-gray-100 sm:border-none sm:pt-0">
-          {totalPrice === "예약 마감" ? (
-             <span className="text-lg font-bold text-gray-400">예약 마감</span>
+          {/* 🌟 [수정] 예약 불가 상태 처리 */}
+          {totalPrice === "예약 가능한 방이 없습니다" ? (
+             <span className="text-sm font-bold text-gray-400">
+                예약 가능한 방이 없습니다
+             </span>
           ) : (
             <>
               <span className="text-xl font-bold text-blue-600">

@@ -1,11 +1,10 @@
-import axios from "axios";
+import api from "./AxiosInstance"; 
 import { 
     ROOM_ENDPOINTS, 
     DAILY_POLICY_ENDPOINTS,
     axiosConfig
 } from "../config";
 
-const api = axios.create(axiosConfig);
 
 // 1. 객실 생성 (POST /rooms)
 export const createRoom = async (roomData) => {

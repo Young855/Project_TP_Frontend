@@ -1,31 +1,42 @@
 const API_BASE_URL = "http://localhost:9090";
+const AI_API_BASE_URL = "http://localhost:8000";
 
 export const USER_ENDPOINTS = {
     USERS: {
         LIST: `${API_BASE_URL}/users`, 
         ADD : `${API_BASE_URL}/users/signup`, 
+        SOCIAL_ADD : `${API_BASE_URL}/users/social-signup`,
         LOGIN : `${API_BASE_URL}/users/login`, 
         CHECK_EMAIL : `${API_BASE_URL}/users/check-email`, 
         CHECK_NICKNAME : `${API_BASE_URL}/users/check-nickname`,
         SEND_VERIFICATION: `${API_BASE_URL}/users/send-verification`,
         VERIFY_CODE: `${API_BASE_URL}/users/verify-code`,
+        INFO : (accountid)=>`${API_BASE_URL}/users/account/${accountid}`,
         GET : (id) => `${API_BASE_URL}/users/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/users/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/users/${id}`, 
     },
 }
+export const AUTH_ENDPOINTS = {
+    LOGIN: `${API_BASE_URL}/auth/users/login`,          
+    PARTNER_LOGIN: `${API_BASE_URL}/auth/partners/login`, 
+    KAKAO_LOGIN: `${API_BASE_URL}/auth/api/kakao`, 
+    
+    REISSUE: `${API_BASE_URL}/auth/api/reissue`,          
+};
 
 export const PARTNER_ENDPOINTS = {
     PARTNERS: { 
-        LIST: `${API_BASE_URL}/partners`, 
-        ADD : `${API_BASE_URL}/partners/signup`, 
-        LOGIN : `${API_BASE_URL}/partners/login`, 
-        CHECK_EMAIL : `${API_BASE_URL}/partners/check-email`, 
-        SEND_VERIFICATION: `${API_BASE_URL}/partners/send-verification`,
-        VERIFY_CODE: `${API_BASE_URL}/partners/verify-code`,
-        GET : (id) => `${API_BASE_URL}/partners/${id}`, 
-        MODIFY : (id) => `${API_BASE_URL}/partners/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/partners/${id}`, 
+        LIST: `${API_BASE_URL}/partner/partnerpage`, 
+        ADD : `${API_BASE_URL}/partner/signup`, 
+        LOGIN : `${API_BASE_URL}/partner/login`, 
+        CHECK_EMAIL : `${API_BASE_URL}/partner/check-email`, 
+        SEND_VERIFICATION: `${API_BASE_URL}/partner/send-verification`,
+        VERIFY_CODE: `${API_BASE_URL}/partner/verify-code`,
+        GET : (id) => `${API_BASE_URL}/partner/partnerpage/${id}`, 
+        MODIFY : (id) => `${API_BASE_URL}/partner/partnerpage/${id}`, 
+        DELETE : (id) => `${API_BASE_URL}/partner/partnerpage/${id}`, 
+        GET_BY_ACCOUNT: (accountId) => `${API_BASE_URL}/partner/account/${accountId}`,
     }
 }
 
@@ -52,6 +63,9 @@ export const BOOKING_ENDPOINTS = {
         CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,
     },
 }
+export const RECOMMENDATION_ENDPOINTS = {
+    RECOMMENDATION: `${AI_API_BASE_URL}/recommendation`
+};
 
 export const PARTNER_BOOKING_ENDPOINTS = {
   // ✅ 대시보드
@@ -76,16 +90,14 @@ export const PARTNER_BOOKING_ENDPOINTS = {
 
 export const ROOM_ENDPOINTS = {
     ROOMS: {
-        LIST: `${API_BASE_URL}/rooms`, 
-        ADD : `${API_BASE_URL}/rooms`, 
+        LIST: `${API_BASE_URL}/rooms/admin`, 
+        ADD : `${API_BASE_URL}/rooms/partner`, 
         GET : (id) => `${API_BASE_URL}/rooms/${id}`, 
-        MODIFY : (id) => `${API_BASE_URL}/rooms/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/rooms/${id}`, 
+        MODIFY : (id) => `${API_BASE_URL}/rooms/partner/${id}`, 
+        DELETE : (id) => `${API_BASE_URL}/rooms/partner/${id}`, 
         LIST_BY_ACCOMMODATION_WITH_PHOTO: (accommodationId) =>
              `${API_BASE_URL}/rooms/by-accommodation/${accommodationId}/with-main-photo`,
         GET_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/rooms/accommodation/${accommodationId}`,
-        GET_CALENDAR: (roomId) => `${API_BASE_URL}/rooms/${roomId}/calendar`,
-        POLICY: `${API_BASE_URL}/rooms/policy`,
     },
 }
 
@@ -100,6 +112,7 @@ export const ACCOMMODATIONS_ENDPOINTS = {
     ACCOMMODATIONS: {
         LIST_ALL: `${API_BASE_URL}/accommodations`, 
         GET_DETAIL: (id) => `${API_BASE_URL}/accommodations/${id}/detail`,
+        
         LIST_BY_PARTNER: (partnerId) =>
              `${API_BASE_URL}/accommodations/by-partner/${partnerId}`, 
         LIST_BY_PARTNER_WITH_PHOTO: (partnerId) =>
@@ -124,11 +137,11 @@ export const ACCOMMODATION_PHOTO_ENDPOINTS = {
 }
 export const ROOM_PHOTO_ENDPOINTS = {
     PHOTOS: {
-        ADD_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/${roomId}`,
-        DELETE: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}`,
-        GET_METADATA_LIST: (roomId) => `${API_BASE_URL}/partner/rooms/photos/list/${roomId}`,
-        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/partner/rooms/photos/${photoId}/data`,
-        REORDER: (roomId) => `/partner/rooms/photos/${roomId}/reorder`, 
+        ADD_LIST: (roomId) => `${API_BASE_URL}/rooms/partner/photos/${roomId}`,
+        DELETE: (photoId) => `${API_BASE_URL}/rooms/partner/photos/${photoId}`,
+        GET_METADATA_LIST: (roomId) => `${API_BASE_URL}/rooms/photos/list/${roomId}`,
+        GET_BLOB_DATA: (photoId) => `${API_BASE_URL}/rooms/photos/${photoId}/data`,
+        REORDER: (roomId) => `/rooms/partner/photos/${roomId}/reorder`, 
     }
 }
 
@@ -212,6 +225,11 @@ export const ADMIN_ENDPOINTS = {
 export const PRICE_ENDPOINTS = {
     CALCULATE: `${API_BASE_URL}/prices/calculate`, 
 }
+
+export const USER_PREFERENCE_ENDPOINTS = {
+    GET: (userId) => `${API_BASE_URL}/api/preference/${userId}`,   // GET 조회
+    SAVE: (userId) => `${API_BASE_URL}/api/preference/${userId}`,
+};
 
 export const axiosConfig = {
     baseURL: API_BASE_URL,

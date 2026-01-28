@@ -6,33 +6,29 @@ import GuestCounter from "../components/GuestCounter";
 
 const STORAGE_KEY = "tp_search_criteria";
 
-const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
+// 🌟 [수정] onLogout prop을 제거하고 내부에서 처리하도록 변경했습니다.
+const Header = ({ navigate, onOpenDrawer, onSubmitSearch }) => {
   const location = useLocation();
   // const navigate = useNavigate(); // ❌ 삭제: 강제 새로고침을 위해 사용 안 함
 
-  // ✅ 찜 페이지 여부
-  const isFavoritePage = location.pathname.startsWith("/favorites");
+  // 1. 로그인 여부 판단 (로컬 스토리지 기준)
+  const token = localStorage.getItem("accessToken");
+  const isLoggedIn = !!token; 
+  
+  // 2. 닉네임 가져오기
+  const nickname = localStorage.getItem("nickname") || "여행자";
 
-  // 1. URL 쿼리 파라미터 파싱
-  const urlCriteria = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    const keyword = params.get("keyword");
-    const checkIn = params.get("checkIn");
-    const checkOut = params.get("checkOut");
-    const guests = params.get("guests");
+  // 🌟 [추가] 로그아웃 핸들러 함수
+  const handleLogout = () => {
+    localStorage.clear();
 
-    if (keyword || checkIn || checkOut) {
-      return {
-        destination: keyword || "",
-        checkIn: checkIn || "",
-        checkOut: checkOut || "",
-        guests: guests ? parseInt(guests, 10) : 2,
-      };
-    }
-    return null;
-  }, [location.search]);
+    alert("로그아웃 되었습니다.");
 
-  // 2. 라우팅 state
+    // 2. 메인 페이지로 이동하며 새로고침 (중요!)
+    // 새로고침을 해야 Header가 다시 렌더링되면서 isLoggedIn이 false로 바뀝니다.
+    window.location.href = "/";
+  };
+
   const navCriteria = location.state?.criteria || null;
   // ✅ URL 쿼리에서 criteria 복구 (/search-results?keyword=...&checkIn=...)
   // state가 없어도 pill이 뜨게 함
@@ -54,13 +50,11 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     };
   }, [location.search]);
 
-  // 3. 페이지 판별
   const isSearchLikePage =
     location.pathname.startsWith("/search") ||
     location.pathname.startsWith("/accommodation") ||
     location.pathname.startsWith("/favorites"); // ✅ 추가
 
-  // 4. 로컬스토리지
   const storageCriteria = useMemo(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -77,9 +71,24 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     }
   }, [location.key]);
 
+  const urlCriteria = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const keyword = params.get("keyword");
+    
+    // URL에 검색 키워드나 날짜가 없으면 null 처리
+    if (!keyword && !params.get("checkIn")) return null;
+
+    return {
+      destination: keyword || "",
+      checkIn: params.get("checkIn") || "",
+      checkOut: params.get("checkOut") || "",
+      guests: Number(params.get("guests")) || 2,
+    };
+  }, [location.search]);
   // 최종 기준
   const criteria = urlCriteria || navCriteria || storageCriteria;
 
+  
   useEffect(() => {
     if (!criteria) return;
     try {
@@ -87,7 +96,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     } catch {}
   }, [criteria]);
 
-  // --- 상태 관리 ---
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
@@ -263,15 +271,32 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
           {/* 3. 오른쪽 메뉴 */}
           <div className="flex items-center gap-2 w-1/3 justify-end">
-            {!isLoggedIn && (
+            {!isLoggedIn ? (
+              // 비로그인 상태
               <button
                 onClick={() => (window.location.href = "/login-selection")}
                 className="btn-primary-outline px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
               >
                 로그인/회원가입
               </button>
+            ) : (
+              // 로그인 상태
+              <div className="flex items-center gap-4 mr-2">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                  <User size={18} />
+                  {nickname}님
+                </span>
+                {/* 🌟 [수정] 위에서 만든 handleLogout 함수 연결 */}
+                <button 
+                  onClick={handleLogout} 
+                  className="text-sm text-gray-500 hover:text-red-600 underline"
+                >
+                  로그아웃
+                </button>
+              </div>
             )}
-            <button onClick={onOpenDrawer} className="p-1">
+
+            <button onClick={onOpenDrawer} className="p-1 text-gray-600 hover:text-gray-900">
               <Menu size={28} />
             </button>
           </div>
@@ -283,21 +308,17 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
         <div ref={panelRef} className="border-t border-gray-200 bg-white shadow-sm absolute w-full z-50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
-              {/* ✅ 여행지 (찜 페이지에서는 숨김) */}
-              {!isFavoritePage && (
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">여행지</label>
-                  <input
-                    type="text"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
-                    value={searchForm.destination}
-                    onChange={handleChange("destination")}
-                    placeholder="여행지 입력"
-                  />
-                </div>
-              )}
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">여행지</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                  value={searchForm.destination}
+                  onChange={handleChange("destination")}
+                  placeholder="여행지 입력"
+                />
+              </div>
 
-              {/* 체크인/체크아웃 */}
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">체크인</label>
@@ -366,7 +387,6 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                 )}
               </div>
 
-              {/* 검색 버튼 */}
               <div className="w-full md:w-auto">
                 <button
                   type="button"

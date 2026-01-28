@@ -33,6 +33,7 @@ import AdminRouter from './routers/AdminRouter';
 import PartnerBookingPage from "./pages/booking/PartnerBookingPage";
 
 import ChatWidget from "./components/ChatWidget";
+import KakaoCallback from './pages/auth/KakaoCallback';
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -205,7 +206,9 @@ const router = createBrowserRouter([
     path: '/',
     element: <UserLayout />,
     children: [
+      
       { index: true, element: <MainPageWithSearch /> },
+      { path:"/oauth/callback/kakao", element:<KakaoCallback />},
       { path: 'login-selection', element: <LoginSelectionPage /> },
       { path: 'find-password', element: <FindPasswordPage /> },
       { path: 'search-results', element: <SearchResultPage /> },

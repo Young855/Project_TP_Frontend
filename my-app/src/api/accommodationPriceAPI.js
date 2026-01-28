@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./AxiosInstance";
 import { PRICE_ENDPOINTS, axiosConfig } from "../config";
 
 /**
@@ -20,10 +20,9 @@ export const calculateTotalPrices = async (accommodationIds, checkIn, checkOut) 
   };
 
   try {
-    const response = await axios.post(
+    const response = await api.post(
       PRICE_ENDPOINTS.CALCULATE, 
-      requestBody, 
-      axiosConfig
+      requestBody
     );
     return response.data;
   } catch (error) {

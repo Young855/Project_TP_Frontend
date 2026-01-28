@@ -1,7 +1,7 @@
-import axios from "axios";
+import api from "./AxiosInstance";
 import { ADMIN_ENDPOINTS, axiosConfig } from "../config";
 
-const api = axios.create(axiosConfig);
+
 
 // 1. 계정 검색 함수
 export const searchAccounts = async (params) => {

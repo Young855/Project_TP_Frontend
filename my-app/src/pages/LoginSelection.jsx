@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Mail, Key, User, Globe, Briefcase } from 'lucide-react'; // Briefcase 아이콘 추가
+import { Mail, Key, User, Globe, Briefcase } from 'lucide-react';
 
 /**
  * 로그인 진입 선택 페이지 (Social, Email, Business)
@@ -9,13 +9,25 @@ const LoginSelectionPage = () => {
   const { showModal } = useOutletContext();
   const navigate = useNavigate();
 
-  // R008: API 로그인 처리 (기능 없음, 틀만 유지)
+  const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_API_KEY; 
+  const KAKAO_REDIRECT_URI = "http://localhost:5173/oauth/callback/kakao";
+  const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
+
   const handleApiLogin = (provider) => {
-    console.log(`${provider} API 로그인 시도 - 기능 구현 예정`);
-    showModal('API 로그인 준비', `${provider}를 이용한 소셜 로그인 기능은 Security 설정 후 구현될 예정입니다.`, null);
+    // 🌟 [수정 3] 카카오 버튼 클릭 시 이동 로직 추가
+    
+    if (provider === 'Kakao') {
+      console.log("---------------");
+      console.log("이동할 주소:", KAKAO_AUTH_URL); // 👈 이 코드를 꼭 넣어보세요!
+      console.log("---------------");
+      console.log("카카오 로그인 페이지로 이동합니다.");
+      window.location.href = KAKAO_AUTH_URL; // 리액트 라우터가 아닌 window 객체로 외부 이동
+      return;
+    }
+
   };
   
-  // 소셜 로그인 버튼 컴포넌트 (스타일 유지)
+  // 소셜 로그인 버튼 컴포넌트
   const SocialLoginButton = ({ provider, bgColor, textColor, icon, onClick }) => (
     <button
       type="button"
@@ -33,15 +45,9 @@ const LoginSelectionPage = () => {
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-8 tracking-tight">로그인</h2>
 
-        {/* R008: 소셜 로그인 섹션 */}
+        {/* 소셜 로그인 섹션 */}
         <div className="space-y-4 mb-8">
-          <SocialLoginButton
-            provider="Google"
-            bgColor="bg-white"
-            textColor="text-gray-700"
-            icon={<Globe size={20} className="text-red-500" />}
-            onClick={() => handleApiLogin('Google')}
-          />
+          {/* Kakao 버튼 클릭 시 handleApiLogin('Kakao') 실행됨 */}
           <SocialLoginButton
             provider="Kakao"
             bgColor="bg-[#FEE500]"
@@ -73,8 +79,6 @@ const LoginSelectionPage = () => {
             <Briefcase size={20} className="mr-3 text-blue-600" /> 비즈니스 계정으로 로그인하기
           </button>
         </div>
-        
-        
       </div>
     </div>
   );

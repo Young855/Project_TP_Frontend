@@ -7,7 +7,7 @@ import { Loader2, Building } from 'lucide-react'; // 🌟 로딩 아이콘 추�
 
 export default function PartnerAccommodationsPage({ showModal }) {
   const navigate = useNavigate();
-  const { partnerInfo, switchAccommodation, refreshPartnerData } = usePartner(); 
+  const {switchAccommodation, refreshPartnerData } = usePartner(); 
   
   const [accommodations, setAccommodations] = useState([]);
   const [isLoading, setIsLoading] = useState(false); // 목록 로딩용
@@ -18,7 +18,7 @@ export default function PartnerAccommodationsPage({ showModal }) {
   const [page, setPage] = useState(0);       
   const [totalPages, setTotalPages] = useState(0);
   
-  const partnerId = partnerInfo?.partnerId || 1; 
+  const partnerId = localStorage.getItem('partnerId');
   const pageSize = 10; 
 
   // ... (loadAccommodations 및 useEffect는 기존과 동일) ...

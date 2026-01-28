@@ -1,14 +1,7 @@
-import axios from "axios";
-import { axiosConfig, DAILY_POLICY_ENDPOINTS } from "../config";
+import api from "./AxiosInstance";
+import {  DAILY_POLICY_ENDPOINTS } from "../config";
 
-// DailyRoomPolicyController 매핑
-//  - GET    /daily-policies/calendar?roomId=&startDate=&endDate=
-//  - POST   /daily-policies
-//  - PUT    /daily-policies
-//  - PUT    /daily-policies/bulk
-// ※ config에 DAILY_POLICY_ENDPOINTS가 없다면 fallbackPath를 사용합니다.
 
-const api = axios.create(axiosConfig);
 
 const fallbackPath = {
   CALENDAR: "/daily-policies/calendar",

@@ -1,27 +1,44 @@
-export default function ServiceModal({ amenities, onClose }) {
-  if (!amenities) return null;
+// 서비스 모달
+export default function ServiceModal({ open, onClose, amenities = [] }) {
+  if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
-        {/* 헤더 */}
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-bold">서비스 및 부대시설</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-black text-2xl">&times;</button>
+    <div
+      className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-xl p-5 mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 닫기(X) - 확실히 보이게 */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white hover:bg-gray-50 shadow flex items-center justify-center text-gray-700"
+          aria-label="닫기"
+        >
+          ✕
+        </button>
+
+        <div className="mb-4 pr-12">
+          <h3 className="text-lg font-bold text-gray-900">서비스 및 부대시설</h3>
         </div>
-        
-        {/* 그리드 컨텐츠 */}
-        <div className="p-8 grid grid-cols-4 gap-y-8 gap-x-4 max-h-[70vh] overflow-y-auto">
-          {amenities.map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center text-center">
-              {/* 아이콘: 실제로는 아이콘 매핑 로직 필요, 여기서는 Placeholder */}
-              <div className="w-10 h-10 mb-2 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xl">
-                 Example
+
+        {Array.isArray(amenities) && amenities.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {amenities.map((a) => (
+              <div
+                key={a.amenityId || a.name}
+                className="border border-gray-100 rounded-xl px-3 py-2 text-sm text-gray-700 bg-gray-50"
+              >
+                {a.name}
               </div>
-              <span className="text-xs text-gray-600 font-medium break-keep">{item.name}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">등록된 편의시설이 없습니다.</p>
+        )}
       </div>
     </div>
   );

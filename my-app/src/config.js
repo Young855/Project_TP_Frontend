@@ -2,31 +2,31 @@ const API_BASE_URL = "http://localhost:9090";
 
 export const USER_ENDPOINTS = {
     USERS: {
-        LIST: `${API_BASE_URL}/user`, 
-        ADD : `${API_BASE_URL}/user/signup`, 
-        LOGIN : `${API_BASE_URL}/user/login`, 
-        CHECK_EMAIL : `${API_BASE_URL}/user/check-email`, 
-        CHECK_NICKNAME : `${API_BASE_URL}/user/check-nickname`,
-        SEND_VERIFICATION: `${API_BASE_URL}/user/send-verification`,
-        VERIFY_CODE: `${API_BASE_URL}/user/verify-code`,
-        GET : (id) => `${API_BASE_URL}/user/${id}`, 
-        MODIFY : (id) => `${API_BASE_URL}/user/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/user/${id}`, 
+        LIST: `${API_BASE_URL}/users`, 
+        ADD : `${API_BASE_URL}/users/signup`, 
+        LOGIN : `${API_BASE_URL}/users/login`, 
+        CHECK_EMAIL : `${API_BASE_URL}/users/check-email`, 
+        CHECK_NICKNAME : `${API_BASE_URL}/users/check-nickname`,
+        SEND_VERIFICATION: `${API_BASE_URL}/users/send-verification`,
+        VERIFY_CODE: `${API_BASE_URL}/users/verify-code`,
+        GET : (id) => `${API_BASE_URL}/users/${id}`, 
+        MODIFY : (id) => `${API_BASE_URL}/users/${id}`, 
+        DELETE : (id) => `${API_BASE_URL}/users/${id}`, 
     },
 }
 
 export const PARTNER_ENDPOINTS = {
     PARTNERS: { 
-        LIST: `${API_BASE_URL}/partner`, 
-        ADD : `${API_BASE_URL}/partner/signup`, 
-        LOGIN : `${API_BASE_URL}/partner/login`, 
-        CHECK_EMAIL : `${API_BASE_URL}/partner/check-email`, 
-        SEND_VERIFICATION: `${API_BASE_URL}/partner/send-verification`,
-        VERIFY_CODE: `${API_BASE_URL}/partner/verify-code`,
-        GET : (id) => `${API_BASE_URL}/partner/${id}`, 
-        MODIFY : (id) => `${API_BASE_URL}/partner/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/partner/${id}`, 
-    }, 
+        LIST: `${API_BASE_URL}/partners`, 
+        ADD : `${API_BASE_URL}/partners/signup`, 
+        LOGIN : `${API_BASE_URL}/partners/login`, 
+        CHECK_EMAIL : `${API_BASE_URL}/partners/check-email`, 
+        SEND_VERIFICATION: `${API_BASE_URL}/partners/send-verification`,
+        VERIFY_CODE: `${API_BASE_URL}/partners/verify-code`,
+        GET : (id) => `${API_BASE_URL}/partners/${id}`, 
+        MODIFY : (id) => `${API_BASE_URL}/partners/${id}`, 
+        DELETE : (id) => `${API_BASE_URL}/partners/${id}`, 
+    }
 }
 
 export const BOOKING_ENDPOINTS = {
@@ -179,9 +179,9 @@ export const HASHTAG_ENDPOINTS = {
 
 export const FAVORITE_ENDPOINTS = {
     FAVORITES: {
-        ADD: `${API_BASE_URL}/favorites/create`,
-        LIST:`${API_BASE_URL}/favorites/list`,
-        DELETE:`${API_BASE_URL}/favorites/delete`,
+        ADD: `${API_BASE_URL}/favorites`,
+        LIST:`${API_BASE_URL}/favorites`,
+        DELETE:`${API_BASE_URL}/favorites`,
     },
 }
 

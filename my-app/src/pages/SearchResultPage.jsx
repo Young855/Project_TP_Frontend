@@ -218,7 +218,9 @@ export default function SearchResultPage() {
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="appearance-none border border-gray-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-gray-700 hover:border-gray-400 cursor-pointer"
+                className="appearance-none border
+                border-gray-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-gray-700 
+                hover:border-gray-400 cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>

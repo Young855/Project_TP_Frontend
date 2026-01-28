@@ -1,5 +1,6 @@
+// BookingCreate.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { prepareBooking, createBookingFromToken } from "../../api/bookingAPI";
 import { sendVerificationEmail, verifyEmailCode } from "../../api/userAPI";
 
@@ -16,28 +17,43 @@ import { sendVerificationEmail, verifyEmailCode } from "../../api/userAPI";
  */
 export default function BookingCreate() {
   const location = useLocation();
+  const nav = useNavigate();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
   const initial = useMemo(() => {
     const roomIdRaw = Number(params.get("roomId"));
     const roomId = roomIdRaw ? Number(roomIdRaw) : undefined;
+
+    // 수정하기 - URL에서 불러와야 하는데 안불러온다
     const checkinDate = params.get("checkinDate") || "";
     const checkoutDate = params.get("checkoutDate") || "";
-    const userId = Number(params.get("userId")); // 임시
+    const userIdRaw = params.get("userId");
+
+    // 로컬 스토리지로
+    const userId = 1;
+    
     const tokenFromSession = sessionStorage.getItem("reservationToken") || "";
     return { roomId, checkinDate, checkoutDate, userId, tokenFromSession };
   }, [params]);
 
+  const userId = initial.userId;
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  // ✅ (변경 1) 페이지 로딩 에러 / 제출(예약하기) 에러 분리
+  const [pageError, setPageError] = useState(""); // prepareBooking 실패 등 "페이지 자체" 오류
+  const [submitError, setSubmitError] = useState(""); // 예약하기 검증/실패 메시지
+
   const [view, setView] = useState(null);
 
   // ✅ 예약하기(저장) 중 잠금
   const [submitting, setSubmitting] = useState(false);
 
+  // ✅ (변경 2) 인증코드 발송 후 60초 쿨다운
+  const [cooldown, setCooldown] = useState(0);
+
   // ✅ form에 email 유지 (인증 성공 시 확정)
   const [form, setForm] = useState({
-    userId: initial.userId || "",
     email: "",
     guests: 2,
     bookerName: "",
@@ -50,8 +66,6 @@ export default function BookingCreate() {
    * - verified: 인증 성공 여부
    * - sending: 발송 중 여부 (잠금)
    * - verifying: 인증 확인 중 여부 (잠금)
-   *
-   * 🚫 cooldown 제거 (요구사항)
    */
   const [emailAuth, setEmailAuth] = useState({
     email: "",
@@ -84,42 +98,45 @@ export default function BookingCreate() {
     };
   }, [view]);
 
+  // ✅ (변경 2) cooldown 카운트다운
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
         setLoading(true);
-        setError("");
+        setPageError(""); // ✅ (변경 1) 페이지 오류 초기화
 
-        const hasToken = !!initial.tokenFromSession;
-        const hasQuery =
-          Number.isFinite(initial.roomId) &&
-          initial.roomId > 0 &&
-          !!initial.checkinDate &&
-          !!initial.checkoutDate;
+        // ✅ 핵심: 여기서 "지금 시점"의 토큰을 직접 읽는다
+        const token = sessionStorage.getItem("reservationToken");
 
-        if (!hasToken && !hasQuery) {
-          throw new Error("예약 정보가 없습니다. roomId/checkinDate/checkoutDate 또는 token이 필요합니다.");
+        console.log("[BookingCreate] reservationToken =", token);
+
+        if (!token) {
+          throw new Error("예약 토큰이 없습니다. 다시 객실을 선택해주세요.");
         }
 
-        const data = await prepareBooking({
-          token: initial.tokenFromSession || undefined,
-          roomId: hasQuery ? initial.roomId : undefined,
-          checkinDate: hasQuery ? initial.checkinDate : undefined,
-          checkoutDate: hasQuery ? initial.checkoutDate : undefined,
-        });
+        // ✅ 토큰 기반으로만 예약 준비 API 호출
+        const data = await prepareBooking({ token });
 
         if (cancelled) return;
 
         setView(data);
 
+        // (선택) 서버에서 토큰을 새로 내려주는 구조라면 갱신
         if (data?.token) {
           sessionStorage.setItem("reservationToken", data.token);
         }
       } catch (e) {
         if (cancelled) return;
-        setError(e?.response?.data?.message || e?.message || "예약 정보 로딩 실패");
+        // ✅ (변경 1) prepareBooking 실패는 pageError로만
+        setPageError(e?.response?.data?.message || e?.message || "예약 정보 로딩 실패");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -128,7 +145,7 @@ export default function BookingCreate() {
     return () => {
       cancelled = true;
     };
-  }, [initial]);
+  }, []);
 
   const onChange = (key) => (e) => {
     setForm((prev) => ({
@@ -139,8 +156,8 @@ export default function BookingCreate() {
 
   /**
    * ✅ 이메일 인증코드 발송
-   * - 성공 시 alert 띄움 (요구사항)
-   * - cooldown 없음 (요구사항)
+   * - 성공 시 alert 띄움
+   * - ✅ (변경 2) alert 이후 60초 대기(재전송 쿨다운)
    * - 발송 중에는 다른 버튼 못 누름 (isLocked)
    * - 인증 완료 후에는 재발송/재인증 불가
    */
@@ -148,6 +165,7 @@ export default function BookingCreate() {
     try {
       if (isLocked) return;
       if (emailAuth.verified) return; // ✅ 인증 완료면 발송 금지
+      if (cooldown > 0) return; // ✅ (변경 2) 쿨다운 중 재발송 금지
 
       const email = (emailAuth.email || "").trim().replace(/[,，\s]+$/g, ""); // 끝 콤마/공백 제거
 
@@ -167,6 +185,9 @@ export default function BookingCreate() {
 
       // ✅ 요구사항: 발송 시 alert
       alert("인증코드를 발송했습니다. 이메일을 확인해주세요.");
+
+      // ✅ (변경 2) 60초 쿨다운 시작
+      setCooldown(60);
 
       setEmailAuth((prev) => ({
         ...prev,
@@ -196,7 +217,7 @@ export default function BookingCreate() {
       if (isLocked) return;
       if (emailAuth.verified) return; // ✅ 인증 완료면 재검증 불가
 
-      const email = (emailAuth.email || "").trim().replace(/[,，\s]+$/g, "");
+      const email = (emailAuth.email || "").trim().replace(/[,\s]+$/g, "");
       const code = (emailAuth.code || "").trim();
 
       if (!email) throw new Error("이메일을 입력해주세요.");
@@ -241,13 +262,23 @@ export default function BookingCreate() {
    * ✅ 예약하기(저장)
    * - 누르는 순간 submitting=true로 잠금
    * - 처리 중 스피너 표시
+   *
+   * ✅ (변경 1) 예약하기 실패는 submitError에만 표시 (페이지 전체 오류로 안 튕김)
+   * ✅ 예약자 이름 프론트 검증 추가
    */
   const onSubmit = async () => {
     try {
       if (isLocked) return;
 
       setSubmitting(true);
-      setError("");
+      setSubmitError("");
+
+      // ... (검증 로직 생략)
+
+      // ✅ (변경 1) 예약자 이름 필수 (프론트 1차 방어)
+      if (!form.bookerName || form.bookerName.trim() === "") {
+        throw new Error("예약자 이름은 필수입니다.");
+      }
 
       // 이메일 인증 완료 강제
       if (!emailAuth.verified) {
@@ -257,19 +288,23 @@ export default function BookingCreate() {
       const token = sessionStorage.getItem("reservationToken");
       if (!token) throw new Error("예약 토큰이 없습니다. 다시 시도해주세요.");
 
-      if (!form.userId) throw new Error("userId가 필요합니다.(임시)");
+      const email = (form.email || "").trim();
+      if (!email) throw new Error("이메일이 없습니다. 다시 인증해주세요.");
 
       const res = await createBookingFromToken({
-        userId: Number(form.userId),
         token,
+        userId,
+        email,
         guests: Number(form.guests || 2),
         bookerName: form.bookerName,
         visitMode: form.visitMode,
       });
 
-      alert(`예약 완료!\n예약번호: ${res?.bookingNumber || "(없음)"}`);
+      // ✅ 1. 예약 완료 알림
+      alert(`예약 완료!\n예약번호: ${res?.bookingNumber || ""}`);
+
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "예약 생성 실패");
+      setSubmitError(e?.response?.data?.message || e?.message || "예약 생성 실패");
     } finally {
       setSubmitting(false);
     }
@@ -285,11 +320,7 @@ export default function BookingCreate() {
       aria-label="loading"
     >
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-      />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
     </svg>
   );
 
@@ -302,11 +333,12 @@ export default function BookingCreate() {
     );
   }
 
-  if (error) {
+  // ✅ (변경 1) pageError일 때만 "예약 페이지 오류" 화면
+  if (pageError) {
     return (
       <div className="max-w-3xl mx-auto p-4 space-y-3">
         <h1 className="text-xl font-semibold">예약 페이지 오류</h1>
-        <div className="rounded border p-3 text-sm">{error}</div>
+        <div className="rounded border p-3 text-sm">{pageError}</div>
         <button className="rounded border px-3 py-2" onClick={() => window.location.reload()} disabled={isLocked}>
           다시 시도
         </button>
@@ -336,25 +368,23 @@ export default function BookingCreate() {
 
       {/* 2) 일자별 가격/재고 */}
       <section className="rounded border p-4">
-        <div className="text-lg font-semibold mb-3">일자별 가격/재고</div>
+        <div className="text-lg font-semibold mb-3">일자별 가격</div>
 
         <div className="space-y-2">
           {ui.policies?.map((p) => (
             <div key={p.policyId} className="flex items-center justify-between rounded bg-gray-50 p-2">
               <div className="text-sm">
                 <div className="font-medium">{String(p.targetDate)}</div>
-                <div className="text-gray-600">policyId: {p.policyId}</div>
               </div>
               <div className="text-right text-sm">
-                <div className="font-semibold">{p.price?.toLocaleString()}원</div>
-                <div className="text-gray-600">남은재고: {p.remainingStock}</div>
+                <div className="font-semibold">가격 : {p.price?.toLocaleString()}원</div>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-3 text-right text-lg font-semibold">
-          총액: {Number(ui.totalPrice || 0).toLocaleString()}원
+          총액 : {Number(ui.totalPrice || 0).toLocaleString()}원
         </div>
       </section>
 
@@ -385,13 +415,14 @@ export default function BookingCreate() {
               <button
                 type="button"
                 onClick={handleSendEmailCode}
-                disabled={isLocked || emailAuth.verified}
+                // ✅ (변경 2) cooldown > 0 동안 비활성화
+                disabled={isLocked || emailAuth.verified || cooldown > 0}
                 className={`
                   min-w-[120px] rounded border px-3 py-2 text-sm font-medium
                   ${
                     emailAuth.verified
                       ? "bg-green-50 text-green-700 border-green-300"
-                      : isLocked
+                      : isLocked || cooldown > 0
                       ? "bg-gray-100 text-gray-700 border-gray-300"
                       : "bg-white text-blue-700 border-blue-400 hover:bg-blue-50"
                   }
@@ -405,6 +436,11 @@ export default function BookingCreate() {
                     <Spinner className="h-4 w-4" />
                     발송 중...
                   </span>
+                ) : cooldown > 0 ? (
+                  // ✅ (변경 2) 60초 카운트다운 표시
+                  `재전송 (${cooldown}s)`
+                ) : emailAuth.sent ? (
+                  "재전송"
                 ) : (
                   "인증코드 발송"
                 )}
@@ -465,11 +501,7 @@ export default function BookingCreate() {
           )}
 
           {/* 인증 완료 메시지 */}
-          {emailAuth.verified && (
-            <div className="text-sm md:col-span-2 text-green-600">
-              ✔ 이메일 인증이 완료되었습니다.
-            </div>
-          )}
+          {emailAuth.verified && <div className="text-sm md:col-span-2 text-green-600">✔ 이메일 인증이 완료되었습니다.</div>}
 
           {/* 메시지/에러 */}
           {(emailAuth.message || emailAuth.error) && (
@@ -539,7 +571,8 @@ export default function BookingCreate() {
           )}
         </button>
 
-        {error ? <div className="text-sm text-red-600">{error}</div> : null}
+        {/* ✅ (변경 1) submitError만 하단에 표시 */}
+        {submitError ? <div className="text-sm text-red-600">{submitError}</div> : null}
       </section>
     </div>
   );

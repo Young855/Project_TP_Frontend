@@ -80,10 +80,24 @@ export default function AccommodationRoomDetail({ userId }) {
   const effectiveFavorite = localFavorite ?? isFavorite;
 
   const handleToggleFavorite = async () => {
-    const next = !effectiveFavorite;
+    const next = !effectiveFavorite;   // true = 찜 추가, false = 찜 해제
     setLocalFavorite(next);
-    try { await toggleFavorite(); } catch { setLocalFavorite(!next); }
+
+    try {
+      await toggleFavorite();
+      if (next) {
+        alert("찜이 완료되었습니다.");
+      } else {
+        alert("찜이 해제되었습니다.");
+      }
+
+    } catch (e) {
+      // 실패 시 롤백
+      setLocalFavorite(!next);
+      alert("찜 처리에 실패했습니다.");
+    }
   };
+
 
   const roomsRef = useRef(null);
   const locationRef = useRef(null);

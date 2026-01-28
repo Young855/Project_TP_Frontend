@@ -10,6 +10,9 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   const location = useLocation();
   // const navigate = useNavigate(); // ❌ 삭제: 강제 새로고침을 위해 사용 안 함
 
+  // ✅ 찜 페이지 여부
+  const isFavoritePage = location.pathname.startsWith("/favorites");
+
   // 1. URL 쿼리 파라미터 파싱
   const urlCriteria = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -20,10 +23,10 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
     if (keyword || checkIn || checkOut) {
       return {
-        destination: keyword || "", 
+        destination: keyword || "",
         checkIn: checkIn || "",
         checkOut: checkOut || "",
-        guests: guests ? parseInt(guests, 10) : 2, 
+        guests: guests ? parseInt(guests, 10) : 2,
       };
     }
     return null;
@@ -35,7 +38,8 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   // 3. 페이지 판별
   const isSearchLikePage =
     location.pathname.startsWith("/search") ||
-    location.pathname.startsWith("/accommodation");
+    location.pathname.startsWith("/accommodation") ||
+    location.pathname.startsWith("/favorites"); // ✅ 추가
 
   // 4. 로컬스토리지
   const storageCriteria = useMemo(() => {
@@ -43,11 +47,11 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return { 
-        destination: parsed.destination || "", 
-        checkIn: parsed.checkIn || "", 
-        checkOut: parsed.checkOut || "", 
-        guests: Number(parsed.guests) || 2 
+      return {
+        destination: parsed.destination || "",
+        checkIn: parsed.checkIn || "",
+        checkOut: parsed.checkOut || "",
+        guests: Number(parsed.guests) || 2,
       };
     } catch {
       return null;
@@ -69,7 +73,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [isGuestPickerOpen, setIsGuestPickerOpen] = useState(false);
-  
+
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -159,14 +163,16 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
     setIsGuestPickerOpen(false);
   };
 
-  // 🌟 [핵심 수정] 검색 버튼 클릭: 페이지 새로고침(Refresh) 적용
+  // ✅ [핵심 수정] 찜 페이지에서는 지역(keyword) 없이 날짜/인원만 변경 → /favorites로 이동
   const handleSearchClick = () => {
     // 1. 유효성 검사
-    if (!searchForm.destination.trim()) {
-      alert("여행지나 숙소 이름을 입력해주세요.");
-      return;
+    if (!isFavoritePage) {
+      if (!searchForm.destination.trim()) {
+        alert("여행지나 숙소 이름을 입력해주세요.");
+        return;
+      }
     }
-    
+
     // 2. 로컬스토리지 저장
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(searchForm));
@@ -174,17 +180,25 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
     // 3. URL 파라미터 생성
     const params = new URLSearchParams();
-    params.set("keyword", searchForm.destination);
+
+    if (!isFavoritePage) {
+      params.set("keyword", searchForm.destination);
+    }
+
     params.set("checkIn", searchForm.checkIn);
     params.set("checkOut", searchForm.checkOut);
     params.set("guests", searchForm.guests);
 
-    // 4. 패널 닫기 (새로고침 되면 어차피 닫히지만 UX상 먼저 닫음)
+    // 4. 패널 닫기
     setIsPanelOpen(false);
     setIsGuestPickerOpen(false);
 
-    // 5. 🌟 페이지 강제 이동 및 새로고침 (Refresh)
-    // navigate() 대신 window.location.href를 쓰면 페이지가 새로고침됩니다.
+    // 5. 페이지 강제 이동 및 새로고침 (Refresh)
+    if (isFavoritePage) {
+      window.location.href = `/favorites?${params.toString()}`;
+      return;
+    }
+
     window.location.href = `/search?${params.toString()}`;
   };
 
@@ -201,19 +215,27 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
           {/* 2. 가운데 Pill */}
           <div
-           className="flex justify-center items-center w-1/3"
-           style={{ transform: "translate(-40px, 12px)" }}
+            className="flex justify-center items-center w-1/3"
+            style={{ transform: "translate(-40px, 12px)" }}
           >
             {isSearchLikePage && criteria && (
               <button
-                ref={buttonRef} 
+                ref={buttonRef}
                 type="button"
                 onClick={handleTogglePanel}
                 className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-[14px] md:text-[16px] text-gray-700 whitespace-nowrap overflow-hidden"
               >
-                <span className="truncate max-w-[100px]">{criteria.destination}</span>
-                <span className="w-px h-3 bg-gray-300" />
-                <span>{criteria.checkIn} ~ {criteria.checkOut}</span>
+                {/* ✅ 찜 페이지에서는 지역 숨김 */}
+                {!isFavoritePage && (
+                  <>
+                    <span className="truncate max-w-[100px]">{criteria.destination}</span>
+                    <span className="w-px h-3 bg-gray-300" />
+                  </>
+                )}
+
+                <span>
+                  {criteria.checkIn} ~ {criteria.checkOut}
+                </span>
                 <span className="w-px h-3 bg-gray-300" />
                 <span>{criteria.guests}명</span>
               </button>
@@ -224,8 +246,7 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
           <div className="flex items-center gap-2 w-1/3 justify-end">
             {!isLoggedIn && (
               <button
-                // Link나 navigate 대신 href를 쓰면 로그인 페이지 갈 때도 새로고침 됨 (필요하면 navigate로 변경 가능)
-                onClick={() => window.location.href = "/login-selection"}
+                onClick={() => (window.location.href = "/login-selection")}
                 className="btn-primary-outline px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
               >
                 로그인/회원가입
@@ -240,23 +261,22 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
 
       {/* --- 검색 패널 --- */}
       {isSearchLikePage && isPanelOpen && (
-        <div 
-          ref={panelRef} 
-          className="border-t border-gray-200 bg-white shadow-sm absolute w-full z-50"
-        >
+        <div ref={panelRef} className="border-t border-gray-200 bg-white shadow-sm absolute w-full z-50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
-              {/* 여행지 */}
-              <div className="flex-1">
-                <label className="block text-xs text-gray-500 mb-1">여행지</label>
-                <input
-                  type="text"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
-                  value={searchForm.destination}
-                  onChange={handleChange("destination")}
-                  placeholder="여행지 입력"
-                />
-              </div>
+              {/* ✅ 여행지 (찜 페이지에서는 숨김) */}
+              {!isFavoritePage && (
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">여행지</label>
+                  <input
+                    type="text"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                    value={searchForm.destination}
+                    onChange={handleChange("destination")}
+                    placeholder="여행지 입력"
+                  />
+                </div>
+              )}
 
               {/* 체크인/체크아웃 */}
               <div className="flex-1 grid grid-cols-2 gap-2">
@@ -277,7 +297,11 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
                     value={searchForm.checkOut}
                     onChange={handleChange("checkOut")}
-                    min={searchForm.checkIn ? getNextDay(searchForm.checkIn) : new Date().toISOString().split("T")[0]}
+                    min={
+                      searchForm.checkIn
+                        ? getNextDay(searchForm.checkIn)
+                        : new Date().toISOString().split("T")[0]
+                    }
                   />
                 </div>
               </div>
@@ -294,21 +318,31 @@ const Header = ({ isLoggedIn, navigate, onOpenDrawer, onSubmitSearch }) => {
                     <User size={14} className="text-gray-500" />
                     <span>총 {totalGuests}명</span>
                   </div>
-                  {isGuestPickerOpen ? <ChevronUp size={14} className="text-gray-500"/> : <ChevronDown size={14} className="text-gray-500"/>}
+                  {isGuestPickerOpen ? (
+                    <ChevronUp size={14} className="text-gray-500" />
+                  ) : (
+                    <ChevronDown size={14} className="text-gray-500" />
+                  )}
                 </button>
 
                 {isGuestPickerOpen && (
                   <div className="absolute top-full right-0 md:left-0 mt-1 w-60 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4 space-y-4">
-                     <GuestCounter 
-                        count={adults} 
-                        setCount={(val) => { if (val < 1) return; setAdults(val); }} 
-                        label="성인" 
-                     />
-                     <GuestCounter 
-                        count={children} 
-                        setCount={(val) => { if (val < 0) return; setChildren(val); }} 
-                        label="아동" 
-                     />
+                    <GuestCounter
+                      count={adults}
+                      setCount={(val) => {
+                        if (val < 1) return;
+                        setAdults(val);
+                      }}
+                      label="성인"
+                    />
+                    <GuestCounter
+                      count={children}
+                      setCount={(val) => {
+                        if (val < 0) return;
+                        setChildren(val);
+                      }}
+                      label="아동"
+                    />
                   </div>
                 )}
               </div>

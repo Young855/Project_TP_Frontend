@@ -69,7 +69,7 @@ export default function PriceRangeSlider({ min, max, step, minValue, maxValue, o
             width: "20px",
             height: "20px",
             borderRadius: "50%",
-            backgroundColor: "#ffffff",
+            backgroundColor: "##ffffff",
             border: "1px solid #cbd5e1",
             boxShadow: "0 0 4px rgba(0,0,0,0.15)",
           }}

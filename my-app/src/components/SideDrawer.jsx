@@ -3,6 +3,7 @@
 import React from 'react';
 import { X, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useUrlUser } from '../hooks/useUrlUser'; // 추가
 
 /**
  * 사이드 드로어 컴포넌트
@@ -13,6 +14,8 @@ import { Link } from 'react-router-dom';
  * @param {function} props.onLogout - 로그아웃 처리 함수
  */
 const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
+
+  const { userId } = useUrlUser(); // 추가
 
   const handleLinkClick = () => {
     // 링크 클릭 시 드로어 닫기
@@ -93,18 +96,16 @@ const SideDrawer = ({ isOpen, onClose, isLoggedIn, onLogout }) => {
               </>
             ) : (
               // 비로그인 상태: 로그인/회원가입
-              <NavItem to="/loginSelection" icon={User} isAuth={true}>
+              <NavItem to="/login-selection" icon={User} isAuth={true}>
                 로그인/회원가입
               </NavItem>
             )}
-            
-           
-            
           </div>
           
           {/* 일반 네비게이션 링크 (스크린샷 기반) */}
           <div className="mt-4 space-y-1">
-            <NavItem to="/bookings">예약 내역</NavItem>
+          {/* ✅ 수정: 예약 내역 클릭 시 userId를 쿼리로 같이 넘김 */}
+            <NavItem to={`/booking?userId=${userId ?? ""}`}>예약 내역</NavItem> {/* 수정 */}
             <NavItem to="/favorites">찜 목록</NavItem>
           <div className="border-t my-2"></div> {/* 구분선 */}
             

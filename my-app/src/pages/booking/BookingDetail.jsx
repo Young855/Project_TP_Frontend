@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { getBooking } from "../../api/bookingAPI";
+import { useParams } from "react-router-dom"; // 추가 
 
-export default function BookongDetail(){
+
+export default function BookingDetail(){
     const { id } = useParams();
     const [data, setData] = useState(null);
     const [note, setNote] = useState("");
@@ -58,8 +60,8 @@ export default function BookongDetail(){
 
             <p>
                 <Link to={`/booking/${id}/edit`}>수정</Link>{" "}
-                <button disabled={busy} onclick={doCheckIn}>체크인</button>{" "}
-                <button disabled={busy} onclick={doCheckIn}>체크아웃</button>
+                <button disabled={busy} onClick={doCheckIn}>체크인</button>{" "}
+                <button disabled={busy} onClick={doCheckIn}>체크아웃</button>
             </p>
 
             <h3>메모</h3>

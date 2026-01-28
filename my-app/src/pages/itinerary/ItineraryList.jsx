@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAllBookings } from "../../api/bookingAPI";
+// import { getAllBookings } from "../../api/bookingAPI";
 
 export default function ItineraryList({ userId }) {
   const [items, setItems] = useState([]);   // 예약 목록 = 내 일정
@@ -19,7 +19,7 @@ export default function ItineraryList({ userId }) {
         sort: "checkIn,asc",
       };
 
-      const res = await getAllBookings(params);
+      // const res = await getAllBookings(params);
       const list = res?.content ?? res ?? [];
       setItems(list);
     } catch (e) {

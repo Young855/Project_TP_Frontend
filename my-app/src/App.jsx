@@ -33,6 +33,9 @@ import AdminLayout from './Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AccommodationPage from './pages/accommodation/AccommodationRoomPage';
 import AdminRouter from './routers/AdminRouter';
+import PartnerBookingPage from "./pages/booking/PartnerBookingPage";
+
+import ChatWidget from "./components/ChatWidget";
 
 const Placeholder = ({ title }) => (
   <div className="p-8 text-2xl font-bold text-gray-400">
@@ -115,11 +118,11 @@ function UserLayout() {
     if (protectedPaths.includes(path) && !isLoggedIn) {
       showModal('로그인 필요', '로그인이 필요한 서비스입니다.', () => {
         localStorage.setItem('nextPath', path);
-        navigate('/login');
+        navigate('/login-section');       // section 추가
       });
       return false;
     }
-    return true;``
+    return true;
   };
 
   // 메인/헤더에서 공통으로 사용하는 검색 함수 / 메인 페이지든 헤더든 전부 이 handleSearch만 호출
@@ -211,6 +214,9 @@ function UserLayout() {
       >
         <p>{modal.content}</p>
       </Modal>
+
+      {/* ✅ (추가) 유저 화면 어디서든 챗봇 사용 가능 */}
+      <ChatWidget />
     </div>
   );
 }
@@ -249,6 +255,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="accommodations" replace /> },
 //      { index: true, element: <PartnerDashboard /> },
      {path : 'dashboard', element: <PartnerDashboard/>},
+     {path : "booking-check",  element: <PartnerBookingPage /> },
       ...RoomRouter,
       ...partnerAccommodationRoutes, 
     ],

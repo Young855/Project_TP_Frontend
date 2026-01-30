@@ -262,7 +262,7 @@ const RateCalendarPage = () => {
                                             <div className="flex flex-col">
                                                 <div className="flex items-center mb-1">
                                                     <span className="text-base">{room.name}</span>
-                                                    <Link to={`/partner/rooms/${room.roomId}/edit`} className="ml-2 text-blue-500 hover:text-blue-700"><Edit size={16} className="inline"/></Link>
+                                                    <Link to={`/partner/rooms/${room.roomId}`} className="ml-2 text-blue-500 hover:text-blue-700"><Edit size={16} className="inline"/></Link>
                                                 </div>
                                             </div>
                                         </div>

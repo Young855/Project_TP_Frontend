@@ -3,8 +3,7 @@ import { redirect } from "react-router-dom";
 import UserEdit from "../pages/user/UserEdit";       
 import SignupPage from "../pages/user/SignupPage";   
 import LoginPage from "../pages/user/LoginPage";     
-import MyPage from "../pages/user/MyPage";           
-import FindPasswordPage from "../pages/user/FindPasswordPage"; 
+import MyPage from "../pages/user/MyPage";
 
 
 import { 
@@ -104,10 +103,6 @@ export const userRoutes = [
             {
                 path: "mypage", 
                 element: <MyPage />, 
-            },
-            {
-                path: "find-password",
-                element: <FindPasswordPage />,
             },
             {
                 path: ":id/edit", 

@@ -131,7 +131,7 @@ const PartnerLoginPage = () => {
         
         <div className="text-sm text-center text-gray-600 mt-8 flex justify-center space-x-6">
           <button 
-            onClick={() => showModal('알림', '파트너 비밀번호 찾기 기능은 고객센터에 문의해주세요.', null)} 
+            onClick={() => navigate('/acc/forgot-password')} 
             className="hover:text-blue-600 transition-colors font-medium"
           >
             비밀번호 찾기

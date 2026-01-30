@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserCheck, Settings, Edit3, Save, Check, Quote } from 'lucide-react';
 import { getUserPreference, saveUserPreference } from '../../api/userPrefAPI';

@@ -22,7 +22,7 @@ export default function StickyTabs({ onTabClick }) {
 
   const tabs = [
     { id: "rooms", label: "객실안내/예약" },
-    { id: "amenities", label: "숙소정보" }, // 클릭 시 서비스 모달 띄움
+    { id: "accommodation", label: "숙소정보" }, // 클릭 시 서비스 모달 띄움
     { id: "location", label: "위치" },
     { id: "reviews", label: "리뷰" },
   ];

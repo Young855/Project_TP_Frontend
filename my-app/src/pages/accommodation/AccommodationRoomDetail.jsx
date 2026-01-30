@@ -3,19 +3,21 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 // components
 import StickyTabs from "@/components/accommodation/detail/StickyTabs";
-import ServiceModal from "@/components/ServiceModal";
-import GalleryModal from "@/components/GalleryModal";
+import ServiceModal from "@/components/accommodation/detail/ServiceModal";
+import GalleryModal from "@/components/accommodation/detail/GalleryModal";
+import SellerInfoModal from "@/components/SellerModal"; // [추가] 판매자 정보 모달
 
 // API & Config
 import { getRoomPhotos } from "@/api/roomPhotoAPI"; 
-import { prepareBooking } from "@/api/bookingAPI"; 
+import { prepareBooking } from "@/api/bookingAPI";
+import { getReviewList } from "@/api/reviewAPI";
+import { getPartnerByAccommodationId } from "@/api/partnerAPI"; // [추가] 파트너 조회 API
 import { ACCOMMODATION_PHOTO_ENDPOINTS, ROOM_PHOTO_ENDPOINTS } from "@/config"; 
 
 // hooks
 import useAccommodationDetail from "@/hooks/accommodation/detail/useAccommodationDetail";
 import useFavorite from "@/hooks/accommodation/detail/useFavorite";
 
-// [변경] props에서 userId를 받는 대신 내부에서 직접 확인하므로, props에서 userId 삭제 가능
 export default function AccommodationRoomDetail() {
   const { id } = useParams();
   const location = useLocation();
@@ -27,14 +29,14 @@ export default function AccommodationRoomDetail() {
   const checkOut = searchParams.get("checkOut") || new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const guests = searchParams.get("guests") || "2";
 
-  // 1. 데이터 로딩
+  // 1. 데이터 로딩 (숙소 상세 정보)
   const { accommodation, loading: accLoading } = useAccommodationDetail(id, checkIn, checkOut, guests);
   
-  // accommodation.rooms 사용 (통합 데이터)
   const rooms = accommodation?.rooms || [];
 
-  // 2. 갤러리 로직
+  // 2. 갤러리 로직 & 객실별 대표 이미지 관리
   const [allGalleryImages, setAllGalleryImages] = useState([]);
+  const [roomMainPhotos, setRoomMainPhotos] = useState({}); // { roomId: "url" } 매핑
 
   useEffect(() => {
     if (!accommodation || !rooms) return;
@@ -49,7 +51,7 @@ export default function AccommodationRoomDetail() {
         type: 'accommodation'
       })) || [];
 
-      // (2) 객실 사진
+      // (2) 객실 사진 병렬 호출
       const roomPhotoPromises = rooms.map(async (room) => {
         try {
           const rPhotos = await getRoomPhotos(room.roomId);
@@ -58,7 +60,8 @@ export default function AccommodationRoomDetail() {
             url: ROOM_PHOTO_ENDPOINTS.PHOTOS.GET_BLOB_DATA(p.imageId),
             description: room.roomName,
             sortOrder: p.sortOrder || 999,
-            type: 'room'
+            type: 'room',
+            roomId: room.roomId // 정렬 등을 위해 ID 유지
           }));
         } catch (e) {
           return [];
@@ -66,9 +69,22 @@ export default function AccommodationRoomDetail() {
       });
 
       const roomsPhotosResult = await Promise.all(roomPhotoPromises);
-      const flattenedRoomPhotos = roomsPhotosResult.flat();
+      
+      // 객실별 대표 이미지(sortOrder 1순위) 추출하여 매핑 생성
+      const newMainPhotoMap = {};
+      rooms.forEach((room, index) => {
+          const photos = roomsPhotosResult[index]; // rooms와 순서 동일
+          if (photos && photos.length > 0) {
+              // sortOrder 기준 오름차순 정렬 (가장 낮은 숫자가 대표 사진)
+              photos.sort((a, b) => a.sortOrder - b.sortOrder);
+              newMainPhotoMap[room.roomId] = photos[0].url;
+          }
+      });
+      setRoomMainPhotos(newMainPhotoMap);
 
-      accPhotos.sort((a, b) => a.sortOrder - b.sortOrder);
+      // 갤러리용 전체 사진 병합
+      const flattenedRoomPhotos = roomsPhotosResult.flat();
+      accPhotos.sort((a, b) => a.sortOrder - b.sortOrder); // 숙소 사진도 정렬
       setAllGalleryImages([...accPhotos, ...flattenedRoomPhotos]);
     };
 
@@ -76,38 +92,120 @@ export default function AccommodationRoomDetail() {
   }, [accommodation, rooms]);
 
   // ---------------------------------------------------------------
-  // [수정] userId를 props가 아닌 localStorage에서 직접 조회
+  // [추가] 판매자 정보(Partner) 관련 로직
   // ---------------------------------------------------------------
+  const [isSellerModalOpen, setIsSellerModalOpen] = useState(false);
+  const [partnerInfo, setPartnerInfo] = useState(null);
+
+  const handleOpenSellerInfo = async () => {
+      if (partnerInfo) {
+          setIsSellerModalOpen(true);
+          return;
+      }
+
+      try {
+          // accommodationId를 이용해 Partner 정보 조회
+          const data = await getPartnerByAccommodationId(id);
+          setPartnerInfo(data);
+          setIsSellerModalOpen(true);
+      } catch (error) {
+          console.error("판매자 정보 로딩 실패", error);
+          alert("판매자 정보를 불러올 수 없습니다. (등록된 판매자가 없거나 오류 발생)");
+      }
+  };
+
+  // ---------------------------------------------------------------
+  // 리뷰 관련 State 및 로직
+  // ---------------------------------------------------------------
+  const [reviews, setReviews] = useState([]);
+  const [reviewPage, setReviewPage] = useState(0); 
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchReviews = async () => {
+        try {
+            const data = await getReviewList(id, reviewPage, 10);
+            setReviews(data.content);
+            setTotalPages(data.totalPages);
+            setTotalElements(data.totalElements);
+        } catch (error) {
+            console.error("리뷰 로딩 실패", error);
+        }
+    };
+    
+    fetchReviews();
+  }, [id, reviewPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+        setReviewPage(newPage);
+    }
+  };
+
+  const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const renderStars = (rating) => {
+      const safeRating = rating || 0;
+      return "★".repeat(safeRating) + "☆".repeat(5 - safeRating);
+  };
+
+  // 3. 찜하기 로직
   const token = localStorage.getItem("accessToken");
   const storedUserId = localStorage.getItem("userId");
   
-  // 로그인되어 있고 userId가 있으면 숫자로 변환하여 사용
-  const validUserId = (token && storedUserId) ? Number(storedUserId) : null; 
+  // 로그인 여부 판단 (토큰과 ID가 모두 있고, "null" 문자열이 아닌 경우)
+  const isLogin = !!(token && storedUserId && token !== "null" && token !== "undefined");
 
-  const { isFavorite, toggleFavorite } = useFavorite({ userId: validUserId, accommodationId: id });
+  // 훅 호출
+  // 비로그인(isLogin = false)이면 userId에 null을 전달 -> useFavorite 내부에서 안전하게 무시됨
+  const { isFavorite, toggleFavorite } = useFavorite({ 
+      userId: isLogin ? Number(storedUserId) : null, 
+      accommodationId: id 
+  });
   
+  // 화면 표시용 (낙관적 업데이트)
   const [localFavorite, setLocalFavorite] = useState(null);
   const effectiveFavorite = localFavorite ?? isFavorite;
 
   const handleToggleFavorite = async () => {
-    if (!token) {
+    // 버튼 클릭 시: 로그인 상태가 아니면 로그인 페이지로 유도
+    if (!isLogin) {
         if (window.confirm("로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠습니까?")) {
             navigate("/login-selection");
         }
-        return;
+        return; // 여기서 함수를 끝내서 API 요청 자체를 차단
     }
 
-    const next = !effectiveFavorite;
-    setLocalFavorite(next);
+    // 로그인 상태일 때만 실행됨
+    const next = !effectiveFavorite; 
+    setLocalFavorite(next); 
+    
     try { 
         await toggleFavorite(); 
-    } catch { 
-        setLocalFavorite(!next);
+        
+        // 성공 메시지
+        if (next) {
+            alert("숙소를 찜 목록에 담았습니다.");
+        } else {
+            alert("숙소를 찜 목록에서 삭제했습니다.");
+        }
+    } catch (error) { 
+        setLocalFavorite(!next); // 실패 시 원상복구
+        console.error(error);
         alert("오류가 발생했습니다."); 
     }
   };
 
+  // 4. 스크롤 및 모달 제어
   const roomsRef = useRef(null);
+  const infoRef = useRef(null);     // [추가] 숙소 소개 영역 Ref
   const locationRef = useRef(null);
   const reviewsRef = useRef(null);
 
@@ -172,8 +270,12 @@ export default function AccommodationRoomDetail() {
                 <span className="text-gray-500 text-sm font-bold">{accommodation.type || "호텔/리조트"}</span>
                 <h1 className="text-3xl font-bold mt-1 text-gray-900">{accommodation.name}</h1>
                 <div className="flex items-center gap-2 mt-2">
-                    <span className="bg-yellow-400 text-white px-1.5 py-0.5 rounded text-sm font-bold">{accommodation.ratingAvg || 9.5}</span>
-                    <span className="text-gray-600 text-sm">추천해요 ({accommodation.reviewCount || 0}명 평가)</span>
+                    <span className="bg-yellow-400 text-white px-1.5 py-0.5 rounded text-sm font-bold">
+                        {accommodation.ratingAvg || 5.0}
+                    </span>
+                    <span className="text-gray-600 text-sm">
+                        추천해요 ({accommodation.reviewCount || 0}명 평가)
+                    </span>
                 </div>
               </div>
               <button onClick={handleToggleFavorite} className="flex flex-col items-center text-gray-400 hover:text-red-500">
@@ -197,6 +299,7 @@ export default function AccommodationRoomDetail() {
            </div>
         </div>
 
+        {/* 탭 메뉴 */}
         <StickyTabs 
           activeTab="rooms" 
           onTabClick={(tab) => {
@@ -214,8 +317,9 @@ export default function AccommodationRoomDetail() {
                 {rooms.map((room) => (
                     <div key={room.roomId} className="border border-gray-200 rounded-xl overflow-hidden flex flex-col md:flex-row h-auto md:h-64 shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-full md:w-1/3 bg-gray-200 relative">
+                             {/* 객실별 대표 이미지 (없으면 기본 이미지) */}
                              <img 
-                                src={room.mainPhotoUrl || "/images/no-image.png"} 
+                                src={roomMainPhotos[room.roomId] || "/images/no-image.png"} 
                                 alt={room.roomName} 
                                 className="w-full h-full object-cover" 
                                 loading="lazy"
@@ -278,6 +382,27 @@ export default function AccommodationRoomDetail() {
         
         <hr className="my-10 border-gray-100"/>
 
+        {/* ------------------------------------------------------- */}
+        {/* [추가] 숙소 소개 및 판매자 정보 섹션 (위치 정보 위) */}
+        {/* ------------------------------------------------------- */}
+        <div ref={infoRef} className="px-4 md:px-0 py-6 scroll-mt-20">
+            <h2 className="text-xl font-bold mb-4">숙소 소개</h2>
+            <div className="text-gray-600 leading-relaxed whitespace-pre-wrap mb-6">
+                {accommodation.description || "등록된 숙소 소개가 없습니다."}
+            </div>
+            
+            {/* 판매자 정보 모달 열기 버튼 */}
+            <button 
+                onClick={handleOpenSellerInfo}
+                className="text-sm text-gray-500 underline hover:text-gray-800 transition-colors"
+            >
+                판매자 정보 확인
+            </button>
+        </div>
+
+        <hr className="my-10 border-gray-100"/>
+
+        {/* 위치 정보 */}
         <div ref={locationRef} className="px-4 md:px-0 py-6 scroll-mt-20">
            <h2 className="text-xl font-bold mb-4">위치 정보</h2>
            <div className="text-gray-600 mb-4">{accommodation.address}</div>
@@ -286,15 +411,67 @@ export default function AccommodationRoomDetail() {
            </div>
         </div>
 
+        {/* 리뷰 섹션 */}
         <div ref={reviewsRef} className="px-4 md:px-0 py-6 scroll-mt-20">
-           <h2 className="text-xl font-bold mb-4">리뷰</h2>
-           <div className="bg-gray-50 p-6 rounded-xl text-center text-gray-500">
-              실제 투숙객들의 리뷰가 표시될 영역입니다.
+           <div className="flex items-center gap-2 mb-6">
+               <h2 className="text-xl font-bold">리뷰</h2>
+               <span className="text-blue-600 font-bold">{totalElements}개</span>
            </div>
+
+           {reviews.length === 0 ? (
+               <div className="bg-gray-50 p-10 rounded-xl text-center text-gray-500">
+                   아직 등록된 리뷰가 없습니다.
+               </div>
+           ) : (
+               <div className="space-y-6">
+                   {reviews.map((review) => (
+                       <div key={review.reviewId} className="border-b border-gray-100 pb-6 last:border-0">
+                           <div className="flex items-center justify-between mb-2">
+                               <div className="flex items-center gap-3">
+                                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-sm">
+                                       {review.nickname ? review.nickname.charAt(0).toUpperCase() : "U"}
+                                   </div>
+                                   <div>
+                                       <div className="font-bold text-gray-800">{review.nickname || "익명 사용자"}</div>
+                                       <div className="text-xs text-gray-400">{formatDate(review.createdAt)}</div>
+                                   </div>
+                               </div>
+                               <div className="text-yellow-400 text-sm tracking-widest">
+                                   {renderStars(review.rating)}
+                               </div>
+                           </div>
+                           <div className="pl-13 text-gray-600 leading-relaxed whitespace-pre-wrap">
+                               {review.content}
+                           </div>
+                       </div>
+                   ))}
+
+                   <div className="flex justify-center items-center gap-4 mt-8">
+                       <button 
+                           onClick={() => handlePageChange(reviewPage - 1)}
+                           disabled={reviewPage === 0}
+                           className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-600"
+                       >
+                           이전
+                       </button>
+                       <span className="text-sm text-gray-600 font-medium">
+                           {reviewPage + 1} / {totalPages === 0 ? 1 : totalPages}
+                       </span>
+                       <button 
+                           onClick={() => handlePageChange(reviewPage + 1)}
+                           disabled={reviewPage >= totalPages - 1}
+                           className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-600"
+                       >
+                           다음
+                       </button>
+                   </div>
+               </div>
+           )}
         </div>
 
       </div>
 
+      {/* 부가 서비스 모달 */}
       {isServiceOpen && (
         <ServiceModal 
            amenities={accommodation.amenities} 
@@ -302,6 +479,7 @@ export default function AccommodationRoomDetail() {
         />
       )}
 
+      {/* 갤러리 모달 */}
       {isGalleryOpen && (
         <GalleryModal 
             images={allGalleryImages}
@@ -309,6 +487,13 @@ export default function AccommodationRoomDetail() {
             onClose={() => setIsGalleryOpen(false)}
         />
       )}
+
+      {/* [추가] 판매자 정보 모달 */}
+      <SellerInfoModal 
+          isOpen={isSellerModalOpen}
+          onClose={() => setIsSellerModalOpen(false)}
+          partner={partnerInfo}
+      />
     </div>
   );
 }

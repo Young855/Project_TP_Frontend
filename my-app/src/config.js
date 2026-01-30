@@ -17,12 +17,22 @@ export const USER_ENDPOINTS = {
         DELETE : (id) => `${API_BASE_URL}/users/${id}`, 
     },
 }
+export const REVIEW_ENDPOINTS = {
+    REVIEWS: {
+        LIST: `${API_BASE_URL}/reviews`, // GET /reviews?accommodationId=...
+        ADD: `${API_BASE_URL}/reviews`,
+        MODIFY: (id) => `${API_BASE_URL}/reviews/${id}`,
+        DELETE: (id) => `${API_BASE_URL}/reviews/${id}`,
+    }
+}
 export const AUTH_ENDPOINTS = {
     LOGIN: `${API_BASE_URL}/auth/users/login`,          
     PARTNER_LOGIN: `${API_BASE_URL}/auth/partners/login`, 
     KAKAO_LOGIN: `${API_BASE_URL}/auth/api/kakao`, 
-    
-    REISSUE: `${API_BASE_URL}/auth/api/reissue`,          
+    REISSUE: `${API_BASE_URL}/auth/api/reissue`,
+    REQUEST_RESET: `${API_BASE_URL}/auth/request-reset-password`, // 이메일 발송 요청
+    VERIFY_RESET: `${API_BASE_URL}/auth/verify-reset-token`,      // 토큰 검증
+    RESET_PASSWORD: `${API_BASE_URL}/auth/reset-password`,        // 실제 변경
 };
 
 export const PARTNER_ENDPOINTS = {
@@ -37,6 +47,7 @@ export const PARTNER_ENDPOINTS = {
         MODIFY : (id) => `${API_BASE_URL}/partner/partnerpage/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/partner/partnerpage/${id}`, 
         GET_BY_ACCOUNT: (accountId) => `${API_BASE_URL}/partner/account/${accountId}`,
+        GET_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/partner/by-accommodation/${accommodationId}`,
     }
 }
 
@@ -232,6 +243,7 @@ export default{
     HASHTAG_ENDPOINTS,
     FAVORITE_ENDPOINTS,
     ROOM_PHOTO_ENDPOINTS,
+    REVIEW_ENDPOINTS,
     BOOKINGROOM_ENDPOINTS,
     DAILY_POLICY_ENDPOINTS,
     PRICE_ENDPOINTS,

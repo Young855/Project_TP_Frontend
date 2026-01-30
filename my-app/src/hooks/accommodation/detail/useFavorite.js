@@ -1,10 +1,8 @@
-// src/hooks/accommodation/detail/useFavorite.js
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { addFavorite, removeFavorite, getFavorites } from "@/api/favoriteAPI";
-// ↑ 경로가 다르면 아래처럼 바꿔라
-// import { addFavorite, removeFavorite, getFavorites } from "../../../api/favoriteAPI";
+import { addFavorite, removeFavorite, getFavorites } from "@/api/favoriteAPI"; 
 
 export default function useFavorite({ userId, accommodationId }) {
+  // Number 변환 (null이나 빈 문자열은 0이 됨)
   const numericUserId = useMemo(() => Number(userId), [userId]);
   const numericId = useMemo(() => Number(accommodationId), [accommodationId]);
 
@@ -13,7 +11,14 @@ export default function useFavorite({ userId, accommodationId }) {
 
   // 1) 최초 진입/ID 변경 시: 서버에서 찜 여부 동기화
   useEffect(() => {
-    if (!Number.isFinite(numericUserId) || !Number.isFinite(numericId)) return;
+    // [수정 핵심] userId가 없으면(null, '', undefined) 즉시 종료 (API 호출 X)
+    // numericUserId === 0 체크도 추가하여 변환된 0값도 방어
+    if (!userId || !Number.isFinite(numericUserId) || numericUserId === 0) {
+        setIsFavorite(false); // 비로그인 상태이므로 찜 해제 상태로 둠
+        return; 
+    }
+
+    if (!Number.isFinite(numericId)) return;
 
     let alive = true;
 
@@ -38,12 +43,13 @@ export default function useFavorite({ userId, accommodationId }) {
     return () => {
       alive = false;
     };
-  }, [numericUserId, numericId]);
+  }, [userId, numericUserId, numericId]); // 의존성 배열에 userId 추가
 
-  // 2) 토글: 서버에 add/remove 요청을 반드시 보냄
+  // 2) 토글: 서버에 add/remove 요청
   const toggleFavorite = useCallback(async () => {
-    if (!Number.isFinite(numericUserId)) {
-      throw new Error("userId가 없어서 찜을 처리할 수 없습니다.");
+    // 여기도 방어 코드 추가 (혹시 모를 호출 대비)
+    if (!userId || !Number.isFinite(numericUserId) || numericUserId === 0) {
+      throw new Error("로그인이 필요한 서비스입니다.");
     }
     if (!Number.isFinite(numericId)) {
       throw new Error("accommodationId가 올바르지 않습니다.");
@@ -51,7 +57,6 @@ export default function useFavorite({ userId, accommodationId }) {
 
     setFavLoading(true);
 
-    // 현재 상태 기준으로 add/remove
     const currently = isFavorite;
 
     try {
@@ -67,7 +72,7 @@ export default function useFavorite({ userId, accommodationId }) {
     } finally {
       setFavLoading(false);
     }
-  }, [numericUserId, numericId, isFavorite]);
+  }, [userId, numericUserId, numericId, isFavorite]);
 
   return {
     isFavorite,
@@ -75,4 +80,4 @@ export default function useFavorite({ userId, accommodationId }) {
     toggleFavorite,
     numericId,
   };
-}
+} 

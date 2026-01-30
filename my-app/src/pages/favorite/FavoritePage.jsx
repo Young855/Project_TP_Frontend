@@ -7,11 +7,11 @@ import { useUrlUser } from "../../hooks/useUrlUser";
 // 찜 목록 최상위 페이지
 // - URL: /favorites 또는 /favorites?userId=1 형식
 // - 내부에서는 카드 형태의 FavoriteList만 사용
-export default function FavoritePage({ userId: propUserId }) {
+export default function FavoritePage() {
   const navigate = useNavigate();
   const { userId: urlUserId } = useUrlUser();
 
-  const userId = Number(propUserId ?? urlUserId ?? 1);
+  const userId = Number(localStorage.getItem("userId"));
 
   const handleGoToSearch = () => {
     // 메인 페이지로 바로 이동

@@ -19,7 +19,7 @@ import {
 } from 'react-icons/md';
 
 // 1. 숙소(Accommodation) 전용 편의시설
-const ACCOMMODATION_AMENITIES = [
+export const ACCOMMODATION_AMENITIES = [
   { name: "레스토랑", icon: <FaUtensils /> },
   { name: "카페&베이커리", icon: <FaCoffee /> },
   { name: "피트니스", icon: <FaDumbbell /> },
@@ -41,7 +41,7 @@ const ACCOMMODATION_AMENITIES = [
 ];
 
 // 2. 객실(Room) 전용 편의시설
-const ROOM_AMENITIES = [
+export const ROOM_AMENITIES = [
   { name: "무선인터넷", icon: <FaWifi /> },
   { name: "금연", icon: <FaSmokingBan /> },
   { name: "TV", icon: <FaTv /> },

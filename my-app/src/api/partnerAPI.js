@@ -111,3 +111,15 @@ export const deletePartner = async (id) => {
     throw error;
   }
 };
+
+export const getPartnerByAccommodationId = async (accommodationId) => {
+    try {
+        const response = await api.get(
+            PARTNER_ENDPOINTS.PARTNERS.GET_BY_ACCOMMODATION(accommodationId)
+        );
+        return response.data; 
+    } catch (error) {
+        console.error("숙소별 파트너 정보 조회 실패:", error);
+        throw error;
+    }
+};

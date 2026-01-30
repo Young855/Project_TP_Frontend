@@ -240,13 +240,15 @@ export default function PartnerAccommodationsPage({ showModal }) {
                       >
                         수정
                       </button>
-                      <button 
-                        onClick={() => handleDeleteAccommodation(acc.accommodationId)} 
-                        disabled={isActionProcessing}
-                        className="px-3 py-1 text-xs font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        삭제
-                      </button>
+                      {acc.auth !== 'CONFIRM' && (
+                        <button 
+                          onClick={() => handleDeleteAccommodation(acc.accommodationId)} 
+                          disabled={isActionProcessing}
+                          className="px-3 py-1 text-xs font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          삭제
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

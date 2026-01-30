@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // Hooks
@@ -37,21 +37,37 @@ export default function SearchResultPage() {
 
   // 1. 초기 데이터 설정
   const params = new URLSearchParams(location.search);
-  const initialCriteria = {
+  return {
     destination: params.get("keyword") || state?.criteria?.destination || "",
     checkIn: params.get("checkIn") || state?.criteria?.checkIn || "",
     checkOut: params.get("checkOut") || state?.criteria?.checkOut || "",
-    guests: params.get("guests") || state?.criteria?.guests || state?.criteria?.totalGuests || 2,
+    guests: params.get("guests") || state?.criteria?.guests || 2,
   };
+}, [location.search, state]);
 
-  const [criteria] = useState(initialCriteria);
+
 
   // 2. 데이터 상태 관리
-  const [results, setResults] = useState([]); 
-  const [page, setPage] = useState(0);        
-  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState([]);
+  const [page, setPage] = useState(0);       
   const [isLast, setIsLast] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
+
+  // ✅ criteria 변경 = 새 검색 → 상태 초기화
+  useEffect(() => {
+    setResults([]);
+    setPage(0);
+    setIsLast(false);
+    setTotalCount(0);
+    setCalculatedPriceMap({});
+  }, [
+    criteria.destination,
+    criteria.checkIn,
+    criteria.checkOut,
+    criteria.guests,
+  ]);
 
   // AI 추천 관련 상태
   const [aiDisplayItems, setAiDisplayItems] = useState([]); 
@@ -137,16 +153,20 @@ useEffect(() => {
       setIsLoading(true);
       try {
         const searchParams = {
-            keyword: criteria.destination || "", 
-            checkIn: criteria.checkIn,
-            checkOut: criteria.checkOut,
-            guests: criteria.guests,
+          keyword: criteria.destination || "",
+          checkIn: criteria.checkIn,
+          checkOut: criteria.checkOut,
+          guests: criteria.guests,
         };
         const data = await searchAccommodationsWithMainPhoto(searchParams, page, 10);
         const newItems = data.content || [];
-        setResults((prev) => page === 0 ? newItems : [...prev, ...newItems]);
-        setIsLast(data.last);
-        if (page === 0) setTotalCount(data.totalElements);
+
+        setResults((prev) =>
+          page === 0 ? newItems : [...prev, ...newItems]
+        );
+
+        setIsLast(!!data.last);
+        if (page === 0) setTotalCount(data.totalElements || 0);
       } catch (error) {
         console.error("숙소 리스트 로딩 실패:", error);
       } finally {

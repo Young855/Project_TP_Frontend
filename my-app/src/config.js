@@ -69,12 +69,35 @@ export const BOOKING_ENDPOINTS = {
         GET : (id) => `${API_BASE_URL}/bookings/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/bookings/${id}`, 
         DELETE : (id) => `${API_BASE_URL}/bookings/${id}`, 
-        GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`, 
+        GET_BY_USER: (userId) => `${API_BASE_URL}/bookings/user/${userId}`,
+        UPDATE_BOOKER: (id) => `${API_BASE_URL}/bookings/${id}/booker`,
+        CONFIRM_PAYMENT: (id) => `${API_BASE_URL}/bookings/${id}/payment/confirm`,
     },
 }
 export const RECOMMENDATION_ENDPOINTS = {
     RECOMMENDATION: `${AI_API_BASE_URL}/recommendation`
 };
+
+export const PARTNER_BOOKING_ENDPOINTS = {
+  // ✅ 대시보드
+  DASHBOARD: (partnerId) => `${API_BASE_URL}/partners/${partnerId}/dashboard`,
+  DASHBOARD_BY_ACCOMMODATION: (partnerId, accommodationId) =>
+    `${API_BASE_URL}/partners/${partnerId}/dashboard/accommodations/${accommodationId}`,
+
+  // ✅ 예약관리
+  BOOKINGS: {
+    // GET /partners/{partnerId}/bookings
+    LIST: (partnerId) => `${API_BASE_URL}/partners/${partnerId}/bookings`,
+
+    // ✅ 숙소별 예약관리 (GET)
+    LIST_BY_ACCOMMODATION: (partnerId, accommodationId) =>
+      `${API_BASE_URL}/partners/${partnerId}/accommodations/${accommodationId}/bookings`,
+
+    // /partners/{partnerId}/bookings/{bookingId}/confirm
+    CONFIRM: (partnerId, bookingId) =>
+      `${API_BASE_URL}/partners/${partnerId}/bookings/${bookingId}/confirm`,
+  },
+}
 
 export const ROOM_ENDPOINTS = {
     ROOMS: {
@@ -232,6 +255,7 @@ export default{
     USER_ENDPOINTS,
     PARTNER_ENDPOINTS,
     BOOKING_ENDPOINTS,
+    PARTNER_BOOKING_ENDPOINTS,
     ROOM_ENDPOINTS,
     ADMIN_ENDPOINTS,
     ACCOMMODATIONS_ENDPOINTS,

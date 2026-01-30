@@ -153,11 +153,11 @@ const PartnerLayoutContent = () => {
             </div>
           </Link>
 
-          {/* <Link to="/partner/reservations" onClick={handleNavigationGuard} className={getLinkClass('/partner/reservations')}>
+          <Link to="/partner/booking-check" onClick={handleNavigationGuard} className={getLinkClass('/partner/booking-check')}>
             <List size={20} />
-            <span>예약 목록</span>
-          </Link> */}
-
+            <span>예약 관리</span>
+          </Link>
+          
           <div className="pt-6 mt-2">
              <p className="px-4 text-xs font-bold text-gray-400 mb-2 uppercase">Current Accommodation</p>
              {currentAccommodation ? (

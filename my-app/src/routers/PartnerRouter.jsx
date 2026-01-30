@@ -3,6 +3,7 @@ import BizVerificationPage from "../pages/partner/BizVerificationPage";
 import EmailVerificationPage from "../pages/user/EmailVarificationPage"; 
 import PartnerSignupPage from "../pages/partner/partnerSignupPage";
 
+
 const PartnerRouter = [
     {
         path : "partner",

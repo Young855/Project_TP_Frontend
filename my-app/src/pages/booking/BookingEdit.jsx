@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 import { useEffect, useState } from "react";
 import { getBooking, updateBooking } from "../../api/bookingAPI";
 
@@ -58,7 +60,7 @@ export default function BookingEdit(){
         <form onSubmit={onSubmit}>
             <label>User ID <input name="userId" value={form.userId} onChange={onChange} /></label><br/>
             <label>Property ID <input name="propertyId" value={form.propertyId} onChange={onChange} /></label><br/>
-            <label>Room Id <input name="roomId" value={form.roomID} onChange={onChange} /></label><br/>
+            <label>Room Id <input name="roomId" value={form.roomId} onChange={onChange} /></label><br/>
             <label>Check In <input type="date" name="checkIn" value={form.checkIn} onChange={onChange} /></label><br/>
             <label>Check Out<input type="date" name="checkOut" value={form.checkOut} onChange={onChange} /></label><br/>
             <label>Guests <input type="number" name="guests" value={form.guests} onChange={onChange} /></label><br/>
@@ -68,3 +70,4 @@ export default function BookingEdit(){
         </form>
     )
 }
+>>>>>>> otherwork

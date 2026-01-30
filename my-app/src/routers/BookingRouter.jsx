@@ -1,8 +1,6 @@
 import BookingList from "../pages/booking/BookingList";
 import BookingCreate from "../pages/booking/BookingCreate";
 import BookingDetail from "../pages/booking/BookingDetail";
-import BookingEdit from "../pages/booking/BookingEdit";
-
 const BookingRouter = [
   {
     path: "booking",
@@ -19,10 +17,10 @@ const BookingRouter = [
         path: ":id",
         element: <BookingDetail />
       },
-      {
-        path: ":id/edit",
-        element: <BookingEdit />
-      }
+      // {
+      //   path: ":id/edit",
+      //   element: <BookingPage />
+      // }
     ]
   },
 ];

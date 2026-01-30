@@ -1,14 +1,16 @@
+// src/hooks/accommodation/detail/useAccommodationPhoto.js
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
+import {
+  getAccommodationPhotoBlobUrl,
+ getAccommodationPhotos,
+} from "../../../api/accommodationPhotoAPI";
 
 /**
  * 숙소 사진 로드
  * - 메타데이터: GET /partner/accommodations/photos/list/{accommodationId}
  * - 실제 이미지(blob): GET /partner/accommodations/photos/{photoId}/data
  *
- * ✅ 수정 포인트
+ * ✅ 유지
  * - abort/unmount 후 setState 방지
  * - abort는 에러로 처리하지 않음
  */
@@ -16,7 +18,6 @@ export default function useAccommodationPhoto(accommodationId) {
   const [images, setImages] = useState([]);
   const [topImages, setTopImages] = useState([]);
 
-  // 생성한 objectURL cleanup
   const createdUrlsRef = useRef([]);
 
   useEffect(() => {
@@ -40,10 +41,9 @@ export default function useAccommodationPhoto(accommodationId) {
     (async () => {
       try {
         // 1) 메타데이터 목록
-        const metaRes = await axios.get(
-          `${API_BASE}/partner/accommodations/photos/list/${accommodationId}`,
-          { signal: controller.signal }
-        );
+        const metaRes = await getAccommodationPhotos(accommodationId, {
+          signal: controller.signal,
+        });
 
         const metaList = metaRes.data?.data ?? metaRes.data ?? [];
         const list = Array.isArray(metaList) ? metaList : [];
@@ -63,10 +63,9 @@ export default function useAccommodationPhoto(accommodationId) {
             if (!photoId) return null;
 
             try {
-              const blobRes = await axios.get(
-                `${API_BASE}/partner/accommodations/photos/${photoId}/data`,
-                { responseType: "blob", signal: controller.signal }
-              );
+              const blobRes = await getAccommodationPhotoBlobUrl(photoId, {
+                signal: controller.signal,
+              });
               const objUrl = URL.createObjectURL(blobRes.data);
               createdUrlsRef.current.push(objUrl);
               return objUrl;

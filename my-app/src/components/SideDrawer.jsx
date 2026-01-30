@@ -34,6 +34,8 @@ const SideDrawer = ({ isOpen, onClose }) => {
     }
   };
 
+  const { userId } = useUrlUser(); // 추가
+
   const handleLinkClick = () => {
     onClose(); 
   };
@@ -116,6 +118,7 @@ const SideDrawer = ({ isOpen, onClose }) => {
                 </NavItem>
               </>
             ) : (
+              // 비로그인 상태: 로그인/회원가입
               <NavItem to="/login-selection" icon={User} isAuth={true}>
                 로그인/회원가입
               </NavItem>
@@ -131,14 +134,14 @@ const SideDrawer = ({ isOpen, onClose }) => {
             </NavItem>
 
             <NavItem 
-              onClick={() => handleProtectedMove("/bookings")} 
+              onClick={() => handleProtectedMove("/bookings")}  // 수정해야된다
               icon={BookOpen}
             >
               예약 내역
             </NavItem>
 
             <NavItem 
-              onClick={() => handleProtectedMove("/favorites")} 
+              onClick={() => handleProtectedMove("/favorites")}  // 수정해야한다
               icon={Heart}
             >
               찜 목록

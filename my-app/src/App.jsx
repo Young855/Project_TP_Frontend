@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RouterProvider, createBrowserRouter, Outlet, useNavigate, useOutletContext, Navigate } from 'react-router-dom';
 import './index.css';
-import { useUrlUser } from './hooks/useUrlUser';
 
 import Header from './components/Header';
 import Modal from './components/Modal';
@@ -43,7 +42,6 @@ const Placeholder = ({ title }) => (
 
 function UserLayout() {
   const navigate = useNavigate();
-  const { userId } = useUrlUser();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchParams, setSearchParams] = useState({});

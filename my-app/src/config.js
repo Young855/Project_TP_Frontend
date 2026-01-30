@@ -1,5 +1,5 @@
 const API_BASE_URL = "http://localhost:9090";
-const AI_API_BASE_URL = "http://localhost:8000";
+const AI_API_BASE_URL = "http://192.168.0.152:8000";
 
 export const USER_ENDPOINTS = {
     USERS: {

@@ -1,13 +1,10 @@
 // src/components/accommodation/detail/RoomSection.jsx
 // 객실 선택 리스트 섹션
 
-<<<<<<< HEAD
-=======
 import { useEffect } from "react";
 import { getRoomPhotos } from "@/api/roomPhotoAPI";
 import { prepareBooking } from "../../../api/bookingAPI";
 
->>>>>>> otherwork
 export default function RoomSection({
   roomsRef,
   roomsTitleRef,
@@ -70,7 +67,6 @@ rooms.map((room) => {
     price != null &&
     priceInfo?.isBookable === true;
 
-<<<<<<< HEAD
   // ✅ reason 변수 없어서 터졌던 부분: reasonText로 생성
   const reasonText = !hasDates
     ? "날짜를 선택해주세요."
@@ -79,25 +75,6 @@ rooms.map((room) => {
       : (isExplicitlyBlocked || price == null)
         ? (priceInfo?.reason || "해당 기간에 예약할 수 없습니다.")
         : "";
-=======
-                    {hasDates && reason && (
-                      <div className="mt-1 text-xs text-red-600">{reason}</div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onClickSelectRoom?.(room)}
-                    disabled={!isBookable}
-                    className={`min-w-[88px] h-11 px-5 text-base font-semibold rounded-lg
-                      flex items-center justify-center self-end mb-[2px] ${
-                        isBookable
-                          ? "bg-blue-600 text-gray-700 hover:bg-blue-500"
-                          : "bg-blue-700 border border-gray-300 text-gray-400 cursor-not-allowed"
-                      }`}
-                  >
-                    선택
-                  </button>
->>>>>>> otherwork
 
   return (
     <div

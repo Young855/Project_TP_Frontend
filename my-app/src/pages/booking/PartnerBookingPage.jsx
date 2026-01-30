@@ -11,42 +11,50 @@ import { Filter, Loader2, RotateCcw, Search } from "lucide-react";
 export default function PartnerBookingPage() {
   const { currentAccommodation, partnerInfo } = usePartner();
 
+  // ✅ 오늘(로컬) 날짜 문자열 (YYYY-MM-DD)
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
   const [summary, setSummary] = useState({
     todaySales: 0,
     todayCheckinCount: 0,
+    pendingCount: 0,
     remainingRoomCount: 0,
     totalRoomCount: 0,
-    pendingCount: 0,
   });
 
-  // 서버에서 받아온 “원본 목록”
   const [rawList, setRawList] = useState([]);
-
-  // 로딩
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ 필터 상태(관리자 필터 UI 느낌 유지)
   const [filters, setFilters] = useState({
-    bookingKeyword: "", // 예약번호 검색
-    bookerName: "", // 예약자명 검색
-    status: "", // 전체/ PENDING / CONFIRMED ...
-    startDate: "", // 예약일(등록일) 시작
-    endDate: "", // 예약일(등록일) 종료
+    status: "",
+    keywordType: "bookingNumber",
+    keyword: "",
+    startDate: "",
+    endDate: "",
   });
 
-  /**
-   * ✅ 서버 호출 (대시보드 + 예약리스트)
-   * - 서버 필터는 우선 status만 적용 (백엔드가 지원할 가능성이 높음)
-   * - 나머지는 프론트에서 필터링(useMemo)
-   */
+  const list = useMemo(() => {
+    // 현재는 rawList 그대로 사용(필터가 서버에서 적용되는 구조)
+    // 프론트에서 추가 필터/검색을 할거면 여기서 처리하면 됨
+    return rawList;
+  }, [rawList]);
+
   const fetchData = async ({ status } = {}) => {
-    if (!currentAccommodation?.accommodationId || !partnerInfo?.partnerId) return;
+    if (!partnerInfo?.partnerId || !currentAccommodation?.accommodationId) return;
 
     setIsLoading(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
 
-      // 1) 대시보드
+    try {
+      // ✅ 오늘 날짜(서울 기준으로 맞추려면)
+      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+
+      // 1) 요약(숙소별)
       const summaryData = await getPartnerDashboardByAccommodation(
         partnerInfo.partnerId,
         currentAccommodation.accommodationId,
@@ -65,54 +73,53 @@ export default function PartnerBookingPage() {
 
       setRawList(Array.isArray(bookingData) ? bookingData : []);
     } catch (error) {
-      console.error("데이터 로드 실패:", error);
-      alert("데이터 로드 실패: " + (error.response?.data?.message || error.message));
+      console.error(error);
+      alert("데이터 조회 실패: " + (error.response?.data?.message || error.message));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ✅ 숙소 선택 바뀔 때 초기 로딩
   useEffect(() => {
-    if (!currentAccommodation?.accommodationId || !partnerInfo?.partnerId) return;
     fetchData({ status: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAccommodation, partnerInfo]);
+  }, [partnerInfo?.partnerId, currentAccommodation?.accommodationId]);
 
-  // ✅ 조회 버튼
   const handleSearch = async () => {
-    // 날짜 검증
-    if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) {
-      alert("종료일은 시작일보다 빠를 수 없습니다.");
-      return;
-    }
-
-    // 서버에는 status만 전달 (나머지는 아래 listMemo에서 프론트 필터)
+    // 지금 구조는 status만 서버에 전달하는 형태
     await fetchData({ status: filters.status || null });
   };
 
-  // ✅ 필터 초기화
   const handleReset = async () => {
-    const empty = {
-      bookingKeyword: "",
-      bookerName: "",
+    setFilters({
       status: "",
+      keywordType: "bookingNumber",
+      keyword: "",
       startDate: "",
       endDate: "",
-    };
-    setFilters(empty);
-
+    });
     await fetchData({ status: null });
   };
 
-  // ✅ 예약 확정
-  const handleConfirm = async (bookingId) => {
+  const handleConfirm = async (row) => {
+    const isToday = row?.checkinDate === todayStr;
+
+    // ✅ 정책: 체크인 당일 + PENDING만 확정 가능
+    if (row?.bookingStatus !== "PENDING") {
+      alert("PENDING 상태만 확정할 수 있습니다.");
+      return;
+    }
+    if (!isToday) {
+      alert("예약 확정은 체크인 당일에만 가능합니다.");
+      return;
+    }
+
     if (!window.confirm("예약을 확정하시겠습니까?")) return;
 
     try {
       await confirmPartnerBooking({
         partnerId: partnerInfo.partnerId,
-        bookingId,
+        bookingId: row.bookingId,
       });
 
       alert("예약이 확정되었습니다.");
@@ -124,43 +131,10 @@ export default function PartnerBookingPage() {
     }
   };
 
-  // ✅ 프론트 필터 적용된 최종 리스트
-  const list = useMemo(() => {
-    const safe = Array.isArray(rawList) ? rawList : [];
-
-    const keyword = (filters.bookingKeyword || "").trim().toLowerCase();
-    const booker = (filters.bookerName || "").trim().toLowerCase();
-    const start = filters.startDate || "";
-    const end = filters.endDate || "";
-
-    return safe.filter((row) => {
-      // 예약번호 검색
-      if (keyword) {
-        const bk = String(row.bookingNumber ?? "").toLowerCase();
-        if (!bk.includes(keyword)) return false;
-      }
-
-      // 예약자명 검색
-      if (booker) {
-        const bn = String(row.bookerName ?? "").toLowerCase();
-        if (!bn.includes(booker)) return false;
-      }
-
-      // 예약일(등록일) 기간 필터: createdAt yyyy-mm-dd 기준
-      if (start || end) {
-        const created = String(row.createdAt ?? "").slice(0, 10); // yyyy-mm-dd
-        if (start && created < start) return false;
-        if (end && created > end) return false;
-      }
-
-      return true;
-    });
-  }, [rawList, filters.bookingKeyword, filters.bookerName, filters.startDate, filters.endDate]);
-
   if (!currentAccommodation) {
     return (
-      <div className="p-10 text-center text-gray-500">
-        좌측 상단에서 숙소를 먼저 선택해 주세요.
+      <div className="p-6 text-gray-500">
+        숙소를 선택해주세요. (파트너가 가진 숙소가 없으면 관리자에서 숙소 등록 필요)
       </div>
     );
   }
@@ -170,120 +144,131 @@ export default function PartnerBookingPage() {
       {/* 타이틀 */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{currentAccommodation.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {currentAccommodation.name}
+          </h1>
           <p className="text-gray-500 text-sm">실시간 예약 및 객실 현황입니다.</p>
         </div>
       </div>
 
       {/* 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <SummaryCard
-          title="오늘의 매출"
-          value={`${summary.todaySales.toLocaleString()}원`}
-          subText="오늘 체크인 예약 기준"
-        />
-        <SummaryCard
-          title="체크인 예정"
-          value={`${summary.todayCheckinCount}건`}
-          subText="오늘 방문 예정 총 건수"
-        />
-        <SummaryCard
-          title="남은 객실"
-          value={`${summary.remainingRoomCount} / ${summary.totalRoomCount}`}
-          subText="전체 재고 - 오늘 예약"
-        />
-        <SummaryCard
-          title="확정 대기"
-          value={`${summary.pendingCount}건`}
-          subText="PENDING 상태 예약"
-          accent="orange"
-        />
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">오늘 매출</p>
+          <p className="text-2xl font-bold mt-1">
+            {Number(summary.todaySales || 0).toLocaleString()}원
+          </p>
+        </div>
+
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">체크인 예정</p>
+          <p className="text-2xl font-bold mt-1">
+            {Number(summary.todayCheckinCount || 0).toLocaleString()}건
+          </p>
+        </div>
+
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">확정 대기(PENDING)</p>
+          <p className="text-2xl font-bold mt-1">
+            {Number(summary.pendingCount || 0).toLocaleString()}건
+          </p>
+        </div>
+
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">남은 객실 / 전체 객실</p>
+          <p className="text-2xl font-bold mt-1">
+            {Number(summary.remainingRoomCount || 0).toLocaleString()} /{" "}
+            {Number(summary.totalRoomCount || 0).toLocaleString()}
+          </p>
+        </div>
       </div>
 
-      {/* ✅ (추가) 관리자 스타일 필터 영역 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+      {/* 필터 박스 */}
+      <div className="bg-white border rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-gray-800 flex items-center gap-2">
             <Filter size={20} />
             예약 관리 필터
           </h2>
 
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded transition text-sm font-medium"
+            className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 transition"
           >
-            <RotateCcw size={16} /> 필터 초기화
+            <RotateCcw size={18} />
+            초기화
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-4 items-end">
-          {/* 예약번호 검색 */}
-          <div className="flex-1 min-w-[240px] h-[90px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">예약번호 검색</label>
-            <input
-              type="text"
-              placeholder="예) BK-2026-01-23..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              value={filters.bookingKeyword}
-              onChange={(e) => setFilters((p) => ({ ...p, bookingKeyword: e.target.value }))}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-          </div>
-
-          {/* 예약자명 */}
-          <div className="w-48 h-[90px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">예약자명</label>
-            <input
-              type="text"
-              placeholder="예약자명 입력"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              value={filters.bookerName}
-              onChange={(e) => setFilters((p) => ({ ...p, bookerName: e.target.value }))}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-          </div>
-
-          {/* 현재 상태 */}
-          <div className="w-48 h-[90px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">현재 상태</label>
+        <div className="mt-5 flex flex-wrap gap-4 items-end">
+          {/* 상태 필터 */}
+          <div className="w-52">
+            <label className="block text-sm text-gray-600 mb-1">상태</label>
             <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none"
+              className="w-full border rounded-md px-3 py-2 text-sm"
               value={filters.status}
-              onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
+              onChange={(e) =>
+                setFilters((p) => ({ ...p, status: e.target.value }))
+              }
             >
               <option value="">전체</option>
               <option value="PENDING">PENDING</option>
               <option value="CONFIRMED">CONFIRMED</option>
               <option value="CANCELLED">CANCELLED</option>
+              <option value="COMPLETED">COMPLETED</option>
             </select>
           </div>
 
-          {/* 예약일(등록일) 기간 */}
-          <div className="h-[90px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">예약일(등록일) 기간</label>
-            <div className="flex items-center gap-2">
+          {/* 예약번호/예약자명(현재 서버에 넘기진 않음 - UI만 유지) */}
+          <div className="w-44">
+            <label className="block text-sm text-gray-600 mb-1">검색 기준</label>
+            <select
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              value={filters.keywordType}
+              onChange={(e) =>
+                setFilters((p) => ({ ...p, keywordType: e.target.value }))
+              }
+            >
+              <option value="bookingNumber">예약번호</option>
+              <option value="bookerName">예약자명</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[240px]">
+            <label className="block text-sm text-gray-600 mb-1">검색어</label>
+            <input
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              value={filters.keyword}
+              onChange={(e) =>
+                setFilters((p) => ({ ...p, keyword: e.target.value }))
+              }
+              placeholder="검색어 입력"
+            />
+          </div>
+
+          {/* 날짜 범위(현재 서버에 넘기진 않음 - UI만 유지) */}
+          <div className="flex gap-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">시작일</label>
               <input
                 type="date"
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="border rounded-md px-3 py-2 text-sm"
                 value={filters.startDate}
-                onChange={(e) => {
-                  const newStart = e.target.value;
-                  setFilters((p) => {
-                    // start가 end보다 뒤면 end를 start로 맞춤(관리자 페이지 로직 느낌)
-                    if (p.endDate && newStart > p.endDate) {
-                      return { ...p, startDate: newStart, endDate: newStart };
-                    }
-                    return { ...p, startDate: newStart };
-                  });
-                }}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, startDate: e.target.value }))
+                }
               />
-              <span className="text-gray-500">~</span>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">종료일</label>
               <input
                 type="date"
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="border rounded-md px-3 py-2 text-sm"
                 value={filters.endDate}
-                min={filters.startDate}
-                onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, endDate: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -309,7 +294,12 @@ export default function PartnerBookingPage() {
       {/* 예약 테이블 */}
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">예약 관리</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-gray-900">예약 관리</h2>
+            <span className="text-xs text-red-500">
+              ※ 예약 확정은 체크인 당일 예약만 가능합니다.
+            </span>
+          </div>
           {isLoading && <span className="text-sm text-gray-500">로딩중...</span>}
         </div>
 
@@ -341,18 +331,33 @@ export default function PartnerBookingPage() {
               </div>
               <div className="col-span-2">{row.bookingStatus}</div>
 
-              {/* 상태 변경: PENDING일 때만 확정 버튼 */}
+              {/* 상태 변경: PENDING + 오늘(checkinDate==todayStr)일 때만 활성 */}
               <div className="col-span-2">
-                {row.bookingStatus === "PENDING" ? (
-                  <button
-                    className="px-3 py-2 rounded-lg border text-sm hover:bg-gray-50"
-                    onClick={() => handleConfirm(row.bookingId)}
-                  >
-                    확정
-                  </button>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
+                {(() => {
+                  const isToday = row.checkinDate === todayStr;
+                  const canConfirm = row.bookingStatus === "PENDING" && isToday;
+
+                  if (row.bookingStatus !== "PENDING") return <span className="text-gray-400">-</span>;
+
+                  return (
+                    <button
+                      disabled={!canConfirm}
+                      className={`px-3 py-2 rounded-lg border text-sm transition ${
+                        canConfirm
+                          ? "hover:bg-gray-50"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                      onClick={() => handleConfirm(row)}
+                      title={
+                        canConfirm
+                          ? "예약 확정"
+                          : "예약 확정은 체크인 당일에만 가능합니다."
+                      }
+                    >
+                      확정
+                    </button>
+                  );
+                })()}
               </div>
 
               <div className="col-span-2 text-right text-gray-500">
@@ -362,19 +367,6 @@ export default function PartnerBookingPage() {
           ))
         )}
       </div>
-    </div>
-  );
-}
-
-/** 카드 컴포넌트(너 기존 스타일 유지용 간단 버전) */
-function SummaryCard({ title, value, subText, accent }) {
-  const ring = accent === "orange" ? "border-orange-200" : "border-gray-200";
-
-  return (
-    <div className={`bg-white rounded-xl border ${ring} p-5`}>
-      <div className="text-sm text-gray-500">{title}</div>
-      <div className="mt-2 text-2xl font-bold text-gray-900">{value}</div>
-      <div className="mt-2 text-xs text-gray-400">{subText}</div>
     </div>
   );
 }

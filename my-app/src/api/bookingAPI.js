@@ -3,6 +3,21 @@ import { axiosConfig, BOOKING_ENDPOINTS } from "../config";
 
 const api = axios.create(axiosConfig);
 
+/* =========================
+   ✅ Authorization 인터셉터 추가
+   - localStorage accessToken 자동 첨부
+========================= */
+api.interceptors.request.use(
+  (config) => {
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 /**
  * 예약 페이지 로딩 (GET /bookings/prepare)
  * - token 있으면 token으로 복구
@@ -70,19 +85,21 @@ export const getBookingByUserId = async (userId) => {
 };
 
 /** 변경
- * 예약 취소 (DELETE /bookings/{bookingId}/cancel?userId=1)
- * userId를 query param으로 보냄22
+/**
+ 예약 취소 (DELETE /bookings/{bookingId}/cancel?userId=1)
+ - BookingService에서 본인 예약 검증에 userId 필요 
  */
-export const cancelBooking = async (bookingId, userId) => {
-  if (!bookingId) throw new Error("bookingId가 필요합니다. ");
-  if (!userId) throw new Error("userId가 필요합니다. ");
-  
-  // axios params 사용 (자동으로 ?userId= 붙는다)
-  const url = `${BOOKING_ENDPOINTS.BOOKINGS.GET(bookingId)}/cancel`;
-  const res = await api.delete(url, { params: { userId } });
+export const cancelBooking = async ({ bookingId, userId }) => {
+  if (!bookingId) throw new Error("bookingId가 필요합니다.");
+  if (!userId) throw new Error("userId가 필요합니다.");
 
+  const url = `${BOOKING_ENDPOINTS.BOOKINGS.GET(bookingId)}/cancel`;
+
+  // ✅ query param으로 userId 전달
+  const res = await api.delete(url, { params: { userId } });
   return res.data;
-}
+};
+
 
 
 /**

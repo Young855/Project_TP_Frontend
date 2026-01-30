@@ -1,123 +1,172 @@
-// src/pages/favorite/FavoriteList.jsx
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { getFavorites, removeFavorite } from "../../api/favoriteAPI";
-import { getAccommodationPhotoBlobUrl } from "../../api/accommodationPhotoAPI";
+import { getAccommodationSummaries } from "../../api/accommodationAPI";
 import { calculateTotalPrices } from "../../api/accommodationPriceAPI";
+import { getAccommodationPhotoBlobUrl } from "../../api/accommodationPhotoAPI";
 
-// ✅ 검색결과 카드 컴포넌트 재사용 (모양/위치 동일하게)
-import AccommodationCard from "../../components/common/searches/AccommodationCard"; 
-// ⚠️ 위 import 경로는 네 프로젝트 구조에 따라 다를 수 있음.
-// SearchResultPage 기준 경로가 "./components/common/searches/AccommodationCard" 였으니까,
-// FavoriteList가 있는 위치에 맞게 경로 맞춰줘.
+import AccommodationCard from "../../components/common/searches/AccommodationCard";
 
+const STORAGE_KEY = "tp_search_criteria";
 
-// ✅ 찜 목록 대표사진 src 결정 (기존 로직 유지)
-function resolveFavoriteThumbnailSrc(fav) {
-  const photoId =
-    fav?.representPhotoId ??
-    fav?.mainPhotoId ??
-    fav?.thumbnailPhotoId ??
-    fav?.thumbPhotoId ??
-    fav?.photoId ??
-    fav?.thumbnailId ??
-    null;
+const getToday = () => new Date().toISOString().split("T")[0];
+const getTomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+};
 
-  if (photoId != null && String(photoId).trim().length > 0) {
-    return getAccommodationPhotoBlobUrl(photoId);
-  }
-
-  const url =
-    fav?.thumbnailUrl ??
-    fav?.thumbnailImageUrl ??
-    fav?.imageUrl ??
-    fav?.photoUrl ??
-    fav?.mainImageUrl ??
-    null;
-
-  if (typeof url === "string" && url.trim().length > 0) {
-    return url;
-  }
-
-  return "/assets/default_hotel.png";
-}
-
-export default function FavoriteList({ userId, checkIn, checkOut, guests }) {
+export default function FavoriteList({ userId }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [favorites, setFavorites] = useState([]);
+  // ✅ URL 파라미터
+  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const urlCheckIn = params.get("checkIn") || "";
+  const urlCheckOut = params.get("checkOut") || "";
+  const urlGuests = Number(params.get("guests")) || 2;
+
+  // ✅ localStorage fallback
+  const storageCriteria = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return {
+        checkIn: parsed.checkIn || "",
+        checkOut: parsed.checkOut || "",
+        guests: Number(parsed.guests) || 2,
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // ✅ FavoriteList가 “실제로 사용할” 날짜/인원 (URL > storage > default)
+  const checkIn = urlCheckIn || storageCriteria?.checkIn || getToday();
+  const checkOut = urlCheckOut || storageCriteria?.checkOut || getTomorrow();
+  const guests = urlGuests || storageCriteria?.guests || 2;
+
   const [loading, setLoading] = useState(true);
 
-  // ✅ 총액 맵 (accommodationId -> totalPrice)
+  // 1) favorites raw
+  const [favorites, setFavorites] = useState([]);
+
+  // 2) summaries (검색카드용 데이터)
+  const [summaryItems, setSummaryItems] = useState([]);
+
+  // 3) 날짜 기반 가격 맵
   const [calculatedPriceMap, setCalculatedPriceMap] = useState({});
 
-  const fetchFavorites = async () => {
+  // ✅ URL이 비어있는데 Header는 날짜를 보여주는 상황을 막기 위해
+  //    favorites 진입 시 URL을 자동으로 채움(replace)
+  useEffect(() => {
+    const hasUrlDates = !!urlCheckIn && !!urlCheckOut;
+    if (hasUrlDates) return;
+
+    const next = new URLSearchParams(location.search);
+    next.set("checkIn", checkIn);
+    next.set("checkOut", checkOut);
+    next.set("guests", String(guests));
+
+    // replace: 히스토리 깔끔하게
+    navigate(`/favorites?${next.toString()}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCheckIn, urlCheckOut]);
+
+  const fetchFavorites = useCallback(async () => {
     setLoading(true);
     try {
       const list = await getFavorites(userId);
-      const normalized = (list ?? []).map((fav) => ({
-        ...fav,
-        isActive: true,
-      }));
-      setFavorites(normalized);
+      setFavorites((list ?? []).map((x) => ({ ...x, isActive: true })));
     } catch (err) {
-      console.error("목록 불러오기 오류:", err);
+      console.error("찜 목록 불러오기 오류:", err);
+      setFavorites([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchFavorites();
   }, [userId]);
 
-  // ✅ A안: checkIn/checkOut 있을 때만 검색결과와 동일한 총액 계산
+  // ✅ 찜 목록 로드
   useEffect(() => {
-    if (!checkIn || !checkOut) return;
-    if (!favorites || favorites.length === 0) return;
+    fetchFavorites();
+  }, [fetchFavorites]);
 
-    const idsToCalculate = favorites
-      .map((f) => Number(f.accommodationId))
-      .filter((id) => !isNaN(id) && id > 0)
-      .filter((id) => calculatedPriceMap[id] === undefined);
+  // ✅ 찜된 accommodationId로 summaries 재조회
+  useEffect(() => {
+    const fetchSummaries = async () => {
+      const ids = (favorites ?? [])
+        .map((f) => Number(f.accommodationId))
+        .filter((id) => Number.isFinite(id) && id > 0);
+
+      if (ids.length === 0) {
+        setSummaryItems([]);
+        return;
+      }
+
+      try {
+        const summaries = await getAccommodationSummaries(ids);
+
+        // ids 순서대로 정렬 (API가 순서 보장 안 할 수 있음)
+        const map = new Map((summaries ?? []).map((s) => [Number(s.accommodationId), s]));
+        const ordered = ids.map((id) => map.get(id)).filter(Boolean);
+        setSummaryItems(ordered);
+      } catch (err) {
+        console.error("찜 숙소 요약 조회 실패:", err);
+        setSummaryItems([]);
+      }
+    };
+
+    fetchSummaries();
+  }, [favorites]);
+
+  // ✅ 날짜가 있으면 SearchResultPage처럼 가격 계산
+  // (이제 URL이 비어도 checkIn/checkOut fallback이 들어오므로 정상 계산됨)
+  useEffect(() => {
+    if (!checkIn || !checkOut) {
+      setCalculatedPriceMap({});
+      return;
+    }
+
+    const idsToCalculate = (summaryItems ?? [])
+      .map((p) => Number(p.accommodationId))
+      .filter((id) => Number.isFinite(id) && id > 0);
 
     if (idsToCalculate.length === 0) return;
 
     calculateTotalPrices(idsToCalculate, checkIn, checkOut)
       .then((priceList) => {
-        setCalculatedPriceMap((prev) => {
-          const next = { ...prev };
-          priceList.forEach((item) => {
-            // SearchResultPage랑 동일: available이면 totalPrice, 아니면 0(예약마감 처리용)
-            next[item.accommodationId] = item.available ? item.totalPrice : 0;
-          });
-          return next;
+        const next = {};
+        (priceList ?? []).forEach((item) => {
+          if (item.available) next[item.accommodationId] = item.totalPrice;
+          else next[item.accommodationId] = 0; // 예약불가
         });
+        setCalculatedPriceMap(next);
       })
       .catch((err) => console.error("가격 계산 실패:", err));
-  }, [favorites, checkIn, checkOut]); // calculatedPriceMap은 의존성에 넣지 않음(검색결과와 동일)
+  }, [summaryItems, checkIn, checkOut]);
 
-  const handleUnfavorite = async (e, favorite) => {
+  const handleUnfavorite = async (e, accommodationId) => {
     e.preventDefault();
     e.stopPropagation();
 
     // optimistic
     setFavorites((prev) =>
       prev.map((f) =>
-        f.favoriteId === favorite.favoriteId ? { ...f, isActive: false } : f
+        Number(f.accommodationId) === Number(accommodationId) ? { ...f, isActive: false } : f
       )
     );
 
     try {
-      await removeFavorite(userId, favorite.accommodationId);
+      await removeFavorite(userId, accommodationId);
       alert("찜 목록에서 삭제되었습니다.");
       await fetchFavorites();
     } catch (err) {
       alert("찜 해제 실패: " + (err.message || ""));
       setFavorites((prev) =>
         prev.map((f) =>
-          f.favoriteId === favorite.favoriteId ? { ...f, isActive: true } : f
+          Number(f.accommodationId) === Number(accommodationId) ? { ...f, isActive: true } : f
         )
       );
     }
@@ -125,57 +174,45 @@ export default function FavoriteList({ userId, checkIn, checkOut, guests }) {
 
   const handleGoDetail = (accommodationId) => {
     const qs = new URLSearchParams();
-    if (userId) qs.set("userId", String(userId));
-    if (checkIn) qs.set("checkIn", checkIn);
-    if (checkOut) qs.set("checkOut", checkOut);
-    if (guests) qs.set("guests", String(guests));
+    qs.set("checkIn", checkIn);
+    qs.set("checkOut", checkOut);
+    qs.set("guests", String(guests));
+    navigate(`/accommodation/${accommodationId}?${qs.toString()}`);
+  };
 
-    const query = qs.toString();
-    navigate(`/accommodation/${accommodationId}${query ? `?${query}` : ""}`);
+  const renderCard = (p) => {
+    const accId = Number(p.accommodationId);
+    const totalPrice = calculatedPriceMap[accId];
+
+    // ✅ 이제 날짜가 항상 있으므로 "날짜 선택 필요"가 뜰 일이 거의 없음
+    let displayPrice = "요금 확인 중";
+    if (!checkIn || !checkOut) displayPrice = "날짜 선택 필요";
+    else if (totalPrice === 0) displayPrice = "예약 마감";
+    else if (typeof totalPrice === "number") displayPrice = totalPrice;
+
+    const photoUrl = p.mainPhotoId
+      ? getAccommodationPhotoBlobUrl(p.mainPhotoId)
+      : "/assets/default_hotel.png";
+
+    return (
+      <div key={`fav-acc-${accId}`} className="relative">
+        <AccommodationCard
+          data={p}
+          photoUrl={photoUrl}
+          isFavorite={true}
+          onToggleFavorite={(e) => handleUnfavorite(e, accId)}
+          onClick={() => handleGoDetail(accId)}
+          totalPrice={displayPrice}
+          checkIn={checkIn}
+          checkOut={checkOut}
+        />
+      </div>
+    );
   };
 
   if (loading) return <p>찜 목록을 불러오는 중...</p>;
-  if (!loading && favorites.length === 0) return <p>찜한 숙소가 없습니다.</p>;
+  if (!loading && (favorites?.length ?? 0) === 0) return <p>찜한 숙소가 없습니다.</p>;
+  if (!loading && (summaryItems?.length ?? 0) === 0) return <p>찜 숙소 정보를 불러오지 못했습니다.</p>;
 
-  return (
-    <div className="space-y-3">
-      {favorites.map((fav) => {
-        const accId = Number(fav.accommodationId);
-
-        // ✅ AccommodationCard가 기대하는 data 형태로 normalize
-        const data = {
-          accommodationId: accId,
-          name: fav.accommodationName || fav.name || `숙소 #${accId}`,
-          address: fav.address || "주소 정보 없음",
-          ratingAvg: fav.ratingAvg ?? fav.reviewScore ?? 0,
-          accommodationType: fav.accommodationType ?? fav.type ?? "PENSION",
-          checkinTime: fav.checkinTime ?? "15:00:00",
-        };
-
-        const photoUrl = resolveFavoriteThumbnailSrc(fav);
-
-        // ✅ 총액 표시 (검색결과와 동일한 룰)
-        const calculatedTotalPrice = calculatedPriceMap[accId];
-        const displayPrice =
-          calculatedTotalPrice === 0 ? "예약 마감" : calculatedTotalPrice;
-
-        const isActive = fav.isActive !== false;
-        if (!isActive) return null; // 삭제중이면 숨김 (기존 UX 유지)
-
-        return (
-          <AccommodationCard
-            key={fav.favoriteId ?? accId}
-            data={data}
-            photoUrl={photoUrl}
-            isFavorite={true}
-            onToggleFavorite={(e) => handleUnfavorite(e, fav)}
-            onClick={() => handleGoDetail(accId)}
-            totalPrice={checkIn && checkOut ? displayPrice : "가격 정보 없음"}
-            checkIn={checkIn}
-            checkOut={checkOut}
-          />
-        );
-      })}
-    </div>
-  );
+  return <div className="space-y-4">{summaryItems.map((p) => renderCard(p))}</div>;
 }

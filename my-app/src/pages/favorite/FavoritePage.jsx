@@ -1,8 +1,8 @@
 // src/pages/favorite/FavoritePage.jsx
 import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 
 import FavoriteList from "./FavoriteList";
-import { useUrlUser } from "../../hooks/useUrlUser";
 
 // 찜 목록 최상위 페이지
 // - URL: /favorites 또는 /favorites?userId=1 형식
@@ -10,32 +10,69 @@ import { useUrlUser } from "../../hooks/useUrlUser";
 export default function FavoritePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userId: urlUserId } = useUrlUser();
 
   const userId = Number(localStorage.getItem("userId"));
 
-  const params = new URLSearchParams(location.search);
+  // URL 기준으로 초기값 잡기
+  const urlCriteria = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      checkIn: params.get("checkIn") || "",
+      checkOut: params.get("checkOut") || "",
+      guests: Number(params.get("guests")) || 2,
+    };
+  }, [location.search]);
 
-  // ✅ 기본값(오늘~내일, 2명) 넣어서 항상 가격 계산 가능하게
-  const today = new Date().toISOString().split("T")[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const [form, setForm] = useState(urlCriteria);
 
-  const checkIn = params.get("checkIn") || today;
-  const checkOut = params.get("checkOut") || tomorrow;
-  const guests = params.get("guests") || "2";
+  useEffect(() => {
+    setForm(urlCriteria);
+  }, [urlCriteria]);
 
   const handleGoToSearch = () => {
-    // 메인 페이지로 이동
     navigate(`/?userId=${userId}`);
+  };
+
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSearch = () => {
+    if (!form.checkIn || !form.checkOut) {
+      alert("체크인/체크아웃 날짜를 선택해주세요.");
+      return;
+    }
+
+    // ✅ Header pill도 같이 쓰도록 tp_search_criteria에 저장 (destination은 비워둠)
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          destination: "",
+          checkIn: form.checkIn,
+          checkOut: form.checkOut,
+          guests: Number(form.guests) || 2,
+        })
+      );
+    } catch {}
+
+    const params = new URLSearchParams();
+    params.set("checkIn", form.checkIn);
+    params.set("checkOut", form.checkOut);
+    params.set("guests", String(form.guests));
+
+    // ✅ favorites 내에서 URL만 바꿔서 리스트/가격 다시 계산되게
+    navigate(`/favorites?${params.toString()}`, { replace: true });
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-10">
       {/* 상단 헤더 영역 */}
-      <div className="flex justify-between items-center mb-6 md:mb-8">
+      <div className="flex justify-between items-center mb-6 md:mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">찜 목록</h1>
-          <p className="mt-1 text-sm text-gray-500"></p>
+          <p className="mt-1 text-sm text-gray-500" />
         </div>
 
         <button
@@ -52,19 +89,10 @@ export default function FavoritePage() {
         </button>
       </div>
 
+
       {/* 찜 목록 카드 리스트 */}
       <Routes>
-        <Route
-          index
-          element={
-            <FavoriteList
-              userId={userId}
-              checkIn={checkIn}
-              checkOut={checkOut}
-              guests={guests}
-            />
-          }
-        />
+        <Route index element={<FavoriteList userId={userId} />} />
         <Route path="*" element={<Navigate to="/favorites" replace />} />
       </Routes>
     </div>

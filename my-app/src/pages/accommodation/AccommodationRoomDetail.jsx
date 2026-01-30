@@ -38,10 +38,8 @@ export default function AccommodationRoomDetail() {
   const [allGalleryImages, setAllGalleryImages] = useState([]);
   const [roomMainPhotos, setRoomMainPhotos] = useState({}); // { roomId: "url" } 매핑
 
-  // ✅ 객실 대표사진(roomId -> url) / 객실 가격(roomId -> price)
-  const roomPhotoUrlMap = useRoomMainPhoto(rooms);
-  const { roomPriceMap, loading: priceLoading } =
-    useRoomPrice({ rooms, checkIn, checkOut });
+  useEffect(() => {
+    if (!accommodation || !rooms) return;
 
     const fetchAllPhotos = async () => {
       // (1) 숙소 사진
@@ -205,11 +203,6 @@ export default function AccommodationRoomDetail() {
     }
   };
 
-<<<<<<< HEAD
-  // 4. 스크롤 및 모달 제어
-=======
-
->>>>>>> bb202e42215712289ac5d4af961c9d5a2882e842
   const roomsRef = useRef(null);
   const infoRef = useRef(null);     // [추가] 숙소 소개 영역 Ref
   const locationRef = useRef(null);
@@ -223,26 +216,6 @@ export default function AccommodationRoomDetail() {
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
 
-  // 객실 선택
-  const handleSelectRoom = (room) => {
-    // 비로그인 처리 :alert만
-    if (!userId || Number(userId) <= 0) {
-    alert("로그인 후 이용 가능합니다.");
-    return;
-  }
-    const roomId = room?.roomId ?? room?.id;
-    navigate(
-      `/bookings/new?userId=${encodeURIComponent}(
-        userId
-    )}&roomId=${encodeURIComponent(
-      roomId
-    )}&checkinDate=${encodeURIComponent(
-      checkinDate
-    )}&checkoutDate=${encodeURIComponent(
-      checkout
-    )}&guests=${encodeURIComponent(guests)} `
-  );
-};
   const handleBooking = async (room) => {
     try {
         const response = await prepareBooking({
@@ -336,20 +309,7 @@ export default function AccommodationRoomDetail() {
           }}
         />
 
-        {/* 객실 */}
-        <RoomSection
-          roomsRef={roomsRef}
-          roomsTitleRef={roomsTitleRef}
-          roomsLoading={roomsLoading}
-          rooms={rooms}
-          checkIn={checkIn}
-          checkOut={checkOut}
-          roomPhotoUrlMap={roomPhotoUrlMap}
-          roomPriceMap={roomPriceMap}
-          priceLoading={priceLoading}
-          onClickSelectRoom={handleSelectRoom}
-        />
-        {/* 4. 객실 리스트 (기존 코드 그대로 유지) */}
+        {/* 4. 객실 리스트 */}
         <div ref={roomsRef} className="px-4 md:px-0 py-10 scroll-mt-16">
             <h2 className="text-xl font-bold mb-5">객실 선택</h2>
             <div className="space-y-6">

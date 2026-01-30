@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
      Calendar,  LogOut, User, 
-    Building, ChevronDown, PlusCircle, Settings, MapPin, Lock 
+    Building, ChevronDown, PlusCircle, Settings, MapPin, Lock, List, 
 } from 'lucide-react';
 import { PartnerProvider, usePartner } from '../context/PartnerContext';
 import ScrollToTop from '../components/ScrollToTop';
@@ -11,7 +11,7 @@ const PartnerLayoutContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const { partnerInfo, isLoading, accommodations, currentAccommodation } = usePartner();
+  const { partnerInfo, isLoading, accommodations, currentAccommodation, switchAccommodation } = usePartner();
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);

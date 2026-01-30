@@ -1,71 +1,3 @@
-<<<<<<< HEAD
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { createBooking } from "../../api/bookingAPI";
-
-export default function BookingCreatePage() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
-
-  const payload = useMemo(() => {
-    const userId = Number(params.get("userId"));
-    const roomId = Number(params.get("roomId"));
-    const checkinDate = params.get("checkinDate") || "";
-    const checkoutDate = params.get("checkoutDate") || "";
-    const guests = Number(params.get("guests") || 2);
-
-    return { userId, roomId, checkinDate, checkoutDate, guests };
-  }, [params]);
-
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    // 필수값 없으면 생성하지 않음
-    if (!payload.userId || !payload.roomId || !payload.checkinDate || !payload.checkoutDate) {
-      setError("예약 생성에 필요한 정보가 부족합니다.");
-      return;
-    }
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setError("");
-        const res = await createBooking(payload);
-        const bookingId = res?.bookingId ?? res?.id;
-
-        if (!bookingId) throw new Error("예약 생성 응답에 bookingId가 없습니다.");
-        if (cancelled) return;
-
-        navigate(`/bookings/${bookingId}`, { replace: true });
-      } catch (e) {
-        if (cancelled) return;
-        setError(e?.response?.data?.message || e?.message || "예약 생성 실패");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [payload, navigate]);
-
-  if (error) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 space-y-3">
-        <h1 className="text-xl font-semibold">예약 생성 실패</h1>
-        <div className="rounded border p-3 text-sm">{error}</div>
-        <button
-          className="rounded border px-3 py-2"
-          onClick={() => window.location.reload()}
-        >
-          다시 시도
-        </button>
-      </div>
-    );
-  }
-=======
 // BookingCreate.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -99,7 +31,7 @@ export default function BookingCreate() {
 
     // 로컬 스토리지로
     const userId = 1;
-    
+
     const tokenFromSession = sessionStorage.getItem("reservationToken") || "";
     return { roomId, checkinDate, checkoutDate, userId, tokenFromSession };
   }, [params]);
@@ -274,7 +206,6 @@ export default function BookingCreate() {
       }));
     }
   };
->>>>>>> otherwork
 
   /**
    * ✅ 인증코드 확인
@@ -342,9 +273,7 @@ export default function BookingCreate() {
       setSubmitting(true);
       setSubmitError("");
 
-      // ... (검증 로직 생략)
-
-      // ✅ (변경 1) 예약자 이름 필수 (프론트 1차 방어)
+      // ✅ 예약자 이름 필수 (프론트 1차 방어)
       if (!form.bookerName || form.bookerName.trim() === "") {
         throw new Error("예약자 이름은 필수입니다.");
       }
@@ -371,8 +300,18 @@ export default function BookingCreate() {
 
       // ✅ 1. 예약 완료 알림
       alert(`예약 완료!\n예약번호: ${res?.bookingNumber || ""}`);
-
     } catch (e) {
+      // ✅ [추가] 재고 없음(409)면 alert로만 처리하고 화면 아래 500 문구는 안 띄운다
+      const status = e?.response?.status;
+
+      if (status === 409) {
+        alert("해당 날짜에 남은 객실이 없어 예약에 실패했습니다.");
+        setSubmitError(""); // ✅ 빨간 에러문구 제거
+        return;
+      }
+
+      // ✅ [추가] 그 외 오류는 기존처럼 submitError 표시
+      // (500 같은 서버오류는 너무 그대로 보여주기 싫으면 아래 문구를 더 친절하게 바꿔도 됨)
       setSubmitError(e?.response?.data?.message || e?.message || "예약 생성 실패");
     } finally {
       setSubmitting(false);
@@ -418,16 +357,10 @@ export default function BookingCreate() {
   if (!view) return null;
 
   return (
-<<<<<<< HEAD
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-xl font-semibold mb-2">예약 생성 중...</h1>
-      <div className="text-sm text-gray-600">
-        잠시만 기다려주세요. 예약 정보를 생성하고 있습니다.
+      <div className="max-w-3xl mx-auto p-4 space-y-6">
+        <h1 className="text-2xl font-semibold">예약</h1>
       </div>
-=======
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-semibold">예약</h1>
-
       {/* 1) 숙소/객실 정보 */}
       <section className="rounded border p-4">
         <div className="text-sm text-gray-500">숙소</div>
@@ -650,7 +583,6 @@ export default function BookingCreate() {
         {/* ✅ (변경 1) submitError만 하단에 표시 */}
         {submitError ? <div className="text-sm text-red-600">{submitError}</div> : null}
       </section>
->>>>>>> otherwork
     </div>
   );
 }

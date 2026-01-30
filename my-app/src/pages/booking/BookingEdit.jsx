@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import { useEffect, useState } from "react";
 import { getBooking, updateBooking } from "../../api/bookingAPI";
 
@@ -70,4 +68,3 @@ export default function BookingEdit(){
         </form>
     )
 }
->>>>>>> otherwork

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getRoom, deleteRoom } from "../../api/roomAPI";
+import { getRoom, deleteRoom , checkActiveBookings} from "../../api/roomAPI";
 import { getRoomPhotoBlobUrl } from "../../api/roomPhotoAPI"; // 🌟 사진 URL 헬퍼 함수
 import { 
   Users, Maximize, Home, Bath, Bed, Package, 
@@ -37,13 +37,26 @@ const RoomDetail = () => {
   // 삭제 핸들러
   const onDelete = async () => {
     if (!window.confirm("정말 이 객실을 삭제하시겠습니까? 삭제 후에는 되돌릴 수 없습니다.")) return;
+
     try {
+      // 1. 예약 있는지 먼저 확인 (GET 요청)
+      const hasBookings = await checkActiveBookings(id);
+
+      if (hasBookings) {
+        // 2. 예약이 있으면 경고만 띄우고 중단 (에러 아님)
+        alert("해당 객실에 아직 종료되지 않은 예약이 있어 삭제할 수 없습니다.");
+        return;
+      }
+
+      // 3. 예약이 없으면 진짜 삭제 진행 (PUT 요청)
       await deleteRoom(id);
+      
       alert("객실이 삭제되었습니다.");
-      navigate("/partner/rooms");
+      navigate("/partner/accommodations"); // 혹은 목록 페이지 경로
+
     } catch (e) {
       console.error(e);
-      alert("삭제에 실패했습니다. 예약이 존재하는지 확인해주세요.");
+      alert("삭제 처리 중 오류가 발생했습니다.");
     }
   };
 

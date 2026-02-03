@@ -50,10 +50,20 @@ export const updateRoom = async (roomId, roomData) => {
   }
 };
 
+export const checkActiveBookings = async (roomId) => {
+  try {
+    const response = await api.get(ROOM_ENDPOINTS.ROOMS.CHECK_BOOKINGS(roomId));
+    return response.data; 
+  } catch (error) {
+    console.error("예약 확인 중 오류:", error);
+    throw error;
+  }
+};
+
 // 5. 객실 삭제 (DELETE /rooms/{id})
 export const deleteRoom = async (roomId) => {
   try {
-    const response = await api.delete(ROOM_ENDPOINTS.ROOMS.DELETE(roomId));
+    const response = await api.put(ROOM_ENDPOINTS.ROOMS.DELETE(roomId));
     return response.data;
   } catch (error) {
     console.error("객실 삭제 오류:", error);

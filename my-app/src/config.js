@@ -1,5 +1,5 @@
 const API_BASE_URL = "http://localhost:9090";
-const AI_API_BASE_URL = "http://192.168.0.152:8000";
+const AI_API_BASE_URL = "http://192.168.0.152:8001";
 
 export const USER_ENDPOINTS = {
     USERS: {
@@ -105,7 +105,8 @@ export const ROOM_ENDPOINTS = {
         ADD : `${API_BASE_URL}/rooms/partner`, 
         GET : (id) => `${API_BASE_URL}/rooms/${id}`, 
         MODIFY : (id) => `${API_BASE_URL}/rooms/partner/${id}`, 
-        DELETE : (id) => `${API_BASE_URL}/rooms/partner/${id}`, 
+        DELETE : (id) => `${API_BASE_URL}/rooms/partner/${id}/status`, 
+        CHECK_BOOKINGS: (id) => `${API_BASE_URL}/rooms/partner/${id}/check-bookings`,
         LIST_BY_ACCOMMODATION_WITH_PHOTO: (accommodationId) =>
              `${API_BASE_URL}/rooms/by-accommodation/${accommodationId}/with-main-photo`,
         GET_BY_ACCOMMODATION: (accommodationId) => `${API_BASE_URL}/rooms/accommodation/${accommodationId}`,

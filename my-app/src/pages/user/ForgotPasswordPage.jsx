@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
           <strong>{email}</strong>으로 비밀번호 재설정 링크를 보냈습니다.<br />
           메일함을 확인해주세요.
         </p>
-        <Link to="/login" className="bg-gray-800 text-white px-6 py-2 rounded hover:bg-black">
+        <Link to="/login-selection" className="bg-gray-800 text-white px-6 py-2 rounded hover:bg-black">
           로그인으로 돌아가기
         </Link>
       </div>

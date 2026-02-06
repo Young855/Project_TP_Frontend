@@ -18,6 +18,7 @@ export const loginPartner = async (email, password) => {
         const response = await api.post(AUTH_ENDPOINTS.PARTNER_LOGIN, { email, password });
         return response.data;
     } catch (error) {
+        console.log(error);
         console.error("파트너 로그인 오류:", error);
         throw error;
     }

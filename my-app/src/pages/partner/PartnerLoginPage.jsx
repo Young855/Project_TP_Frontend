@@ -6,10 +6,9 @@ import { loginPartner } from '../../api/loginAPI';
 import { getPartnerByAccountId } from '../../api/partnerAPI';
 
 const PartnerLoginPage = () => {
-  const { onLogin, showModal } = useOutletContext(); 
+  const { onLogin } = useOutletContext(); 
   const navigate = useNavigate();
 
-  // [1] 여기서 이미 'email'이라는 상태 변수를 선언했습니다.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +28,6 @@ const PartnerLoginPage = () => {
     setIsLoading(true);
     
     try {
-        // [2] 여기서 상태 변수 'email'을 사용합니다.
         const data = await loginPartner(email, password);
         const { 
             tokenDTO, 
@@ -38,12 +36,11 @@ const PartnerLoginPage = () => {
             accountId, 
             role 
         } = data;
+        
+        // accountId로 파트너 상세 정보 조회
         const partnerData = await getPartnerByAccountId(accountId);
             
-            // partnerId 저장 (이제 다른 페이지에서 꺼내 쓸 수 있음)
-            localStorage.setItem('partnerId', partnerData.partnerId);
-        // [3] 수정 포인트: 백엔드에서 온 'email'을 'partnerEmail'로 이름 바꿔서 받기 (충돌 방지)
-        
+        localStorage.setItem('partnerId', partnerData.partnerId);
 
         if (tokenDTO) {
             localStorage.setItem('accessToken', tokenDTO.accessToken);
@@ -51,22 +48,31 @@ const PartnerLoginPage = () => {
         }
 
         localStorage.setItem('nickname', nickname || '파트너');
-        
-        // [4] 이름 바꾼 변수 사용
         localStorage.setItem('email', partnerEmail);
-        
         localStorage.setItem('accountId', accountId);
         localStorage.setItem('role', role); 
         
         if (onLogin) onLogin();
 
         alert(`파트너 ${nickname}님 환영합니다!`);
-        window.location.href = "/partner/dashboard"; // 파트너 메인으로 이동
+        window.location.href = "/partner/accommodations"; // 파트너 메인으로 이동
 
     } catch (err) {
         console.error('파트너 로그인 오류:', err);
+        
+        const status = err.response?.status;
         const msg = err.response?.data?.message || '로그인에 실패했습니다. 이메일과 승인 상태를 확인해주세요.';
-        setError(msg);
+
+        // [핵심 로직] 상태 코드에 따른 분기 처리
+        if (status === 403) {
+            // 403 Forbidden: 승인 대기(Pending) 또는 권한 없음 -> Alert 창 띄우기
+            // (백엔드에서 AccessDeniedException을 던져야 함)
+            alert(msg); 
+        } else {
+            // 401 Unauthorized (비번 틀림), 400 Bad Request, 500 Server Error 등
+            // -> 하단 붉은 박스(setError)에 표시
+            setError(msg);
+        }
     } finally {
         setIsLoading(false);
     }
@@ -112,6 +118,7 @@ const PartnerLoginPage = () => {
             />
           </div>
 
+          {/* 에러 메시지 표시 영역 (403이 아닐 때만 표시됨) */}
           {error && (
             <div className="text-sm text-red-600 p-3 bg-red-50 border border-red-200 rounded-lg">
               {error}

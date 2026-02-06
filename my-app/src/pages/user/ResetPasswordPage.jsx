@@ -19,7 +19,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     if (!token) {
       alert("잘못된 접근입니다.");
-      navigate("/login");
+      navigate("/login-selection");
       return;
     }
     verifyResetToken(token)
